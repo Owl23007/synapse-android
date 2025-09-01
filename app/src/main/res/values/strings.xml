@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Synapse</string>
+
+    <!-- 通用 -->
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="retry">重试</string>
+    <string name="loading">加载中...</string>
+    <string name="error">错误</string>
+
+    <!-- 聊天相关 -->
+    <string name="chat_input_hint">输入消息...</string>
+    <string name="chat_voice_hint">正在听...</string>
+    <string name="send_message">发送</string>
+    <string name="voice_input">语音输入</string>
+    <string name="chat_empty_state_title">欢迎使用 Synapse AI</string>
+    <string name="chat_empty_state_subtitle">开始对话或选择下方的快速操作</string>
+
+    <!-- 快速操作 -->
+    <string name="action_create_task">创建任务</string>
+    <string name="action_set_reminder">设置提醒</string>
+    <string name="action_start_writing">开始写作</string>
+    <string name="action_view_schedule">查看日程</string>
+    <string name="action_analyze_data">数据分析</string>
+    <string name="action_quick_note">快速笔记</string>
+
+    <!-- 设置 -->
+    <string name="settings">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_dark_mode">深色模式</string>
+    <string name="settings_dark_mode_desc">使用深色主题</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_push_notifications">推送通知</string>
+    <string name="settings_push_notifications_desc">接收任务提醒和更新通知</string>
+    <string name="settings_voice">语音功能</string>
+    <string name="settings_voice_input">语音输入</string>
+    <string name="settings_voice_input_desc">启用语音转文字功能</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">应用版本</string>
+    <string name="settings_privacy_policy">隐私政策</string>
+    <string name="settings_privacy_policy_desc">查看隐私保护说明</string>
+    <string name="settings_terms">使用条款</string>
+    <string name="settings_terms_desc">查看服务条款</string>
+
+    <!-- 引导页面 -->
+    <string name="onboarding_welcome">欢迎使用 Synapse</string>
+    <string name="onboarding_subtitle">您的智能个人助手</string>
+    <string name="onboarding_feature_writing">智能写作</string>
+    <string name="onboarding_feature_writing_desc">AI 协助您完成各种写作任务</string>
+    <string name="onboarding_feature_task">任务管理</string>
+    <string name="onboarding_feature_task_desc">高效管理您的日程和任务</string>
+    <string name="onboarding_feature_goal">目标跟踪</string>
+    <string name="onboarding_feature_goal_desc">设定并追踪您的个人目标</string>
+    <string name="onboarding_get_started">开始使用</string>
+
+    <!-- 错误消息 -->
+    <string name="error_network">网络连接错误</string>
+    <string name="error_voice_permission">需要录音权限才能使用语音功能</string>
+    <string name="error_voice_not_available">语音识别服务不可用</string>
+    <string name="error_unknown">发生未知错误</string>
+</resources>
+

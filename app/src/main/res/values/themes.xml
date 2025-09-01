@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Synapse" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/synapse_primary</item>
+        <item name="colorSecondary">@color/synapse_secondary</item>
+        <item name="colorAccent">@color/synapse_accent</item>
+        <item name="android:colorBackground">@color/synapse_background</item>
+        <item name="colorSurface">@color/synapse_surface</item>
+    </style>
+
+    <style name="Theme.Synapse" parent="Base.Theme.Synapse" />
+
+    <!-- Splash主题 - 禁用启动窗口 -->
+    <style name="Theme.Synapse.Splash" parent="Theme.Synapse">
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+</resources>
