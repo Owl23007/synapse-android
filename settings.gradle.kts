@@ -24,7 +24,6 @@ pluginManagement {
 
 rootProject.name = "Synapse"
 include(":app")
-include(":core")
 include(":data")
 include(":domain")
 include(":feature:task")

@@ -39,7 +39,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":core"))
     implementation(project(":domain"))
     implementation(project(":data"))
 
@@ -54,7 +53,4 @@ dependencies {
     // Compose LiveData integration
     implementation("androidx.compose.runtime:runtime-livedata:1.9.0")
 
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.bundles.testing)
 }

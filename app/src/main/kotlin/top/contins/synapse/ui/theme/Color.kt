@@ -2,29 +2,76 @@ package top.contins.synapse.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// 浅蓝色主题色彩 - 固定配色方案
+val LightBluePrimary = Color(0xFF2196F3)  // 浅蓝主色
+val LightBluePrimaryContainer = Color(0xFFE3F2FD)
+val LightBlueOnPrimary = Color(0xFFFFFFFF)
+val LightBlueOnPrimaryContainer = Color(0xFF0D47A1)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val LightBlueSecondary = Color(0xFF03DAC6)
+val LightBlueSecondaryContainer = Color(0xFFA7F3D0)
+val LightBlueOnSecondary = Color(0xFF000000)
+val LightBlueOnSecondaryContainer = Color(0xFF002114)
 
-val SynapsePrimaryContainer = Color(0xFFE1F5FE)
+// 表面和背景色
+val LightBlueSurface = Color(0xFFFEFBFF)
+val LightBlueOnSurface = Color(0xFF1C1B1F)
+val LightBlueSurfaceVariant = Color(0xFFE7E0EC)
+val LightBlueOnSurfaceVariant = Color(0xFF49454F)
 
-// Synapse 主题色彩
-val SynapsePrimary = Color(0xFF64B5F6)
-val SynapseSecondary = Color(0xFF4FC3F7)
-val SynapseAccent = Color(0xFF4DD0E1)
-val SynapseBackground = Color(0xFFFAFAFA)
-val SynapseSurface = Color(0xFFFFFFFF)
-val SynapseOnPrimary = Color(0xFFFFFFFF)
-val SynapseOnSecondary = Color(0xFFFFFFFF)
-val SynapseOnBackground = Color(0xFF1C1B1F)
-val SynapseOnSurface = Color(0xFF1C1B1F)
+val LightBlueBackground = Color(0xFFFEFBFF)
+val LightBlueOnBackground = Color(0xFF1C1B1F)
+
+// 夜间模式颜色
+val DarkBluePrimary = Color(0xFF64B5F6)
+val DarkBluePrimaryContainer = Color(0xFF0D47A1)
+val DarkBlueOnPrimary = Color(0xFF002C69)
+val DarkBlueOnPrimaryContainer = Color(0xFFC8E6FF)
+
+val DarkBlueSecondary = Color(0xFF4FD3B8)
+val DarkBlueSecondaryContainer = Color(0xFF005141)
+val DarkBlueOnSecondary = Color(0xFF00382B)
+val DarkBlueOnSecondaryContainer = Color(0xFF6DF0D4)
+
+val DarkBlueSurface = Color(0xFF10131C)
+val DarkBlueOnSurface = Color(0xFFE6E1E5)
+val DarkBlueSurfaceVariant = Color(0xFF49454F)
+val DarkBlueOnSurfaceVariant = Color(0xFFCAC4D0)
+
+val DarkBlueBackground = Color(0xFF10131C)
+val DarkBlueOnBackground = Color(0xFFE6E1E5)
+
+// 错误色
+val LightBlueError = Color(0xFFBA1A1A)
+val LightBlueOnError = Color(0xFFFFFFFF)
+val LightBlueErrorContainer = Color(0xFFFFDAD6)
+val LightBlueOnErrorContainer = Color(0xFF410002)
+
+val DarkBlueError = Color(0xFFFFB4AB)
+val DarkBlueOnError = Color(0xFF690005)
+val DarkBlueErrorContainer = Color(0xFF93000A)
+val DarkBlueOnErrorContainer = Color(0xFFFFDAD6)
+
+// 轮廓色
+val LightBlueOutline = Color(0xFF79747E)
+val LightBlueOutlineVariant = Color(0xFFCAC4D0)
+val DarkBlueOutline = Color(0xFF938F99)
+val DarkBlueOutlineVariant = Color(0xFF49454F)
 
 // 聊天气泡颜色
-val UserMessageBackground = Color(0xFF64B5F6)
+val UserMessageBackground = Color(0xFF2196F3)
 val UserMessageText = Color(0xFFFFFFFF)
 val AssistantMessageBackground = Color(0xFFF3F4F6)
 val AssistantMessageText = Color(0xFF374151)
+
+// 保留旧的变量名以保持兼容性
+val SynapsePrimary = LightBluePrimary
+val SynapsePrimaryContainer = LightBluePrimaryContainer
+val SynapseSecondary = LightBlueSecondary
+val SynapseAccent = LightBlueSecondary
+val SynapseBackground = LightBlueBackground
+val SynapseSurface = LightBlueSurface
+val SynapseOnPrimary = LightBlueOnPrimary
+val SynapseOnSecondary = LightBlueOnSecondary
+val SynapseOnBackground = LightBlueOnBackground
+val SynapseOnSurface = LightBlueOnSurface

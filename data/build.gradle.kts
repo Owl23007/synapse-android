@@ -38,7 +38,4 @@ dependencies {
     implementation(project(":domain"))
     implementation(libs.bundles.android.basic)
 
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.bundles.testing)
 }

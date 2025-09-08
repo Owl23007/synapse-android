@@ -1,59 +1,89 @@
 package top.contins.synapse.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = SynapsePrimary,
-    secondary = SynapseSecondary,
-    tertiary = SynapseAccent
+// 浅蓝色亮色主题
+private val LightBlueColorScheme = lightColorScheme(
+    primary = LightBluePrimary,
+    onPrimary = LightBlueOnPrimary,
+    primaryContainer = LightBluePrimaryContainer,
+    onPrimaryContainer = LightBlueOnPrimaryContainer,
+    secondary = LightBlueSecondary,
+    onSecondary = LightBlueOnSecondary,
+    secondaryContainer = LightBlueSecondaryContainer,
+    onSecondaryContainer = LightBlueOnSecondaryContainer,
+    tertiary = LightBlueSecondary,
+    onTertiary = LightBlueOnSecondary,
+    tertiaryContainer = LightBlueSecondaryContainer,
+    onTertiaryContainer = LightBlueOnSecondaryContainer,
+    error = LightBlueError,
+    onError = LightBlueOnError,
+    errorContainer = LightBlueErrorContainer,
+    onErrorContainer = LightBlueOnErrorContainer,
+    outline = LightBlueOutline,
+    outlineVariant = LightBlueOutlineVariant,
+    background = LightBlueBackground,
+    onBackground = LightBlueOnBackground,
+    surface = LightBlueSurface,
+    onSurface = LightBlueOnSurface,
+    surfaceVariant = LightBlueSurfaceVariant,
+    onSurfaceVariant = LightBlueOnSurfaceVariant,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = SynapsePrimary,
-    primaryContainer = SynapsePrimaryContainer, // 显式设置
-    secondary = SynapseSecondary,
-    tertiary = SynapseAccent,
-    background = SynapseBackground,
-    surface = SynapseSurface,
-    onPrimary = SynapseOnPrimary,
-    onSecondary = SynapseOnSecondary,
-    onBackground = SynapseOnBackground,
-    onSurface = SynapseOnSurface
+// 浅蓝色暗色主题
+private val DarkBlueColorScheme = darkColorScheme(
+    primary = DarkBluePrimary,
+    onPrimary = DarkBlueOnPrimary,
+    primaryContainer = DarkBluePrimaryContainer,
+    onPrimaryContainer = DarkBlueOnPrimaryContainer,
+    secondary = DarkBlueSecondary,
+    onSecondary = DarkBlueOnSecondary,
+    secondaryContainer = DarkBlueSecondaryContainer,
+    onSecondaryContainer = DarkBlueOnSecondaryContainer,
+    tertiary = DarkBlueSecondary,
+    onTertiary = DarkBlueOnSecondary,
+    tertiaryContainer = DarkBlueSecondaryContainer,
+    onTertiaryContainer = DarkBlueOnSecondaryContainer,
+    error = DarkBlueError,
+    onError = DarkBlueOnError,
+    errorContainer = DarkBlueErrorContainer,
+    onErrorContainer = DarkBlueOnErrorContainer,
+    outline = DarkBlueOutline,
+    outlineVariant = DarkBlueOutlineVariant,
+    background = DarkBlueBackground,
+    onBackground = DarkBlueOnBackground,
+    surface = DarkBlueSurface,
+    onSurface = DarkBlueOnSurface,
+    surfaceVariant = DarkBlueSurfaceVariant,
+    onSurfaceVariant = DarkBlueOnSurfaceVariant,
 )
 
 @Composable
 fun SynapseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,  // 禁用动态颜色
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    // 强制使用固定的浅蓝色主题，不跟随系统动态颜色
+    val colorScheme = if (darkTheme) DarkBlueColorScheme else LightBlueColorScheme
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+
+            // 使用现代API设置状态栏样式
+            insetsController.isAppearanceLightStatusBars = !darkTheme
         }
     }
 

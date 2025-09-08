@@ -1,9 +1,6 @@
 [versions]
 agp = "8.12.2"
 kotlin = "2.2.10"
-junit = "4.13.2"
-junitVersion = "1.3.0"
-espressoCore = "3.7.0"
 appcompat = "1.7.1"
 material = "1.12.0"
 compose-bom = "2025.08.01"
@@ -14,13 +11,15 @@ navigation-compose = "2.8.5"
 ksp = "2.2.10-2.0.2"
 foundation = "1.9.0"
 material3 = "1.3.2"
+okhttp = "4.12.0"
 
 [libraries]
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+# OkHttp
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 
 # Compose BOM
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
@@ -52,7 +51,6 @@ material3 = { group = "androidx.compose.material3", name = "material3", version.
 compose = ["compose-ui", "compose-ui-tooling-preview", "compose-material3", "compose-material-icons-extended", "compose-runtime-livedata"]
 lifecycle = ["lifecycle-viewmodel-compose", "lifecycle-livedata"]
 android-basic = ["appcompat", "material"]
-testing = ["junit", "ext-junit", "espresso-core"]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

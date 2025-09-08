@@ -81,7 +81,6 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
 
     // Module dependencies
-    implementation(project(":core"))
     implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":feature:assistant"))
@@ -91,8 +90,6 @@ dependencies {
     implementation(project(":feature:writing"))
 
     // Testing
-    testImplementation(libs.bundles.testing)
-    androidTestImplementation(libs.bundles.testing)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.tooling)

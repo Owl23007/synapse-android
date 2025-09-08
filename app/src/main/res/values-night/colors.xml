@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 夜间模式的浅蓝色主题 -->
+    <color name="light_blue_primary">#64B5F6</color>
+    <color name="light_blue_on_primary">#002C69</color>
+    <color name="light_blue_primary_container">#0D47A1</color>
+    <color name="light_blue_on_primary_container">#C8E6FF</color>
+
+    <!-- 次要颜色 -->
+    <color name="light_blue_secondary">#4FD3B8</color>
+    <color name="light_blue_on_secondary">#00382B</color>
+    <color name="light_blue_secondary_container">#005141</color>
+    <color name="light_blue_on_secondary_container">#6DF0D4</color>
+
+    <!-- 表面颜色 -->
+    <color name="surface">#10131C</color>
+    <color name="on_surface">#E6E1E5</color>
+    <color name="surface_variant">#49454F</color>
+    <color name="on_surface_variant">#CAC4D0</color>
+
+    <!-- 背景色 -->
+    <color name="background">#10131C</color>
+    <color name="on_background">#E6E1E5</color>
+
+    <!-- 错误色 -->
+    <color name="error">#FFB4AB</color>
+    <color name="on_error">#690005</color>
+    <color name="error_container">#93000A</color>
+    <color name="on_error_container">#FFDAD6</color>
+
+    <!-- 轮廓色 -->
+    <color name="outline">#938F99</color>
+    <color name="outline_variant">#49454F</color>
+</resources>
+

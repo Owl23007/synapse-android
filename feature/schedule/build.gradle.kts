@@ -40,7 +40,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":core"))
     implementation(project(":domain"))
     implementation(project(":data"))
 
@@ -51,8 +50,4 @@ dependencies {
     // Lifecycle & Basic Android
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.android.basic)
-
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.bundles.testing)
 }

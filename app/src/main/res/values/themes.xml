@@ -1,19 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Synapse" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/synapse_primary</item>
-        <item name="colorSecondary">@color/synapse_secondary</item>
-        <item name="colorAccent">@color/synapse_accent</item>
-        <item name="android:colorBackground">@color/synapse_background</item>
-        <item name="colorSurface">@color/synapse_surface</item>
-    </style>
+    <!-- 基础浅蓝主题 -->
+    <style name="Theme.Synapse" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 主色调 -->
+        <item name="colorPrimary">@color/light_blue_primary</item>
+        <item name="colorOnPrimary">@color/light_blue_on_primary</item>
+        <item name="colorPrimaryContainer">@color/light_blue_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/light_blue_on_primary_container</item>
 
-    <style name="Theme.Synapse" parent="Base.Theme.Synapse" />
+        <!-- 次要色调 -->
+        <item name="colorSecondary">@color/light_blue_secondary</item>
+        <item name="colorOnSecondary">@color/light_blue_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/light_blue_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/light_blue_on_secondary_container</item>
 
-    <!-- Splash主题 - 禁用启动窗口 -->
-    <style name="Theme.Synapse.Splash" parent="Theme.Synapse">
-        <item name="android:windowBackground">@color/white</item>
+        <!-- 表面色 -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+
+        <!-- 背景色 -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorOnBackground">@color/on_background</item>
+
+        <!-- 错误色 -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
+        <item name="colorErrorContainer">@color/error_container</item>
+        <item name="colorOnErrorContainer">@color/on_error_container</item>
+
+        <!-- 轮廓色 -->
+        <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
+
+        <!-- 禁用动态颜色 -->
+        <item name="android:forceDarkAllowed">false</item>
     </style>
 </resources>
+
