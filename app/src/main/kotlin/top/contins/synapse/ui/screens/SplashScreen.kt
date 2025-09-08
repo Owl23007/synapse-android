@@ -48,7 +48,7 @@ fun SplashScreen(
 ) {
     // 模拟启动检查逻辑
     LaunchedEffect(Unit) {
-        delay(2000) // 模拟启动时间
+        delay(1000) // 模拟启动时间
         if (isUserLoggedIn) {
             onNavigateToMain()
         } else {

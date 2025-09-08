@@ -16,13 +16,14 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = SynapsePrimary,
+    secondary = SynapseSecondary,
+    tertiary = SynapseAccent
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = SynapsePrimary,
+    primaryContainer = SynapsePrimaryContainer, // 显式设置
     secondary = SynapseSecondary,
     tertiary = SynapseAccent,
     background = SynapseBackground,

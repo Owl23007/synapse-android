@@ -1,26 +1,36 @@
 package top.contins.synapse.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Web
 import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+import top.contins.synapse.R
 
 /**
  * 认证屏幕
@@ -28,250 +38,252 @@ import androidx.compose.ui.unit.sp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Preview
 fun AuthScreen(
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit = {}
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
+    var serverIp by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    var captchaCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Logo 区域
-        Card(
-            modifier = Modifier.size(80.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+    // 使用 Scaffold + TopAppBar，使 header 固定
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 0.dp, top = 32.dp)
+                    .height(128.dp),
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // 小 logo
+                        // 替换原有 Card+Image 部分为：
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "App Logo",
+                            modifier = Modifier
+                                .size(128.dp)
+                                .clip(RoundedCornerShape(12.dp)) // 圆角
+                        )
+                    }
+                }
             )
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "S",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 标题
-        Text(
-            text = "Synapse",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Text(
-            text = "智能助手平台",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // 模式切换
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+    ) { innerPadding ->
+        // 内容区支持滚动，避免输入法遮挡
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(start = 20.dp, end = 20.dp, top = 0.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            TextButton(
-                onClick = { isLoginMode = true },
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (isLoginMode) MaterialTheme.colorScheme.primary
-                                  else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Text(
-                    text = "登录",
-                    fontWeight = if (isLoginMode) FontWeight.Bold else FontWeight.Normal
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Synapse",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
             Text(
-                text = " | ",
+                text = "智能助手平台",
+                fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            TextButton(
-                onClick = { isLoginMode = false },
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (!isLoginMode) MaterialTheme.colorScheme.primary
-                                  else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 表单 Card，保持之前布局但允许 scroll
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Text(
-                    text = "注册",
-                    fontWeight = if (!isLoginMode) FontWeight.Bold else FontWeight.Normal
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 表单
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 邮箱输入
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        errorMessage = ""
-                    },
-                    label = { Text("邮箱") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Email, contentDescription = "邮箱")
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                // 密码输入
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        errorMessage = ""
-                    },
-                    label = { Text("密码") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = "密码")
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility
-                                             else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
-                            )
-                        }
-                    },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None
-                                         else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                // 确认密码（仅注册模式）
-                if (!isLoginMode) {
-                    OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            errorMessage = ""
-                        },
-                        label = { Text("确认密码") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = "确认密码")
-                        },
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-
-                // 错误消息
-                if (errorMessage.isNotEmpty()) {
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 主要操作按钮
-                Button(
-                    onClick = {
-                        // 表单验证
-                        when {
-                            email.isEmpty() -> errorMessage = "请输入邮箱"
-                            password.isEmpty() -> errorMessage = "请输入密码"
-                            !isLoginMode && confirmPassword.isEmpty() -> errorMessage = "请确认密码"
-                            !isLoginMode && password != confirmPassword -> errorMessage = "两次输入的密码不一致"
-                            !email.contains("@") -> errorMessage = "请输入有效的邮箱地址"
-                            password.length < 6 -> errorMessage = "密码长度至少6位"
-                            else -> {
-                                // 模拟登录/注册过程
-                                isLoading = true
-                                // 这里可以添加实际的认证逻辑
-                                // 暂时直接成功
-                                onLoginSuccess()
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                // 模式切换
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                    Box(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "登录",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isLoginMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .clickable { isLoginMode = true }
+                                .fillMaxWidth()
+                                .wrapContentWidth(Alignment.CenterHorizontally)
                         )
-                    } else {
-                        Text(if (isLoginMode) "登录" else "注册")
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "注册",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (!isLoginMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .clickable { isLoginMode = false }
+                                .fillMaxWidth()
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                        )
                     }
                 }
 
-                // 快速登录（仅登录模式）
-                if (isLoginMode) {
-                    OutlinedButton(
+                // 滑块指示器
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .align(if (isLoginMode) Alignment.CenterStart else Alignment.CenterEnd)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+
+                    OutlinedTextField(
+                        value = serverIp,
+                        onValueChange = { serverIp = it },
+                        label = { Text("服务器地址") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Web, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("邮箱") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("密码") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                modifier = Modifier.clickable { passwordVisible = !passwordVisible }
+                            )
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (!isLoginMode) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = captchaCode,
+                            onValueChange = { captchaCode = it }, // 同上
+                            label = { Text("验证码") },
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            visualTransformation = VisualTransformation.None,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Unspecified),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+
+                    if (errorMessage.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
                         onClick = {
-                            // 快速登录，跳过验证
+                            errorMessage = ""
+                            if (email.isBlank() || password.isBlank()) {
+                                errorMessage = "请输入邮箱和密码"
+                                return@Button
+                            }
+                            if (!isLoginMode && password != captchaCode) {
+                                errorMessage = "两次输入的密码不一致"
+                                return@Button
+                            }
+
+                            isLoading = true
+                            // 这里应调用真实的网络/认证逻辑；预览/本地示例中直接模拟成功
+                            // 模拟结束
+                            isLoading = false
                             onLoginSuccess()
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("快速体验")
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(text = if (isLoginMode) "登录" else "注册")
+                        }
                     }
+
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 忘记密码（仅登录模式）
-        if (isLoginMode) {
-            TextButton(
-                onClick = {
-                    // TODO: 实现忘记密码功能
-                }
-            ) {
-                Text(
-                    text = "忘记密码？",
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

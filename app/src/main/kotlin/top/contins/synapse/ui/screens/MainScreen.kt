@@ -2,6 +2,7 @@ package top.contins.synapse.ui.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -11,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
  * 管理应用内的导航逻辑
  */
 @Composable
+@Preview
 fun MainScreen(
     modifier: Modifier = Modifier
 ) {
