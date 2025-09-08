@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "top.contins.synapse.data"
+    namespace = "top.contins.synapse.network"
+    //noinspection GradleDependency
     compileSdk = 35
 
     defaultConfig {
         minSdk = 29
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -39,7 +39,10 @@ android {
 dependencies {
     implementation(project(":domain"))
     implementation(libs.bundles.android.basic)
-    implementation(project(":network"))
+    implementation(project(":data"))
+    implementation(libs.retrofit)
+    implementation(libs.okhttp)
+    implementation(libs.converter.gson)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }

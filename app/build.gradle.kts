@@ -88,10 +88,4 @@ dependencies {
     implementation(project(":feature:schedule"))
     implementation(project(":feature:task"))
     implementation(project(":feature:writing"))
-
-    // Testing
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.compose.ui.test.junit4)
-    debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.compose.ui.test.manifest)
 }

@@ -1,0 +1,25 @@
+# 构建产物
+/build/
+/out/
+
+# 本地配置文件
+*.iml
+.idea/
+.gradle/
+local.properties
+
+# 缓存文件
+.cxx/
+.externalNativeBuild/
+
+# 日志文件
+*.log
+
+# 测试相关
+/captures/
+/test-results/
+
+# 其他临时文件
+*.tmp
+*.bak
+*.swp

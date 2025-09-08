@@ -31,3 +31,5 @@ include(":feature:schedule")
 include(":feature:goal")
 include(":feature:writing")
 include(":feature:assistant")
+include(":network")
+
