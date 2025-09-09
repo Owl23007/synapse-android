@@ -28,18 +28,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
 }
 
 dependencies {
-    implementation(project(":domain"))
     implementation(libs.bundles.android.basic)
-    implementation(project(":network"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }

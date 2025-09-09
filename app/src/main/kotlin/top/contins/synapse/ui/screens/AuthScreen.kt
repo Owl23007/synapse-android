@@ -32,17 +32,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 import top.contins.synapse.R
+import top.contins.synapse.viewmodel.AuthViewModel
 
 /**
- * 认证屏幕
+ * 认证界面
  * 提供用户登录和注册功能
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun AuthScreen(
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
     var serverIp by remember { mutableStateOf("") }
@@ -52,6 +56,41 @@ fun AuthScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+
+    // 处理登录逻辑
+    fun handleLogin() {
+        if (serverIp.isEmpty() || email.isEmpty() || password.isEmpty() || captchaCode.isEmpty()) {
+            errorMessage = "请填写所有必填项"
+            return
+        }
+        isLoading = true
+        viewModel.login(serverIp, email, password) { success, message ->
+            isLoading = false
+            if (success) {
+                onLoginSuccess()
+            } else {
+                errorMessage = message ?: "登录失败"
+            }
+        }
+    }
+
+    // 处理注册逻辑
+    fun handleRegister() {
+        if (serverIp.isEmpty() || email.isEmpty() || password.isEmpty() || captchaCode.isEmpty()) {
+            errorMessage = "请填写所有必填项"
+            return
+        }
+        isLoading = true
+        viewModel.register(serverIp, email, password,captchaId = "", captchaCode) { success, message ->
+            isLoading = false
+            if (success) {
+                onLoginSuccess()
+            } else {
+                errorMessage = message ?: "注册失败"
+            }
+        }
+    }
+
 
     // 使用 Scaffold + TopAppBar，使 header 固定
     Scaffold(
@@ -64,7 +103,6 @@ fun AuthScreen(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         // 小 logo
-                        // 替换原有 Card+Image 部分为：
                         Image(
                             painter = painterResource(id = R.drawable.logo),
                             contentDescription = "App Logo",

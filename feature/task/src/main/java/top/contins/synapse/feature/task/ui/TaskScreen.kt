@@ -20,7 +20,7 @@ import java.util.*
 @Composable
 fun TaskScreen() {
     val viewModel: TaskViewModel = viewModel()
-    val tasks by viewModel.allTasks.observeAsState(emptyList())
+
 
     Column(
         modifier = Modifier
@@ -45,7 +45,7 @@ fun TaskScreen() {
                     TaskStatus.TODO,
                     TaskPriority.MEDIUM
                 )
-                viewModel.addTask(newTask)
+               // viewModel.addTask(newTask)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,13 +56,13 @@ fun TaskScreen() {
 
         // 任务列表
         LazyColumn {
-            items(tasks) { task ->
-                TaskItem(
-                    task = task,
-                    onTaskClick = { /* 处理任务点击 */ },
-                    onDeleteClick = { viewModel.deleteTask(task.id) }
-                )
-            }
+            //items(tasks) { task ->
+               // TaskItem(
+                //    task = task,
+               //     onTaskClick = { /* 处理任务点击 */ },
+              //      onDeleteClick = { viewModel.deleteTask(task.id) }
+              //  )
+           // }
         }
     }
 }

@@ -1,9 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
-    id("org.jetbrains.kotlin.kapt")
 }
 
 java {
@@ -11,19 +8,17 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-dependencies {
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-}
-
-
 android {
-    namespace = "top.contins.synapse.domin"
-    //noinspection GradleDependency
+    namespace = "top.contins.synapse.domain"
     compileSdk = 35
 
     defaultConfig {
         minSdk = 29
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildTypes {
@@ -35,15 +30,9 @@ android {
             )
         }
     }
+}
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
+dependencies {
+    implementation(project(":network"))
+    implementation(project(":data"))
 }

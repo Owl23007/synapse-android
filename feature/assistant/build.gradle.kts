@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.compose.compiler)
+    alias (libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -35,10 +35,6 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
-    
-    buildFeatures {
-        compose = true
-    }
 }
 
 dependencies {
@@ -54,7 +50,7 @@ dependencies {
     implementation(libs.bundles.android.basic)
 
     // Compose LiveData integration
-    implementation("androidx.compose.runtime:runtime-livedata:1.9.0")
+    implementation(libs.compose.runtime.livedata)
     
     // Hilt
     implementation(libs.hilt.android)

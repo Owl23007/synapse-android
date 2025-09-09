@@ -7,7 +7,6 @@ plugins {
 
 android {
     namespace = "top.contins.synapse.network"
-    //noinspection GradleDependency
     compileSdk = 35
 
     defaultConfig {
@@ -24,25 +23,32 @@ android {
         }
     }
 
+    // 设置 Java 编译目标为 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
+// Hilt 配置
+hilt {
+    enableAggregatingTask = false
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation(libs.bundles.android.basic)
-    implementation(project(":data"))
+    // Android 基础依赖
+    implementation(libs.appcompat)
+
+    // Lifecycle
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
+
+    // 网络库
     implementation(libs.retrofit)
     implementation(libs.okhttp)
     implementation(libs.converter.gson)
+
+    // Hilt 依赖注入
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }

@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -29,17 +29,6 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-
     buildFeatures {
         compose = true
     }
@@ -53,11 +42,10 @@ android {
     }
 }
 
-//  Hilt 配置
+// Hilt 配置
 hilt {
-    enableAggregatingTask = false
+    enableAggregatingTask = false // true: 生成在build目录下，false: 生成在build/generated/source/kapt目录下
 }
-
 
 dependencies {
     // BOM
@@ -66,26 +54,29 @@ dependencies {
     // Android Basic
     implementation(libs.appcompat)
     implementation(libs.material)
+    // 显式添加 lifecycle-runtime-ktx
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
 
+    // Hilt 依赖
     implementation(libs.hilt.android)
-    implementation(libs.foundation)
-    implementation(libs.material3)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
 
-    // Compose
+    // Compose UI
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
     implementation(libs.bundles.compose)
     implementation(libs.compose.runtime.livedata)
 
     // Module dependencies
-    implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":feature:assistant"))
     implementation(project(":feature:goal"))
     implementation(project(":feature:schedule"))
     implementation(project(":feature:task"))
     implementation(project(":feature:writing"))
+    debugImplementation(libs.compose.ui.tooling)
 }

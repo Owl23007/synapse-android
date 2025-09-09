@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.compose.compiler)
+    alias (libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -53,8 +53,9 @@ dependencies {
     implementation(libs.bundles.android.basic)
 
     // Compose LiveData integration
-    implementation("androidx.compose.runtime:runtime-livedata:1.9.0")
-    
+    implementation(libs.compose.runtime.livedata)
+    implementation(libs.lifecycle.viewmodel.compose)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
