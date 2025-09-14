@@ -2,19 +2,17 @@ package top.contins.synapse.feature.task.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.contins.synapse.feature.task.viewmodel.TaskViewModel
-import top.contins.synapse.domain.entity.Task
-import top.contins.synapse.domain.entity.TaskStatus
-import top.contins.synapse.domain.entity.TaskPriority
+import top.contins.synapse.domain.model.Task
+import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.TaskPriority
 import java.util.*
 
 @Composable

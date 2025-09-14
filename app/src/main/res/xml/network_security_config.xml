@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 为调试版本启用明文流量（HTTP） -->
+    <debug-overrides>
+        <trust-anchors>
+            <!-- 信任用户安装的证书，方便抓包调试 -->
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <!-- 为特定域名/IP 配置例外 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.99.10</domain>
+        <!-- 你可以添加更多开发服务器 -->
+        <!-- <domain includeSubdomains="true">your-dev-server.com</domain> -->
+    </domain-config>
+</network-security-config>

@@ -38,7 +38,7 @@ subprojects {
                 freeCompilerArgs.addAll(
                     listOf(
                         "-Xstring-concat=inline",
-                        "-Xcontext-receivers"
+                        "-Xcontext-parameters"
                     )
                 )
             }

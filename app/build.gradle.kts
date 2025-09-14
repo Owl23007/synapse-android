@@ -44,7 +44,7 @@ android {
 
 // Hilt 配置
 hilt {
-    enableAggregatingTask = false // true: 生成在build目录下，false: 生成在build/generated/source/kapt目录下
+    enableAggregatingTask = false
 }
 
 dependencies {
@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
 
     // Module dependencies
+    implementation(project(":network"))
     implementation(project(":domain"))
     implementation(project(":feature:assistant"))
     implementation(project(":feature:goal"))
@@ -79,4 +80,10 @@ dependencies {
     implementation(project(":feature:task"))
     implementation(project(":feature:writing"))
     debugImplementation(libs.compose.ui.tooling)
+
+    // 网络库依赖
+    implementation(libs.okhttp)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
 }

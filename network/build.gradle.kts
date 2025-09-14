@@ -48,7 +48,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.converter.gson)
 
-    // Hilt 依赖注入
+    implementation(libs.javax.inject)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }

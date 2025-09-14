@@ -11,6 +11,7 @@ public class AuthInterceptor implements Interceptor {
     @NonNull
     @Override
     public Response intercept(@NonNull Chain chain) throws IOException {
-        return null;
+        // 直接执行原始请求并返回响应
+        return chain.proceed(chain.request());
     }
 }

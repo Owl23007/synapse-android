@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.entity;
+package top.contins.synapse.domain.model;
 
 /**
  * 任务优先级枚举

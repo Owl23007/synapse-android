@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.entity;
+package top.contins.synapse.domain.model;
 
 import java.util.Date;
 

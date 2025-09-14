@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.entity;
+package top.contins.synapse.domain.model;
 
 /**
  * 日程类型枚举
