@@ -54,7 +54,6 @@ dependencies {
     // Android Basic
     implementation(libs.appcompat)
     implementation(libs.material)
-    // 显式添加 lifecycle-runtime-ktx
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
@@ -62,6 +61,7 @@ dependencies {
 
     // Hilt 依赖
     implementation(libs.hilt.android)
+    implementation(libs.window)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
@@ -69,9 +69,9 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
     implementation(libs.bundles.compose)
-    implementation(libs.compose.runtime.livedata)
 
     // Module dependencies
+    implementation(project(":data"))
     implementation(project(":network"))
     implementation(project(":domain"))
     implementation(project(":feature:assistant"))
@@ -79,6 +79,7 @@ dependencies {
     implementation(project(":feature:schedule"))
     implementation(project(":feature:task"))
     implementation(project(":feature:writing"))
+
     debugImplementation(libs.compose.ui.tooling)
 
     // 网络库依赖

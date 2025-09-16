@@ -22,7 +22,7 @@ class AuthUseCase @Inject constructor(
         captchaId: String,
         captchaCode: String,
         serverEndpoint: String
-    ): AuthResult<String> {
+    ): AuthResult<String?> {
         return repository.register(email, username, password, captchaId, captchaCode, serverEndpoint)
     }
 

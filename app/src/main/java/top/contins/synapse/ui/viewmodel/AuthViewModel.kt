@@ -1,4 +1,4 @@
-package top.contins.synapse.viewmodel
+package top.contins.synapse.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -47,7 +47,7 @@ class AuthViewModel @Inject constructor(
                 email, username, password, captchaId, captchaCode, serverEndpoint
             )) {
                 is AuthResult.Success -> {
-                    _uiState.value = AuthUiState.RegisterSuccess(result.data)
+                    result.data?.let { _uiState.value = AuthUiState.RegisterSuccess(it) }
                 }
                 is AuthResult.Error -> {
                     _uiState.value = AuthUiState.RegisterError(result.message)

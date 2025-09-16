@@ -3,6 +3,7 @@ package top.contins.synapse.ui.screens
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import android.util.Patterns
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,8 +41,70 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.R
 import top.contins.synapse.domain.model.AuthUiState
-import top.contins.synapse.viewmodel.AuthViewModel
+import top.contins.synapse.ui.compose.snackbar.SnackbarAction
+import top.contins.synapse.ui.compose.snackbar.SnackbarController
+import top.contins.synapse.ui.viewmodel.AuthViewModel
 import kotlin.io.encoding.Base64
+
+// 验证函数
+fun isValidUsername(username: String): Boolean {
+    return username.matches(Regex("^[a-zA-Z0-9]{5,16}$"))
+}
+
+fun isValidEmail(email: String): Boolean {
+    return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
+fun isValidPassword(password: String): Boolean {
+    return password.isNotBlank() && password.length >= 6
+}
+
+fun isValidCaptchaCode(captchaCode: String): Boolean {
+    return captchaCode.isNotBlank() && captchaCode.length >= 3
+}
+
+fun isValidServerUrl(url: String): Boolean {
+    if (url.isBlank()) return false
+    return try {
+        val uri = url.toUri()
+        uri.scheme in listOf("http", "https") &&
+                !uri.host.isNullOrEmpty() &&
+                uri.host?.contains('.') == true
+    } catch (_: Exception) {
+        false
+    }
+}
+
+
+fun validateRegisterForm(email: String, username: String, password: String, captchaCode: String, serverIp: String): String {
+
+    if (!isValidEmail(email)) {
+        return "邮箱格式不正确"
+    }
+    if (!isValidUsername(username)) {
+        return "用户名必须为5-16位字母或数字"
+    }
+    if (!isValidPassword(password)) {
+        return "密码长度不少于6位"
+    }
+    if (!isValidCaptchaCode(captchaCode)) {
+        return "验证码至少4位"
+    }
+    if (!isValidServerUrl(serverIp)) {
+        return "服务器地址格式不正确"
+    }
+    return ""
+}
+
+fun validateLoginForm( password: String, serverIp: String): String {
+    if (!isValidPassword(password)) {
+        return "密码长度不少于6位"
+    }
+    if (!isValidServerUrl(serverIp)) {
+        return "服务器地址格式不正确"
+    }
+    return ""
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,22 +124,17 @@ fun AuthScreen(
     var isLoginMode by remember { mutableStateOf(true) }
     var isRefreshingCaptcha by remember { mutableStateOf(false) }
     var captchaImageBase64 by remember { mutableStateOf("") }
+    val snackbarController = SnackbarController.current
 
-    fun isValidServerUrl(url: String): Boolean {
-        if (url.isBlank()) return false
-        return try {
-            val uri = url.toUri()
-            uri.scheme in listOf("http", "https") &&
-                    !uri.host.isNullOrEmpty() &&
-                    uri.host?.contains('.') == true
-        } catch (_: Exception) {
-            false
-        }
-    }
 
     val handleLogin = {
         if (isValidServerUrl(serverIp) && email.isNotBlank() && password.isNotBlank()) {
-            viewModel.login(email, password, serverIp)
+            val validationError = validateLoginForm( password, serverIp)
+            if (validationError.isNotBlank()) {
+                snackbarController.showErrorMessage(validationError)
+            } else {
+                viewModel.login(email, password, serverIp)
+            }
         }
     }
 
@@ -84,7 +142,12 @@ fun AuthScreen(
         if (isValidServerUrl(serverIp) && email.isNotBlank() && password.isNotBlank() &&
             captchaCode.isNotBlank() && captchaId.isNotBlank()
         ) {
-            viewModel.register(email, username, password, captchaId, captchaCode, serverIp)
+            val validationError = validateRegisterForm(email, username, password, captchaCode, serverIp)
+            if (validationError.isNotBlank()) {
+                snackbarController.showErrorMessage(validationError)
+            }else {
+                viewModel.register(email, username, password, captchaId, captchaCode, serverIp)
+            }
         }
     }
 
@@ -106,14 +169,42 @@ fun AuthScreen(
             is AuthUiState.CaptchaError -> {
                 isRefreshingCaptcha = false
                 captchaImageBase64 = "" // 清空图片
+                snackbarController.showErrorMessage(
+                    message = currentState.message,
+                )
             }
 
             is AuthUiState.RegisterSuccess -> {
 
+                snackbarController.showSuccessMessage(message = currentState.message)
+                // 自动切换到登录模式
+                isLoginMode = true
+
+                // 清空注册相关字段
+                email = ""
+                username = ""
+                password = ""
+                captchaCode = ""
+                captchaId = ""
+                captchaImageBase64 = ""
+            }
+
+            is AuthUiState.RegisterError -> {
+                snackbarController.showErrorMessage(
+                    message = currentState.message,
+                )
+                handleRefreshCaptcha()
             }
 
             is AuthUiState.LoginSuccess -> {
+                snackbarController.showSuccessMessage("登录成功！")
                 onLoginSuccess()
+            }
+
+            is AuthUiState.LoginError -> {
+                snackbarController.showErrorMessage(
+                    message = currentState.message
+                )
             }
 
             else -> {}
@@ -251,19 +342,33 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("邮箱") },
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth()
-                    )
 
-                    Spacer(modifier = Modifier.height(12.dp))
 
-                    if (!isLoginMode) {
+                    if (isLoginMode){
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("用户名/邮箱") },
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                   else {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("邮箱") },
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
                             value = username,
                             onValueChange = { username = it },
@@ -394,31 +499,6 @@ fun AuthScreen(
                         } else {
                             Text(text = buttonText)
                         }
-                    }
-
-                    if (uiState is AuthUiState.LoginError || uiState is AuthUiState.RegisterError || uiState is AuthUiState.CaptchaError) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        val errorMessage = when (val currentState = uiState) {
-                            is AuthUiState.LoginError -> currentState.message
-                            is AuthUiState.RegisterError -> currentState.message
-                            is AuthUiState.CaptchaError -> currentState.message
-                            else -> ""
-                        }
-
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.resetAuthState()
-                                    captchaCode = ""
-                                    captchaId = ""
-                                }
-                                .padding(8.dp),
-                            textAlign = TextAlign.Center
-                        )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))

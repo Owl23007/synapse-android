@@ -43,6 +43,13 @@
     <string name="settings_terms">使用条款</string>
     <string name="settings_terms_desc">查看服务条款</string>
 
+    <!-- 底部导航栏 -->
+    <string name="tab_square">广场</string>
+    <string name="tab_writing">写作</string>
+    <string name="tab_chat">对话</string>
+    <string name="tab_plan">计划</string>
+    <string name="tab_profile">我的</string>
+
     <!-- 引导页面 -->
     <string name="onboarding_welcome">欢迎使用 Synapse</string>
     <string name="onboarding_subtitle">您的智能个人助手</string>

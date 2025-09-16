@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,31 +39,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 import top.contins.synapse.R
+import top.contins.synapse.ui.viewmodel.SplashViewModel
+import top.contins.synapse.ui.viewmodel.SplashUiState
 
 /**
  * 启动屏幕组件
- * 纯UI组件，不包含业务逻辑和数据依赖
+ * 检查用户登录状态并导航到相应界面
  */
-@Preview
 @Composable
 fun SplashScreen(
-    onNavigateToAuth: () -> Unit={},
-    onNavigateToMain: () -> Unit={},
-    isLoading: Boolean = true,
-    isUserLoggedIn: Boolean = false
+    onNavigateToAuth: () -> Unit,
+    onNavigateToMain: () -> Unit,
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
-    // 模拟启动检查逻辑
-    LaunchedEffect(Unit) {
-        delay(1000) // 模拟启动时间
-        if (isUserLoggedIn) {
-            onNavigateToMain()
-        } else {
-            onNavigateToAuth()
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // 监听状态变化并导航
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            SplashUiState.NavigateToAuth -> {
+                delay(500) // 短暂延迟确保用户看到启动屏幕
+                onNavigateToAuth()
+            }
+            SplashUiState.NavigateToMain -> {
+                delay(500) // 短暂延迟确保用户看到启动屏幕
+                onNavigateToMain()
+            }
+            SplashUiState.Loading -> {
+                // 继续显示加载状态
+            }
         }
     }
 
+    SplashScreenContent(isLoading = uiState == SplashUiState.Loading)
+}
+
+/**
+ * 启动屏幕内容 - 纯UI组件用于预览
+ */
+@Preview
+@Composable
+fun SplashScreenContent(
+    isLoading: Boolean = true
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "splash_animation")
     val rotationAngle by infiniteTransition.animateFloat(
         initialValue = 0f,

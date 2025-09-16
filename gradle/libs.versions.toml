@@ -2,7 +2,7 @@
 # Android & Kotlin
 agp = "8.12.2"                      # Android Gradle Plugin
 kotlin = "2.2.10"                   # Kotlin
-compose-bom = "2025.08.01"          # Compose BOM（统一管理版本）
+compose-bom = "2025.08.01"          # Compose BOM
 material3 = "1.3.2"
 foundation = "1.9.0"
 lifecycle = "2.9.3"                 # 最新稳定版（兼容 Compose）
@@ -11,18 +11,18 @@ navigation-compose = "2.8.5"
 hilt = "2.57.1"
 hilt-navigation-compose = "1.2.0"
 room = "2.6.1"                      # Room（本地数据库）
-retrofit = "3.0.0"                 # Retrofit & OkHttp
+retrofit = "3.0.0"                  # Retrofit & OkHttp
 okhttp = "5.1.0"
 javax-inject = "1"                  # 注入（Android 项目用 javax.inject）
 ui-tooling = "1.9.0"
 coroutines = "1.10.2"
-
-# KSP（用于 Room）
-ksp = "2.2.10-2.0.2"
+ksp = "2.2.10-2.0.2"                # KSP（用于 Room）
+window = "1.4.0"
+security = "1.1.0-alpha06"          # AndroidX Security（加密本地数据）
 
 [libraries]
 # Android 基础
-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.0" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.1" }
 material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
 
 # 注入（Android 项目专用 javax.inject）
@@ -61,7 +61,6 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "room" }
 
 # Retrofit & OkHttp
@@ -69,6 +68,10 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+window = { group = "androidx.window", name = "window", version.ref = "window" }
+
+# Security
+security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security" }
 
 [bundles]
 # Compose 核心依赖组
@@ -81,7 +84,7 @@ compose = [
     "compose-runtime-livedata"
 ]
 
-# Lifecycle 常用组合
+# Lifecycle 组合
 lifecycle = [
     "lifecycle-viewmodel-ktx",
     "lifecycle-livedata-ktx",

@@ -33,5 +33,6 @@ android {
 dependencies {
     implementation(libs.bundles.android.basic)
     implementation(libs.hilt.android)
+    implementation(libs.security.crypto)
     ksp(libs.hilt.compiler)
 }
