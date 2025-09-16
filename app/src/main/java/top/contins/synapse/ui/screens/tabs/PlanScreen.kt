@@ -30,25 +30,6 @@ fun PlanScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 顶部标题栏
-        TopAppBar(
-            title = {
-                Text(
-                    text = "📅 计划",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.CalendarMonth, contentDescription = "日历视图")
-                }
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Add, contentDescription = "添加计划")
-                }
-            }
-        )
-
         // Tab栏
         TabRow(
             selectedTabIndex = selectedTab,

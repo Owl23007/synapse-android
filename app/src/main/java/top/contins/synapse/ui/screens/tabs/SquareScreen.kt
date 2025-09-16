@@ -37,25 +37,6 @@ fun SquareScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 顶部标题栏
-        TopAppBar(
-            title = {
-                Text(
-                    text = "🌍 广场",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Search, contentDescription = "搜索")
-                }
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Notifications, contentDescription = "通知")
-                }
-            }
-        )
-
         // Tab栏
         TabRow(
             selectedTabIndex = selectedTab,

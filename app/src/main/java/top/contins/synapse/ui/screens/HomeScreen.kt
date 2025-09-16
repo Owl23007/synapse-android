@@ -1,9 +1,13 @@
 package top.contins.synapse.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,8 +23,64 @@ import top.contins.synapse.ui.screens.tabs.*
 @Composable
 fun HomeScreen() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // 根据当前路由获取标题
+    val currentTitle = when (currentRoute) {
+        "square" -> "🌍 广场"
+        "writing" -> "📝 写作"
+        "chat" -> "💬 对话"
+        "plan" -> "📅 计划"
+        "profile" -> "👤 我的"
+        else -> "Synapse"
+    }
     
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = currentTitle,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    when (currentRoute) {
+                        "square" -> {
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Search, contentDescription = "搜索")
+                            }
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "通知")
+                            }
+                        }
+                        "writing" -> {
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Settings, contentDescription = "设置")
+                            }
+                        }
+                        "chat" -> {
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Search, contentDescription = "搜索")
+                            }
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Add, contentDescription = "新建对话")
+                            }
+                        }
+                        "plan" -> {
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = "日历视图")
+                            }
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Add, contentDescription = "添加计划")
+                            }
+                        }
+                    }
+                }
+            )
+        },
         bottomBar = {
             BottomNavigationBar(navController = navController)
         }

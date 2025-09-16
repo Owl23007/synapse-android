@@ -39,22 +39,6 @@ fun WritingScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 顶部标题栏
-        TopAppBar(
-            title = {
-                Text(
-                    text = "📝 写作",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Settings, contentDescription = "设置")
-                }
-            }
-        )
-
         // Tab栏
         TabRow(
             selectedTabIndex = selectedTab,
@@ -95,9 +79,9 @@ fun CreateTab() {
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Default.Add, contentDescription = null)
+            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("开始新的创作", fontSize = 16.sp)
+            Text("开始新的创作", fontSize = 16.sp,color = Color.White)
         }
 
         // 创作模板

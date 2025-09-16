@@ -41,25 +41,6 @@ fun ChatScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 顶部标题栏
-        TopAppBar(
-            title = {
-                Text(
-                    text = "💬 对话",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Search, contentDescription = "搜索")
-                }
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.Add, contentDescription = "新建对话")
-                }
-            }
-        )
-
         // Tab栏
         TabRow(
             selectedTabIndex = selectedTab,
