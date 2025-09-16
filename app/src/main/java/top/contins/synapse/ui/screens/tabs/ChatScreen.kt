@@ -1,396 +1,168 @@
 package top.contins.synapse.ui.screens.tabs
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import top.contins.synapse.ui.components.MarkdownMessageItem
+import top.contins.synapse.ui.viewmodel.ChatViewModel
 
-/**
- * 对话页面 - 专属评价/反馈/协作对话区
- */
-@OptIn(ExperimentalMaterial3Api::class)
+data class Message(val text: String, val isUser: Boolean)
+
 @Composable
-@Preview
-fun ChatScreen() {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("聊天", "协作", "反馈")
-
-    // 模拟对话数据
-    val mockChats = listOf(
-        ChatItem("AI助手", "您好！有什么可以帮助您的吗？", "刚刚", true, 0),
-        ChatItem("写作小组", "大家觉得这个文章标题怎么样？", "5分钟前", false, 3),
-        ChatItem("项目协作", "明天的会议准备好了吗？", "1小时前", false, 1),
-        ChatItem("学习讨论", "关于AI学习路径的讨论", "2小时前", false, 0),
-        ChatItem("产品反馈", "新功能体验如何？", "昨天", false, 2)
-    )
+fun ChatScreen(
+    viewModel: ChatViewModel = hiltViewModel()
+) {
+    val messages by viewModel.messages.collectAsState()
+    val inputText by viewModel.inputText.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val serviceStatus by viewModel.serviceStatus.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Tab栏
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) }
-                )
-            }
-        }
-
-        when (selectedTab) {
-            0 -> ChatListTab(mockChats)
-            1 -> CollaborationTab()
-            2 -> FeedbackTab()
-        }
-    }
-}
-
-@Composable
-fun ChatListTab(chats: List<ChatItem>) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
-        items(chats) { chat ->
-            ChatItemCard(chat = chat)
-        }
-    }
-}
-
-@Composable
-fun CollaborationTab() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "协作项目",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
-        )
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(getCollaborationProjects()) { project ->
-                CollaborationCard(project = project)
-            }
-        }
-    }
-}
-
-@Composable
-fun FeedbackTab() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "用户反馈",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
-        )
-
-        // 快速反馈按钮
-        OutlinedButton(
-            onClick = { },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Feedback, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("提交反馈")
-        }
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(getFeedbackItems()) { feedback ->
-                FeedbackCard(feedback = feedback)
-            }
-        }
-    }
-}
-
-data class ChatItem(
-    val name: String,
-    val lastMessage: String,
-    val time: String,
-    val isAI: Boolean,
-    val unreadCount: Int
-)
-
-data class CollaborationProject(
-    val title: String,
-    val description: String,
-    val members: Int,
-    val status: String
-)
-
-data class FeedbackItem(
-    val title: String,
-    val content: String,
-    val status: String,
-    val time: String
-)
-
-fun getCollaborationProjects() = listOf(
-    CollaborationProject("AI写作指南", "团队合作撰写AI使用指南", 5, "进行中"),
-    CollaborationProject("产品优化方案", "讨论产品功能改进建议", 3, "待开始"),
-    CollaborationProject("用户体验研究", "分析用户使用习惯和痛点", 7, "已完成")
-)
-
-fun getFeedbackItems() = listOf(
-    FeedbackItem("界面优化建议", "希望能够支持深色模式", "已处理", "3天前"),
-    FeedbackItem("功能建议", "增加语音输入功能", "处理中", "1周前"),
-    FeedbackItem("问题反馈", "应用偶尔会闪退", "已修复", "2周前")
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChatItemCard(chat: ChatItem) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 头像
-            Box(
+        // 服务状态显示
+        if (serviceStatus.isNotEmpty()) {
+            Card(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (chat.isAI) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.secondary
-                    ),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             ) {
-                Icon(
-                    if (chat.isAI) Icons.Default.SmartToy else Icons.Default.Group,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                Text(
+                    text = serviceStatus,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // 内容
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = chat.name,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = chat.time,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = chat.lastMessage,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (chat.unreadCount > 0) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
+        }
+        // 聊天消息列表
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 16.dp) // 避免内容贴顶/贴底
+        ) {
+            if (messages.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillParentMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = chat.unreadCount.toString(),
-                                    color = Color.White,
-                                    fontSize = 10.sp
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "还没有对话哦～",
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "输入消息，和 AI 开始聊天吧！",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }
+            } else {
+                items(messages) { message ->
+                    MarkdownMessageItem(message = message)
+                }
+            }
+        }
+
+        // 输入框 + 发送按钮
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = inputText,
+                onValueChange = viewModel::updateInputText,
+                placeholder = { Text("输入消息...") },
+                modifier = Modifier.weight(1f).heightIn(max = 320.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Blue,
+                    unfocusedBorderColor = Color.Gray
+                ),
+                enabled = !isLoading
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            IconButton(
+                onClick = viewModel::sendMessage,
+                modifier = Modifier.size(48.dp),
+                enabled = !isLoading && inputText.isNotBlank()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Default.Send, contentDescription = "发送")
+                }
             }
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CollaborationCard(project: CollaborationProject) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth()
+fun MessageItem(message: Message) {
+    val backgroundColor = if (message.isUser) Color.Blue else Color.LightGray
+    val textColor = if (message.isUser) Color.White else Color.Black
+    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
+    val textAlign = if (message.isUser) TextAlign.End else TextAlign.Start
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        contentAlignment = alignment
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = backgroundColor,
+            modifier = Modifier.padding(vertical = 4.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
+            // 包裹 Text 使其可选择/复制
+            SelectionContainer {
                 Text(
-                    text = project.title,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = when (project.status) {
-                        "进行中" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        "待开始" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                        else -> Color.Green.copy(alpha = 0.1f)
-                    }
-                ) {
-                    Text(
-                        text = project.status,
-                        fontSize = 10.sp,
-                        color = when (project.status) {
-                            "进行中" -> MaterialTheme.colorScheme.primary
-                            "待开始" -> MaterialTheme.colorScheme.secondary
-                            else -> Color.Green
-                        },
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = project.description,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.People,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${project.members} 人参与",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = message.text,
+                    modifier = Modifier.padding(12.dp),
+                    color = textColor,
+                    fontSize = 16.sp,
+                    textAlign = textAlign
                 )
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FeedbackCard(feedback: FeedbackItem) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = feedback.title,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = when (feedback.status) {
-                        "已处理" -> Color.Green.copy(alpha = 0.1f)
-                        "处理中" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        else -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                    }
-                ) {
-                    Text(
-                        text = feedback.status,
-                        fontSize = 10.sp,
-                        color = when (feedback.status) {
-                            "已处理" -> Color.Green
-                            "处理中" -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.secondary
-                        },
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = feedback.content,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = feedback.time,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

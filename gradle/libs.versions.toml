@@ -19,6 +19,7 @@ coroutines = "1.10.2"
 ksp = "2.2.10-2.0.2"                # KSP（用于 Room）
 window = "1.4.0"
 security = "1.1.0-alpha06"          # AndroidX Security（加密本地数据）
+markdown = "0.5.7"                  # Compose Markdown渲染库
 
 [libraries]
 # Android 基础
@@ -72,6 +73,9 @@ window = { group = "androidx.window", name = "window", version.ref = "window" }
 
 # Security
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security" }
+
+# Markdown渲染
+markdown-compose = { group = "com.github.jeziellago", name = "compose-markdown", version.ref = "markdown" }
 
 [bundles]
 # Compose 核心依赖组

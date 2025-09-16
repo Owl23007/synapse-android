@@ -63,10 +63,10 @@ fun HomeScreen() {
                         }
                         "chat" -> {
                             IconButton(onClick = { }) {
-                                Icon(Icons.Default.Search, contentDescription = "搜索")
+                                Icon(Icons.Default.Add, contentDescription = "新建对话")
                             }
                             IconButton(onClick = { }) {
-                                Icon(Icons.Default.Add, contentDescription = "新建对话")
+                                Icon(Icons.Default.History, contentDescription = "历史记录")
                             }
                         }
                         "plan" -> {

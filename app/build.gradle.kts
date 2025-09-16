@@ -87,4 +87,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
 
+    // Markdown渲染
+    implementation(libs.markdown.compose)
+
 }

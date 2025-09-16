@@ -44,4 +44,10 @@ dependencies {
     implementation(libs.javax.inject)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+
+    // 网络库依赖
+    implementation(libs.okhttp)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 }
