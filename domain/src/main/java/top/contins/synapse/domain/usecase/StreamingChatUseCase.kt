@@ -98,26 +98,60 @@ class StreamingChatUseCase @Inject constructor(
     
     /**
      * 解析Server-Sent Events格式的流式响应为Flow
+     * 让每个HTTP chunk直接传递给UI，避免重新组装
      */
     private fun parseStreamResponseFlow(responseBody: okhttp3.ResponseBody): Flow<String> = flow {
         val reader = BufferedReader(InputStreamReader(responseBody.byteStream(), "UTF-8"))
         val currentResponse = StringBuilder()
         
         try {
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                line?.let { currentLine ->
+            var lastEmittedLength = 0
+            
+            // 逐行读取，但不等待完整响应
+            reader.useLines { lineSequence ->
+                for (line in lineSequence) {
+                    Log.d("StreamingChatUseCase", "Received line: $line")
+                    
                     // Server-Sent Events格式：data: 内容
-                    if (currentLine.startsWith("data: ")) {
-                        val content = currentLine.substring(6) // 移除"data: "前缀
+                    if (line.startsWith("data: ")) {
+                        val content = line.substring(6) // 移除"data: "前缀
+                        
+                        // 检查是否为结束标志
+                        if (content == "[DONE]") {
+                            Log.d("StreamingChatUseCase", "Stream completed with [DONE] signal")
+                            return@flow
+                        }
+                        
                         if (content.isNotEmpty()) {
                             currentResponse.append(content)
-                            // 实时emit当前累积的内容
-                            emit(currentResponse.toString())
+                            val fullContent = currentResponse.toString()
+                            
+                            // 只有当内容真正增加时才emit
+                            if (fullContent.length > lastEmittedLength) {
+                                lastEmittedLength = fullContent.length
+                                Log.d("StreamingChatUseCase", "Emitting content (${fullContent.length} chars): ${fullContent.takeLast(50)}")
+                                emit(fullContent)
+                            }
                         }
+                    }
+                    // 处理纯文本流（非SSE格式）
+                    else if (line.isNotEmpty() && !line.startsWith(":")) {
+                        currentResponse.append(line)
+                        val fullContent = currentResponse.toString()
+                        
+                        if (fullContent.length > lastEmittedLength) {
+                            lastEmittedLength = fullContent.length
+                            Log.d("StreamingChatUseCase", "Emitting text content (${fullContent.length} chars): ${fullContent.takeLast(50)}")
+                            emit(fullContent)
+                        }
+                    }
+                    // 处理空行（SSE格式中的消息分隔符）
+                    else if (line.isEmpty()) {
+                        Log.d("StreamingChatUseCase", "SSE message boundary detected")
                     }
                 }
             }
+            
         } finally {
             reader.close()
         }

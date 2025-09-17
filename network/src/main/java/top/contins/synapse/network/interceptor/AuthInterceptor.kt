@@ -2,7 +2,6 @@ package top.contins.synapse.network.interceptor
 
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
-import okhttp3.Request
 import okhttp3.Response
 import top.contins.synapse.data.storage.TokenManager
 import top.contins.synapse.network.api.ApiService
@@ -45,7 +44,7 @@ class AuthInterceptor @Inject constructor(
                 val currentToken = tokenManager.getAccessToken()
                 if (currentToken == accessToken && isRefreshing.compareAndSet(false, true)) {
                     try {
-                        if (refreshTokenSync(originalRequest.url.toString())) {
+                        if (refreshTokenSync()) {
                             // 刷新成功，用新token重新请求
                             val newAccessToken = tokenManager.getAccessToken()
                             if (!newAccessToken.isNullOrEmpty()) {
@@ -80,7 +79,7 @@ class AuthInterceptor @Inject constructor(
         return response
     }
     
-    private fun refreshTokenSync(originalUrl: String): Boolean {
+    private fun refreshTokenSync(): Boolean {
         return try {
             val refreshToken = tokenManager.getRefreshToken()
             val serverEndpoint = tokenManager.getServerEndpoint()
@@ -111,26 +110,16 @@ class AuthInterceptor @Inject constructor(
             false
         }
     }
-    
-    private fun extractServerEndpoint(url: String): String {
-        // 简单的提取服务器端点的方法
-        // 例如从 "https://api.example.com/some/path" 提取 "https://api.example.com"
-        return try {
-            val uri = java.net.URI(url)
-            "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
-        } catch (e: Exception) {
-            "https://api.example.com" // 默认端点
-        }
-    }
-    
+
     private fun waitForRefresh() {
-        // 简单的等待机制，在实际项目中可以使用更复杂的同步机制
+        // 简单的等待机制
         var attempts = 0
         while (isRefreshing.get() && attempts < 50) { // 最多等待5秒
             try {
                 Thread.sleep(100)
                 attempts++
             } catch (e: InterruptedException) {
+
                 Thread.currentThread().interrupt()
                 break
             }

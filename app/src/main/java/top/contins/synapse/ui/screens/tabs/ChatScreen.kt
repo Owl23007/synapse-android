@@ -3,23 +3,45 @@ package top.contins.synapse.ui.screens.tabs
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.ui.components.MarkdownMessageItem
 import top.contins.synapse.ui.viewmodel.ChatViewModel
+import kotlinx.coroutines.delay
 
-data class Message(val text: String, val isUser: Boolean)
+data class Message(
+    val text: String,
+    val isUser: Boolean,
+    val isStreaming: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis()
+) {
+    /**
+     * 预处理消息文本，确保 Markdown 格式正确
+     */
+    fun getFormattedText(): String {
+        if (isUser) return text
+
+        // 直接返回原始内容，暂不预处理
+        return preprocessMarkdown(text)
+    }
+
+    /**
+     * 暂不预处理 Markdown，直接返回原始内容
+     * 如需格式规范化，可在此处添加逻辑
+     */
+    private fun preprocessMarkdown(content: String) = content
+}
 
 @Composable
 fun ChatScreen(
@@ -29,6 +51,30 @@ fun ChatScreen(
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val serviceStatus by viewModel.serviceStatus.collectAsState()
+
+    val listState = rememberLazyListState()
+
+    // 优化滚动逻辑：在流式输出时也保持底部可见
+    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
+        if (messages.isEmpty()) return@LaunchedEffect
+
+        val lastMessage = messages.last()
+        
+        // 如果是流式消息，每当内容增长时滚动到底部（但不要太频繁）
+        if (lastMessage.isStreaming) {
+            // 流式输出时，延迟较短，保持内容可见
+            delay(50)
+            if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.animateScrollToItem(messages.size - 1)
+            }
+        } else {
+            // 消息完成时，确保滚动到底部
+            delay(100)
+            if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.animateScrollToItem(messages.size - 1)
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -50,13 +96,14 @@ fun ChatScreen(
                 )
             }
         }
+
         // 聊天消息列表
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp) // 避免内容贴顶/贴底
         ) {
             if (messages.isEmpty()) {
                 item {
@@ -69,7 +116,7 @@ fun ChatScreen(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Send,
+                                imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = null,
                                 tint = Color.Gray,
                                 modifier = Modifier.size(48.dp)
@@ -90,8 +137,11 @@ fun ChatScreen(
                     }
                 }
             } else {
+                // 👇 修复：包裹 SelectionContainer 使 Markdown 内容可复制
                 items(messages) { message ->
-                    MarkdownMessageItem(message = message)
+                    SelectionContainer {
+                        MarkdownMessageItem(message = message)
+                    }
                 }
             }
         }
@@ -129,39 +179,8 @@ fun ChatScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Icon(Icons.Default.Send, contentDescription = "发送")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送")
                 }
-            }
-        }
-    }
-}
-@Composable
-fun MessageItem(message: Message) {
-    val backgroundColor = if (message.isUser) Color.Blue else Color.LightGray
-    val textColor = if (message.isUser) Color.White else Color.Black
-    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val textAlign = if (message.isUser) TextAlign.End else TextAlign.Start
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        contentAlignment = alignment
-    ) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = backgroundColor,
-            modifier = Modifier.padding(vertical = 4.dp)
-        ) {
-            // 包裹 Text 使其可选择/复制
-            SelectionContainer {
-                Text(
-                    text = message.text,
-                    modifier = Modifier.padding(12.dp),
-                    color = textColor,
-                    fontSize = 16.sp,
-                    textAlign = textAlign
-                )
             }
         }
     }

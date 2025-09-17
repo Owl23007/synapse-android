@@ -1,5 +1,6 @@
 package top.contins.synapse.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,24 +65,49 @@ class ChatViewModel @Inject constructor(
                     )
                 }
                 
-                // 添加一个空的AI消息占位符
+                // 添加一个空的AI消息占位符（标记为正在流式传输）
                 val aiMessageIndex = _messages.value.size
-                _messages.value = _messages.value + Message("", isUser = false)
+                _messages.value = _messages.value + Message("", isUser = false, isStreaming = true)
+                Log.d("ChatViewModel", "Added placeholder message at index: $aiMessageIndex")
                 
                 // 使用流式响应
+                var chunkCount = 0
+                var lastUpdateTime = 0L
+                
                 streamingChatUseCase.sendMessageStream(messageText, conversationHistory).collect { chunk ->
+                    chunkCount++
+                    val currentTime = System.currentTimeMillis()
+                    Log.d("ChatViewModel", "Received chunk #$chunkCount (${chunk.length} chars): ${chunk.takeLast(100)}")
+                    
                     // 实时更新AI消息内容
                     val currentMessages = _messages.value.toMutableList()
                     if (aiMessageIndex < currentMessages.size) {
-                        currentMessages[aiMessageIndex] = Message(chunk, isUser = false)
-                        _messages.value = currentMessages
+                        val updatedMessage = Message(chunk, isUser = false, isStreaming = true)
+                        currentMessages[aiMessageIndex] = updatedMessage
+                        
+                        // 强制触发状态更新
+                        _messages.value = currentMessages.toList()
+                        
+                        lastUpdateTime = currentTime
+                        Log.d("ChatViewModel", "Updated message at index $aiMessageIndex with ${chunk.length} characters (time: $currentTime)")
+                    } else {
+                        Log.e("ChatViewModel", "Invalid aiMessageIndex: $aiMessageIndex, messages size: ${currentMessages.size}")
                     }
+                }
+                
+                // 流式传输完成，移除流式传输标识
+                val finalMessages = _messages.value.toMutableList()
+                if (aiMessageIndex < finalMessages.size) {
+                    val finalMessage = finalMessages[aiMessageIndex]
+                    finalMessages[aiMessageIndex] = finalMessage.copy(isStreaming = false)
+                    _messages.value = finalMessages
+                    Log.d("ChatViewModel", "Completed streaming for message at index $aiMessageIndex")
                 }
                 
             } catch (e: Exception) {
                 // 添加错误消息
                 val currentMessages = _messages.value.toMutableList()
-                val errorMessage = Message("抱歉，发生了错误：${e.message}", isUser = false)
+                val errorMessage = Message("抱歉，发生了错误：${e.message}", isUser = false, isStreaming = false)
                 
                 // 如果有占位符消息，替换它；否则添加新消息
                 if (currentMessages.isNotEmpty() && !currentMessages.last().isUser) {

@@ -55,11 +55,20 @@ public class NetworkModule {
     @Singleton
     public OkHttpClient provideOkHttpClient(AuthInterceptor authInterceptor) {
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        // 降低日志级别，避免影响流式性能
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         
         return new OkHttpClient.Builder()
                 .addInterceptor(authInterceptor)
                 .addInterceptor(loggingInterceptor)
+                // 优化流式处理配置
+                .readTimeout(0, java.util.concurrent.TimeUnit.SECONDS)  // 禁用读取超时，允许长时间流式连接
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)  // 连接超时30秒
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)   // 写入超时30秒
+                // 禁用响应缓存，确保流式数据不被缓存
+                .cache(null)
+                // 禁用重试，避免流式请求被重复
+                .retryOnConnectionFailure(false)
                 .build();
     }
 
