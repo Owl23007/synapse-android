@@ -155,11 +155,9 @@ class ChatUseCase @Inject constructor(
             
             val finalResult = result.toString().trim()
             Log.d("ChatUseCase", "Parsed stream response: $finalResult")
-            
-            if (finalResult.isEmpty()) {
+
+            finalResult.ifEmpty {
                 "AI暂时没有回复内容"
-            } else {
-                finalResult
             }
         } catch (e: Exception) {
             Log.e("ChatUseCase", "Error parsing stream response", e)

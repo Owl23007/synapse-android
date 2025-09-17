@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.components
+package top.contins.synapse.ui.compose.markdown
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.jeziellago.compose.markdowntext.MarkdownText
 import top.contins.synapse.ui.screens.tabs.Message
 
 @Composable
@@ -32,7 +31,7 @@ fun MarkdownMessageItem(message: Message) {
             color = backgroundColor,
             modifier = Modifier
                 .padding(vertical = 4.dp)
-                .widthIn(max = 280.dp) // 限制最大宽度
+                .widthIn(max = 320.dp) // 限制最大宽度
         ) {
             SelectionContainer {
                 Box(
@@ -49,15 +48,11 @@ fun MarkdownMessageItem(message: Message) {
                         )
                     } else {
                         // AI回复使用Markdown渲染，使用格式化后的文本
+
                         Column {
-                            MarkdownText(
-                                markdown = message.getFormattedText(),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    color = textColor
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            
+                            val markdownText = message.getFormattedText()
+                            MarkdownRenderer(markdown = markdownText)
+                            //显示markdown内容
                             // 如果消息正在流式传输，显示打字指示器
                             if (message.isStreaming) {
                                 Row(
@@ -93,7 +88,7 @@ fun MarkdownMessageItem(message: Message) {
                                         }
                                     }
                                     
-                                    // 添加"AI正在思考..."文本（可选）
+                                    // 添加"AI正在思考..."文本
                                     Text(
                                         text = "AI正在思考...",
                                         color = textColor.copy(alpha = 0.6f),

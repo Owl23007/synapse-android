@@ -72,23 +72,21 @@ class ChatViewModel @Inject constructor(
                 
                 // 使用流式响应
                 var chunkCount = 0
-                var lastUpdateTime = 0L
-                
+                var fullResponse = ""
                 streamingChatUseCase.sendMessageStream(messageText, conversationHistory).collect { chunk ->
                     chunkCount++
                     val currentTime = System.currentTimeMillis()
-                    Log.d("ChatViewModel", "Received chunk #$chunkCount (${chunk.length} chars): ${chunk.takeLast(100)}")
-                    
+                    fullResponse += chunk
                     // 实时更新AI消息内容
                     val currentMessages = _messages.value.toMutableList()
                     if (aiMessageIndex < currentMessages.size) {
-                        val updatedMessage = Message(chunk, isUser = false, isStreaming = true)
+                        val updatedMessage = Message(fullResponse, isUser = false, isStreaming = true)
                         currentMessages[aiMessageIndex] = updatedMessage
                         
                         // 强制触发状态更新
                         _messages.value = currentMessages.toList()
-                        
-                        lastUpdateTime = currentTime
+
+
                         Log.d("ChatViewModel", "Updated message at index $aiMessageIndex with ${chunk.length} characters (time: $currentTime)")
                     } else {
                         Log.e("ChatViewModel", "Invalid aiMessageIndex: $aiMessageIndex, messages size: ${currentMessages.size}")

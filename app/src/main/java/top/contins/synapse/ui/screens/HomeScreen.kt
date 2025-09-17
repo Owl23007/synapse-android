@@ -21,7 +21,9 @@ import top.contins.synapse.ui.screens.tabs.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onLogout: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -103,7 +105,7 @@ fun HomeScreen() {
                 PlanScreen()
             }
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(onLogout = onLogout)
             }
         }
     }

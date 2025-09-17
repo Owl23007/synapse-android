@@ -19,13 +19,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import top.contins.synapse.ui.viewmodel.ProfileViewModel
+import top.contins.synapse.ui.viewmodel.ProfileUiState
 
 /**
  * 我的页面 - 个人资料、作品、设置、会员
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    onLogout: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    
+    // 监听登出状态
+    LaunchedEffect(uiState) {
+        if (uiState is ProfileUiState.LoggedOut) {
+            onLogout()
+            viewModel.resetState()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -65,7 +83,56 @@ fun ProfileScreen() {
         }
         
         items(getSettingsMenuItems()) { menuItem ->
-            ProfileMenuItem(menuItem = menuItem)
+            ProfileMenuItem(
+                menuItem = menuItem,
+                onClick = {
+                    if (menuItem.title == "退出登录") {
+                        showLogoutDialog = true
+                    }
+                }
+            )
+        }
+    }
+    
+    // 登出确认对话框
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("确认退出") },
+            text = { Text("确定要退出登录吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.logout()
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false }
+                ) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+    
+    // 登出加载状态
+    if (uiState is ProfileUiState.LoggingOut) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("正在退出...")
+            }
         }
     }
 }
@@ -268,14 +335,23 @@ fun getSettingsMenuItems() = listOf(
         title = "关于我们",
         subtitle = "版本信息和团队介绍",
         icon = Icons.Default.Info
+    ),
+    ProfileMenuItem(
+        title = "退出登录",
+        subtitle = "退出当前账号",
+        icon = Icons.Default.ExitToApp,
+        showChevron = false
     )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileMenuItem(menuItem: ProfileMenuItem) {
+fun ProfileMenuItem(
+    menuItem: ProfileMenuItem,
+    onClick: () -> Unit = {}
+) {
     Card(
-        onClick = { },
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

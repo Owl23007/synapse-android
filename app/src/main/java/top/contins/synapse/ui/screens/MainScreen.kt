@@ -63,7 +63,13 @@ fun MainScreen(
 
                 composable("main") {
                     // 主应用界面
-                    HomeScreen()
+                    HomeScreen(
+                        onLogout = {
+                            navController.navigate("auth") {
+                                popUpTo("main") { inclusive = true }
+                            }
+                        }
+                    )
                 }
             }
         }

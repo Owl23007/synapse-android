@@ -1,5 +1,6 @@
 package top.contins.synapse.ui.screens.tabs
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import top.contins.synapse.ui.components.MarkdownMessageItem
+import top.contins.synapse.ui.compose.markdown.MarkdownMessageItem
 import top.contins.synapse.ui.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
 
@@ -26,23 +27,23 @@ data class Message(
     val isStreaming: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 ) {
-    /**
-     * 预处理消息文本，确保 Markdown 格式正确
-     */
     fun getFormattedText(): String {
         if (isUser) return text
-
-        // 直接返回原始内容，暂不预处理
-        return preprocessMarkdown(text)
+        Log.d("Message", "【预处理前】\n$text")
+        val result = preprocessMarkdown(text)
+        Log.d("Message", "【预处理后】\n$result")
+        return result
     }
 
     /**
-     * 暂不预处理 Markdown，直接返回原始内容
-     * 如需格式规范化，可在此处添加逻辑
+     * 预处理 Markdown 文本
+     * 保持原始格式，不做额外处理
      */
-    private fun preprocessMarkdown(content: String) = content
+    private fun preprocessMarkdown(content: String): String {
+        // replace "data: "with ’‘’
+        return content
+    }
 }
-
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
@@ -54,24 +55,31 @@ fun ChatScreen(
 
     val listState = rememberLazyListState()
 
-    // 优化滚动逻辑：在流式输出时也保持底部可见
-    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
+    // 优化滚动逻辑：减少频繁滚动，改善用户体验
+    LaunchedEffect(messages.size) {
         if (messages.isEmpty()) return@LaunchedEffect
 
-        val lastMessage = messages.last()
+        // 只在消息数量变化时（新消息添加）滚动到底部
+        delay(100) // 延迟以确保布局信息已更新
+        if (listState.layoutInfo.totalItemsCount > 0) {
+            // 计算滚动到底部所需的偏移量：总内容高度 - 可视区域高度
+            val targetOffset = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+            listState.scrollToItem(messages.size - 1, targetOffset)
+        }
+    }
+    
+    // 监听最后一条消息的内容变化，但控制滚动频率
+    var lastScrollTime by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(messages.lastOrNull()?.text?.length) {
+        val lastMessage = messages.lastOrNull()
+        val currentTime = System.currentTimeMillis()
         
-        // 如果是流式消息，每当内容增长时滚动到底部（但不要太频繁）
-        if (lastMessage.isStreaming) {
-            // 流式输出时，延迟较短，保持内容可见
+        // 如果是流式消息且距离上次滚动超过500ms，才进行滚动
+        if (lastMessage?.isStreaming == true && currentTime - lastScrollTime > 500) {
+            lastScrollTime = currentTime
             delay(50)
             if (listState.layoutInfo.totalItemsCount > 0) {
-                listState.animateScrollToItem(messages.size - 1)
-            }
-        } else {
-            // 消息完成时，确保滚动到底部
-            delay(100)
-            if (listState.layoutInfo.totalItemsCount > 0) {
-                listState.animateScrollToItem(messages.size - 1)
+                listState.scrollToItem(messages.size - 1) // 使用scrollToItem而不是animateScrollToItem，减少动画开销
             }
         }
     }
