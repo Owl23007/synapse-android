@@ -11,8 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import top.contins.synapse.data.repository.WritingRepository
-import top.contins.synapse.domain.usecase.ChatUseCase
+import top.contins.synapse.domain.usecase.StreamingChatUseCase
 import top.contins.synapse.data.model.WritingContent
+import kotlinx.coroutines.flow.collect
 import javax.inject.Inject
 
 /**
@@ -20,7 +21,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class WritingViewModel @Inject constructor(
-    private val chatUseCase: ChatUseCase,
+    private val streamingChatUseCase: StreamingChatUseCase,
     private val repository: WritingRepository
 ) : ViewModel() {
     
@@ -205,9 +206,20 @@ class WritingViewModel @Inject constructor(
                 $content
             """.trimIndent()
 
-            val result = chatUseCase.sendMessage(prompt)
-            Log.d("WritingViewModel", "AI evaluation completed successfully")
-            result
+            // 使用流式响应收集完整结果
+            val resultBuilder = StringBuilder()
+            streamingChatUseCase.sendMessageStream(prompt).collect { chunk ->
+                resultBuilder.append(chunk)
+            }
+            
+            val result = resultBuilder.toString().trim()
+            Log.d("WritingViewModel", "AI evaluation completed, result length: ${result.length}")
+            
+            if (result.isEmpty()) {
+                "AI评判暂时没有返回内容，请稍后重试"
+            } else {
+                result
+            }
         } catch (e: Exception) {
             Log.e("WritingViewModel", "Error during AI evaluation", e)
             when (e) {

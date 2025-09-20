@@ -52,7 +52,9 @@ fun WritingEditorScreen(
         if (startEvaluation) {
             isEvaluating = true
             try {
-                evaluationResult = writingViewModel.evaluateArticle(title, content)
+                val result = writingViewModel.evaluateArticle(title, content)
+                Log.d("WritingEditorScreen", "AI evaluation result received: ${result.take(100)}...")
+                evaluationResult = result
             } catch (e: Exception) {
                 Log.e("WritingEditorScreen", "Error during AI evaluation", e)
                 evaluationResult = when (e) {
