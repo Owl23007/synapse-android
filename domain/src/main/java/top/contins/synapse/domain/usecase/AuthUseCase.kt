@@ -31,7 +31,7 @@ class AuthUseCase @Inject constructor(
             val response = repository.getCaptcha(serverEndpoint)
             AuthResult.Success(response)
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "发生未知错误")
+            AuthResult.Error("获取验证码失败，请检查网络或重试")
         }
     }
 
