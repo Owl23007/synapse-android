@@ -40,12 +40,36 @@ class AuthRepositoryImpl @Inject constructor(
                 // 保存tokens和服务器地址
                 tokenManager.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken, serverEndpoint)
                 
-                // 解析JWT token获取用户信息 (这里简化处理)
-                val user = parseUserFromToken(tokenResponse.accessToken) ?: run {
-                    return AuthResult.Error("无法解析用户信息")
+                // 登录成功后，获取用户信息
+                try {
+                    val profileResult = apiService.getUserProfile("$serverEndpoint/profile/me")
+                    if (profileResult.code == 0 && profileResult.data != null) {
+                        val user = mapProfileToUser(profileResult.data!!, serverEndpoint)
+                        AuthResult.Success(user)
+                    } else {
+                        // 获取用户信息失败，但登录已成功，返回基本信息
+                        Log.w("Auth", "Failed to fetch user profile: ${profileResult.message}")
+                        val user = User(
+                            id = 0L,
+                            email = identifier,
+                            username = identifier,
+                            nickname = identifier,
+                            serverEndpoint = serverEndpoint
+                        )
+                        AuthResult.Success(user)
+                    }
+                } catch (e: Exception) {
+                    Log.e("Auth", "Error fetching user profile", e)
+                    // 获取用户信息异常，但登录已成功，返回基本信息
+                    val user = User(
+                        id = 0L,
+                        email = identifier,
+                        username = identifier,
+                        nickname = identifier,
+                        serverEndpoint = serverEndpoint
+                    )
+                    AuthResult.Success(user)
                 }
-                
-                AuthResult.Success(user)
             } else {
                 AuthResult.Error("登录失败: ${result.message ?: "未知错误"}")
             }
@@ -60,34 +84,46 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun parseUserFromToken(accessToken: String): User? {
+    override suspend fun checkAuth(): AuthResult<User> {
+        val accessToken = tokenManager.getAccessToken()
+        val serverEndpoint = tokenManager.getServerEndpoint()
+
+        if (accessToken.isNullOrEmpty() || serverEndpoint.isNullOrEmpty()) {
+            return AuthResult.Error("未登录")
+        }
+
         return try {
-            // 这里应该解析JWT token获取用户信息
-            // 简化处理，返回一个默认用户对象
-            // 在实际项目中，你需要解析JWT的payload部分
-            val parts = accessToken.split(".")
-            if (parts.size >= 2) {
-                val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
-                // 这里应该解析JSON获取用户信息
-                // 现在返回一个占位符用户
-                User(
-                    id = 1L,
-                    email = "user@example.com",
-                    username = "username",
-                    nickname = "nickname",
-                    avatar = "",
-                    background = "",
-                    signature = "",
-                    serverEndpoint = ""
-                )
+            // 调用 /profile/me 接口验证 Token 并获取用户信息
+            val profileResult = apiService.getUserProfile("$serverEndpoint/profile/me")
+            
+            if (profileResult.code == 0 && profileResult.data != null) {
+                val user = mapProfileToUser(profileResult.data!!, serverEndpoint)
+                AuthResult.Success(user)
             } else {
-                null
+                // Token 可能失效
+                AuthResult.Error("Token无效或过期")
             }
         } catch (e: Exception) {
-            Log.e("Auth", "解析token失败", e)
-            null
+            Log.e("Auth", "Check auth failed", e)
+            // 如果是网络错误，可能不应该直接判定为未登录，但为了安全起见，或者根据业务需求处理
+            // 这里简单处理为验证失败
+            AuthResult.Error("验证失败: ${e.message}")
         }
     }
+
+    private fun mapProfileToUser(profile: top.contins.synapse.network.model.UserSelfProfileResponse, serverEndpoint: String): User {
+        return User(
+            id = profile.userId,
+            email = profile.email ?: "",
+            username = profile.username,
+            nickname = profile.nickname ?: profile.username,
+            avatar = profile.avatarImage ?: "",
+            background = profile.backgroundImage ?: "",
+            signature = profile.signature ?: "",
+            serverEndpoint = serverEndpoint
+        )
+    }
+
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7) // 兼容 Android 7.0 以上版本
     override suspend fun register(
         email: String,

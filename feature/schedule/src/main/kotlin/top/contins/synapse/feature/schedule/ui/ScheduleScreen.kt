@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.*
 
 data class ScheduleEvent(
@@ -41,7 +43,7 @@ enum class EventType(val displayName: String, val color: Color) {
 @Composable
 fun ScheduleScreen() {
     val today = Date()
-    val calendar = Calendar.getInstance()
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
 
     var events by remember {
         mutableStateOf(
@@ -71,60 +73,17 @@ fun ScheduleScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 标题栏
-        TopAppBar(
-            title = {
-                Text(
-                    text = "日程安排",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            actions = {
-                IconButton(onClick = { /* 添加新日程 */ }) {
-                    Icon(Icons.Default.Add, contentDescription = "添加日程")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
-
-        // 今日概览卡片
-        Card(
+        // 日历视图
+        CalendarComponent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.CalendarToday,
-                        contentDescription = "今日",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "今日日程",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "${events.size} 个事件",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            currentDate = selectedDate,
+            onDateSelected = { date ->
+                selectedDate = date
+                // 这里可以根据日期筛选事件
             }
-        }
+        )
 
         // 时间轴视图
         LazyColumn(
@@ -132,12 +91,18 @@ fun ScheduleScreen() {
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(events.sortedBy { it.startTime }) { event ->
+            // 简单的日期筛选逻辑（示例）
+            val filteredEvents = events.filter { event ->
+                val eventDate = event.startTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                eventDate == selectedDate
+            }
+
+            items(filteredEvents.sortedBy { it.startTime }) { event ->
                 ScheduleEventItem(event = event)
             }
 
             // 添加空状态
-            if (events.isEmpty()) {
+            if (filteredEvents.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -156,7 +121,7 @@ fun ScheduleScreen() {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "今天还没有安排任何日程",
+                                text = "该日期没有安排日程",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

@@ -78,7 +78,6 @@ dependencies {
     implementation(project(":feature:goal"))
     implementation(project(":feature:schedule"))
     implementation(project(":feature:task"))
-    implementation(project(":feature:writing"))
 
     debugImplementation(libs.compose.ui.tooling)
 
@@ -89,5 +88,8 @@ dependencies {
 
     // Markdown渲染
     implementation(libs.bundles.markdown)
+
+    // 图片加载
+    implementation(libs.coil.compose)
 
 }

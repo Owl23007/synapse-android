@@ -31,20 +31,11 @@ class TokenValidationService @Inject constructor(
                 return TokenValidationResult.NoTokens
             }
             
-            Log.d("TokenValidation", "Validating refresh token for server: $serverEndpoint")
-            
-            // 1. 验证refresh token是否有效
-            val isRefreshTokenValid = validateRefreshToken(serverEndpoint, refreshToken)
-            
-            if (!isRefreshTokenValid) {
-                Log.d("TokenValidation", "Refresh token invalid, clearing tokens")
-                tokenManager.clearTokens()
-                return TokenValidationResult.Invalid
-            }
-            
-            Log.d("TokenValidation", "Refresh token valid, refreshing access token")
-            
-            // 2. refresh token有效，刷新access token
+            Log.d("TokenValidation", "Validating token for server: $serverEndpoint")
+
+            // 尝试使用 Refresh Token 刷新 Access Token
+            // 因为没有单独的 validate 接口，我们直接尝试刷新来验证有效性
+            Log.d("TokenValidation", "Trying to refresh token")
             val refreshSuccess = refreshAccessToken(serverEndpoint, refreshToken)
             
             if (refreshSuccess) {
@@ -64,23 +55,20 @@ class TokenValidationService @Inject constructor(
     }
     
     /**
-     * 验证refresh token是否有效
-     */
-    private suspend fun validateRefreshToken(serverEndpoint: String, refreshToken: String): Boolean {
-        return try {
-            val result = apiService.validateToken("$serverEndpoint/auth/validate", refreshToken)
-            result.code == 0 && result.data != null
-        } catch (e: Exception) {
-            Log.e("TokenValidation", "Error validating refresh token", e)
-            false
-        }
-    }
-    
-    /**
      * 使用refresh token刷新access token
      */
     private suspend fun refreshAccessToken(serverEndpoint: String, refreshToken: String): Boolean {
         return try {
+            // 添加 Bearer 前缀，以符合后端兼容性 (虽然后端说 required=false 且兼容 Bearer，但为了保险)
+            // 后端代码: if (refreshToken.startsWith("Bearer ")) ...
+            // 这里直接传原始值，或者加 Bearer 都可以。后端代码显示它会处理 Bearer。
+            // 既然是 Header 传递，通常不需要 Bearer 前缀，除非是 Authorization header。
+            // 但后端代码 specifically checks for "Bearer ". Let's just pass it as is, assuming stored token is raw.
+            // Wait, stored token usually doesn't have Bearer.
+            // Let's pass "Bearer $refreshToken" just to be safe if backend expects it or handles it.
+            // Actually backend says: if (refreshToken.startsWith("Bearer ")) { refreshToken = refreshToken.substring(7).trim(); }
+            // So it supports both. I will pass raw token.
+            
             val result = apiService.refreshToken("$serverEndpoint/auth/refresh", refreshToken)
             
             if (result.code == 0 && result.data != null) {

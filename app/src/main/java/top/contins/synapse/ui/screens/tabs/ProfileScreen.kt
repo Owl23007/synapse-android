@@ -23,6 +23,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import top.contins.synapse.ui.viewmodel.ProfileViewModel
 import top.contins.synapse.ui.viewmodel.ProfileUiState
+import top.contins.synapse.domain.model.User
+import coil.compose.AsyncImage
+
 
 /**
  * 我的页面 - 个人资料、作品、设置、会员
@@ -44,53 +47,71 @@ fun ProfileScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            // 用户信息卡片
-            UserProfileCard()
+    val user = (uiState as? ProfileUiState.Success)?.user
+
+    if (uiState is ProfileUiState.Loading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
-        
-        item {
-            // 数据统计
-            UserStatsCard()
-        }
-        
-        item {
-            // 功能菜单
-            Text(
-                text = "功能",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-        
-        items(getProfileMenuItems()) { menuItem ->
-            ProfileMenuItem(menuItem = menuItem)
-        }
-        
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            // 设置菜单
-            Text(
-                text = "设置",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-        
-        items(getSettingsMenuItems()) { menuItem ->
-            ProfileMenuItem(
-                menuItem = menuItem,
-                onClick = {
-                    if (menuItem.title == "退出登录") {
-                        showLogoutDialog = true
-                    }
+    } else if (uiState is ProfileUiState.Error) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("加载失败: ${(uiState as ProfileUiState.Error).message}")
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { viewModel.loadUserProfile() }) {
+                    Text("重试")
                 }
-            )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                // 用户信息卡片
+                UserProfileCard(user = user)
+            }
+            
+            item {
+                // 数据统计
+                UserStatsCard()
+            }
+            
+            item {
+                // 功能菜单
+                Text(
+                    text = "功能",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            
+            items(getProfileMenuItems()) { menuItem ->
+                ProfileMenuItem(menuItem = menuItem)
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                // 设置菜单
+                Text(
+                    text = "设置",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            
+            items(getSettingsMenuItems()) { menuItem ->
+                ProfileMenuItem(
+                    menuItem = menuItem,
+                    onClick = {
+                        if (menuItem.title == "退出登录") {
+                            showLogoutDialog = true
+                        }
+                    }
+                )
+            }
         }
     }
     
@@ -137,8 +158,9 @@ fun ProfileScreen(
     }
 }
 
+
 @Composable
-fun UserProfileCard() {
+fun UserProfileCard(user: User? = null) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -152,18 +174,28 @@ fun UserProfileCard() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 头像
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+            if (user?.avatar.isNullOrEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            } else {
+                AsyncImage(
+                    model = user!!.avatar,
+                    contentDescription = "Avatar",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
                 )
             }
             
@@ -171,13 +203,13 @@ fun UserProfileCard() {
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Synapse用户",
+                    text = user?.nickname ?: "Synapse用户",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "AI写作助手的忠实用户",
+                    text = user?.signature?.ifEmpty { "AI写作助手的忠实用户" } ?: "AI写作助手的忠实用户",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )

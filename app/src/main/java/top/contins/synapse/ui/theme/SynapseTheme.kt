@@ -82,8 +82,17 @@ fun SynapseTheme(
             val window = (view.context as Activity).window
             val insetsController = WindowCompat.getInsetsController(window, view)
 
-            // 使用现代API设置状态栏样式
+            // 设置状态栏样式
             insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+
+            // 设置导航栏颜色跟随主题
+            @Suppress("DEPRECATION")
+            window.navigationBarColor = if (darkTheme) {
+                android.graphics.Color.parseColor("#1A1D26")  // 偏亮的深灰色
+            } else {
+                android.graphics.Color.parseColor("#F5F5F5")  // 偏亮的灰色
+            }
         }
     }
 

@@ -49,6 +49,11 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
 
+    // Calendar & Tools
+    implementation(libs.calendar.compose)
+    implementation(libs.biweekly)
+    implementation(libs.lunar)
+
     // Lifecycle & Basic Android
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.android.basic)

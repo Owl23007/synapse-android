@@ -34,4 +34,8 @@ class AuthUseCase @Inject constructor(
             AuthResult.Error(e.message ?: "发生未知错误")
         }
     }
+
+    suspend fun checkAuth(): AuthResult<User> {
+        return repository.checkAuth()
+    }
 }

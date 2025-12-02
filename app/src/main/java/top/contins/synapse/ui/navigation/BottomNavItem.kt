@@ -21,28 +21,16 @@ data class BottomNavItem(
 object BottomNavigation {
     val items = listOf(
         BottomNavItem(
-            route = "square",
-            title = "广场",
-            iconSelected = Icons.Filled.Public,
-            iconUnselected = Icons.Outlined.Public
-        ),
-        BottomNavItem(
-            route = "writing",
-            title = "写作",
-            iconSelected = Icons.Filled.Edit,
-            iconUnselected = Icons.Outlined.Edit
+            route = "plan",
+            title = "计划",
+            iconSelected = Icons.Filled.CalendarToday,
+            iconUnselected = Icons.Outlined.CalendarToday
         ),
         BottomNavItem(
             route = "chat",
             title = "对话",
             iconSelected = Icons.Filled.Chat,
             iconUnselected = Icons.Outlined.Chat
-        ),
-        BottomNavItem(
-            route = "plan",
-            title = "计划",
-            iconSelected = Icons.Filled.CalendarToday,
-            iconUnselected = Icons.Outlined.CalendarToday
         ),
         BottomNavItem(
             route = "profile",

@@ -3,7 +3,7 @@ package top.contins.synapse.domain.model
 sealed class AuthUiState {
     object Idle : AuthUiState()
     object Loading : AuthUiState()
-    data class LoginSuccess(val user: User) : AuthUiState()
+    data class LoginSuccess(val user: User, val isAutoLogin: Boolean = false) : AuthUiState()
     data class LoginError(val message: String) : AuthUiState()
     data class RegisterSuccess(val message: String) : AuthUiState()
     data class RegisterError(val message: String) : AuthUiState()

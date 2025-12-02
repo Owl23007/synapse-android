@@ -114,7 +114,7 @@ fun AuthScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var serverIp by remember { mutableStateOf("http://192.168.99.10:8081") }
+    var serverIp by remember { mutableStateOf("http://10.15.19.136:9080/api") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -197,7 +197,9 @@ fun AuthScreen(
             }
 
             is AuthUiState.LoginSuccess -> {
-                snackbarController.showSuccessMessage("登录成功！")
+                if (!currentState.isAutoLogin) {
+                    snackbarController.showSuccessMessage("登录成功！")
+                }
                 onLoginSuccess()
             }
 

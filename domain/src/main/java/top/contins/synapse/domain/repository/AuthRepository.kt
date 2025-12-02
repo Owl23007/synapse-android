@@ -16,4 +16,5 @@ interface AuthRepository {
     ): AuthResult<String?>
     suspend fun getCaptcha(serverEndpoint: String): CaptchaResponse
     suspend fun afterLogin(serverEndpoint: String, email: String, password: String): AuthResult<User>
+    suspend fun checkAuth(): AuthResult<User>
 }

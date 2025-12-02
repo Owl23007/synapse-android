@@ -7,22 +7,46 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import top.contins.synapse.domain.model.AuthResult
+import top.contins.synapse.domain.model.User
+import top.contins.synapse.domain.usecase.AuthUseCase
 import top.contins.synapse.domain.usecase.LogoutUseCase
 import javax.inject.Inject
 
 sealed class ProfileUiState {
-    object Idle : ProfileUiState()
+    object Loading : ProfileUiState()
+    data class Success(val user: User) : ProfileUiState()
+    data class Error(val message: String) : ProfileUiState()
     object LoggingOut : ProfileUiState()
     object LoggedOut : ProfileUiState()
 }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val logoutUseCase: LogoutUseCase
+    private val logoutUseCase: LogoutUseCase,
+    private val authUseCase: AuthUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Idle)
+    private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    init {
+        loadUserProfile()
+    }
+
+    fun loadUserProfile() {
+        viewModelScope.launch {
+            _uiState.value = ProfileUiState.Loading
+            when (val result = authUseCase.checkAuth()) {
+                is AuthResult.Success -> {
+                    _uiState.value = ProfileUiState.Success(result.data)
+                }
+                is AuthResult.Error -> {
+                    _uiState.value = ProfileUiState.Error(result.message)
+                }
+            }
+        }
+    }
 
     /**
      * 执行登出操作
@@ -48,6 +72,6 @@ class ProfileViewModel @Inject constructor(
      * 重置状态（当已经处理完登出后调用）
      */
     fun resetState() {
-        _uiState.value = ProfileUiState.Idle
+        _uiState.value = ProfileUiState.Loading
     }
 }

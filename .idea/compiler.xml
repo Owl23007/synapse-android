@@ -3,6 +3,7 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel target="17">
       <module name="Synapse.core" target="21" />
+      <module name="Synapse.feature.writing" target="21" />
     </bytecodeTargetLevel>
   </component>
 </project>

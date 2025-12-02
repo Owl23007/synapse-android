@@ -20,6 +20,7 @@ import top.contins.synapse.network.model.Result
 import top.contins.synapse.network.model.ServiceRoutesResponse
 import top.contins.synapse.network.model.TaskResponse
 import top.contins.synapse.network.model.TokenResponse
+import top.contins.synapse.network.model.UserSelfProfileResponse
 
 interface ApiService {
     @GET
@@ -28,13 +29,11 @@ interface ApiService {
     @POST
     suspend fun login(@Url fullUrl: String, @Body loginRequest: LoginRequest): Result<TokenResponse>
 
-    @FormUrlEncoded
-    @POST
-    suspend fun validateToken(@Url fullUrl: String, @Field("token") token: String): Result<String>
+    @GET
+    suspend fun getUserProfile(@Url fullUrl: String): Result<UserSelfProfileResponse>
 
-    @FormUrlEncoded  
     @POST
-    suspend fun refreshToken(@Url fullUrl: String, @Field("refreshToken") refreshToken: String): Result<TokenResponse>
+    suspend fun refreshToken(@Url fullUrl: String, @retrofit2.http.Header("Refresh-Token") refreshToken: String): Result<TokenResponse>
 
     @POST
     suspend fun register(@Url fullUrl: String, @Body registerRequest: RegisterRequest): Result<String>

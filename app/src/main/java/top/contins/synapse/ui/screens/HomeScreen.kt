@@ -1,18 +1,30 @@
 package top.contins.synapse.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import top.contins.synapse.ui.navigation.BottomNavItem
 import top.contins.synapse.ui.navigation.BottomNavigation
 import top.contins.synapse.ui.screens.tabs.*
 
@@ -21,6 +33,7 @@ import top.contins.synapse.ui.screens.tabs.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Preview(showBackground = true)
 fun HomeScreen(
     onLogout: () -> Unit = {}
 ) {
@@ -30,10 +43,8 @@ fun HomeScreen(
     
     // 根据当前路由获取标题
     val currentTitle = when (currentRoute) {
-        "square" -> "🌍 广场"
-        "writing" -> "📝 写作"
-        "chat" -> "💬 对话"
         "plan" -> "📅 计划"
+        "chat" -> "💬 对话"
         "profile" -> "👤 我的"
         else -> "Synapse"
     }
@@ -50,19 +61,6 @@ fun HomeScreen(
                 },
                 actions = {
                     when (currentRoute) {
-                        "square" -> {
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.Search, contentDescription = "搜索")
-                            }
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.Notifications, contentDescription = "通知")
-                            }
-                        }
-                        "writing" -> {
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.Settings, contentDescription = "设置")
-                            }
-                        }
                         "chat" -> {
                             IconButton(onClick = { }) {
                                 Icon(Icons.Default.Add, contentDescription = "新建对话")
@@ -85,24 +83,44 @@ fun HomeScreen(
         },
         bottomBar = {
             BottomNavigationBar(navController = navController)
-        }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate("chat") {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(72.dp)
+                    .offset(y = 50.dp) // 向下偏移，使其覆盖在 BottomBar 上
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Chat,
+                    contentDescription = "对话",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "square",
+            startDestination = "plan",
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("square") {
-                SquareScreen()
-            }
-            composable("writing") {
-                WritingScreen()
+            composable("plan") {
+                PlanScreen()
             }
             composable("chat") {
                 ChatScreen()
-            }
-            composable("plan") {
-                PlanScreen()
             }
             composable("profile") {
                 ProfileScreen(onLogout = onLogout)
@@ -116,37 +134,89 @@ fun BottomNavigationBar(navController: NavHostController) {
     val items = BottomNavigation.items
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    
-    NavigationBar {
-        items.forEach { item ->
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = if (currentRoute == item.route) {
-                            item.iconSelected
-                        } else {
-                            item.iconUnselected
-                        },
-                        contentDescription = item.title
-                    )
-                },
-                label = {
-                    Text(text = item.title)
-                },
-                selected = currentRoute == item.route,
-                onClick = {
-                    if (currentRoute != item.route) {
-                        navController.navigate(item.route) {
-                            // 避免重复的导航栈
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
+    val isDarkTheme = isSystemInDarkTheme()
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp),
+        color = if (isDarkTheme) Color(0xFF1A1D26) else Color(0xFFF5F5F5),  // 响应式灰色
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize() ,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                val isChat = item.route == "chat"
+                val selected = currentRoute == item.route
+
+                if (isChat) {
+                    // Chat 占位符，实际按钮由 FAB 实现
+                    Spacer(modifier = Modifier.width(72.dp))
+                } else {
+                    CustomNavItem(
+                        item = item,
+                        selected = selected,
+                        onClick = {
+                            if (currentRoute != item.route) {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                    }
+                    )
                 }
-            )
+            }
         }
+    }
+}
+
+@Composable
+private fun CustomNavItem(
+    item: BottomNavItem,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val iconColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val textColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Column(
+        modifier = Modifier
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,  // 禁用涟漪效果
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = if (selected) item.iconSelected else item.iconUnselected,
+            contentDescription = item.title,
+            tint = iconColor,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            modifier = Modifier.absoluteOffset(y = (-4).dp),
+            text = item.title,
+            color = textColor,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }

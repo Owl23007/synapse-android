@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import top.contins.synapse.feature.schedule.ui.ScheduleScreen
 
 /**
  * 计划页面 - 未来扩展：写作日程、任务、目标追踪
@@ -46,7 +47,7 @@ fun PlanScreen() {
 
         when (selectedTab) {
             0 -> TodayTab()
-            1 -> ScheduleTab()
+            1 -> ScheduleScreen()
             2 -> TaskTab()
             3 -> GoalTab()
         }
@@ -118,19 +119,6 @@ fun TodayTab() {
 }
 
 @Composable
-fun ScheduleTab() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(getScheduleItems()) { schedule ->
-            ScheduleCard(schedule = schedule)
-        }
-    }
-}
-
-@Composable
 fun TaskTab() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -162,13 +150,6 @@ data class TodayTask(
     val time: String,
     val isCompleted: Boolean,
     val priority: String
-)
-
-data class ScheduleItem(
-    val title: String,
-    val time: String,
-    val date: String,
-    val type: String
 )
 
 data class TaskItem(
@@ -205,13 +186,6 @@ fun getTodayTasks() = listOf(
     TodayTask("团队会议讨论", "14:00", false, "中"),
     TodayTask("回复客户邮件", "16:00", true, "低"),
     TodayTask("整理学习笔记", "19:00", false, "中")
-)
-
-fun getScheduleItems() = listOf(
-    ScheduleItem("产品规划会议", "09:00-10:30", "今天", "会议"),
-    ScheduleItem("写作分享讲座", "14:00-16:00", "明天", "活动"),
-    ScheduleItem("项目进度汇报", "10:00-11:00", "后天", "会议"),
-    ScheduleItem("AI学习研讨", "15:00-17:00", "周五", "学习")
 )
 
 fun getTaskItems() = listOf(
@@ -320,59 +294,6 @@ fun TodayTaskCard(task: TodayTask) {
                     Icons.Default.CheckCircle,
                     contentDescription = "已完成",
                     tint = Color.Green
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ScheduleCard(schedule: ScheduleItem) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                when (schedule.type) {
-                    "会议" -> Icons.Default.VideoCall
-                    "活动" -> Icons.Default.Event
-                    else -> Icons.Default.School
-                },
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = schedule.title,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "${schedule.date} ${schedule.time}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            ) {
-                Text(
-                    text = schedule.type,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
         }

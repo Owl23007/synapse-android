@@ -19,6 +19,25 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
 
+    init {
+        checkLoginStatus()
+    }
+
+    private fun checkLoginStatus() {
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            when (val result = authUseCase.checkAuth()) {
+                is AuthResult.Success -> {
+                    _uiState.value = AuthUiState.LoginSuccess(result.data, isAutoLogin = true)
+                }
+                is AuthResult.Error -> {
+                    // 如果检查失败（未登录或token无效），显示登录界面
+                    _uiState.value = AuthUiState.Idle
+                }
+            }
+        }
+    }
+
     fun login(email: String, password: String, serverEndpoint: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
