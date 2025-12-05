@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import top.contins.synapse.data.storage.TokenManager
 import top.contins.synapse.domain.service.RouteManager
 import top.contins.synapse.domain.usecase.ValidateTokenOnStartupUseCase
-import top.contins.synapse.network.service.TokenValidationResult
+import top.contins.synapse.domain.model.TokenValidationResult
 import javax.inject.Inject
 
 sealed class SplashUiState {

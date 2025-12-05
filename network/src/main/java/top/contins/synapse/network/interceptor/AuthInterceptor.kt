@@ -3,18 +3,17 @@ package top.contins.synapse.network.interceptor
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
-import top.contins.synapse.data.storage.TokenManager
+import top.contins.synapse.network.api.TokenProvider
 import top.contins.synapse.network.api.ApiService
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
-import javax.inject.Named
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
-class AuthInterceptor @Inject constructor(
-    private val tokenManager: TokenManager,
-    @field:Named("refreshApi") private val refreshApiService: ApiService
+class AuthInterceptor(
+    private val tokenProvider: TokenProvider,
+    private val refreshApiServiceProvider: Provider<ApiService>
 ) : Interceptor {
     
     private val isRefreshing = AtomicBoolean(false)
@@ -24,7 +23,7 @@ class AuthInterceptor @Inject constructor(
         val originalRequest = chain.request()
         
         // 添加access token到请求头
-        val accessToken = tokenManager.getAccessToken()
+        val accessToken = tokenProvider.getAccessToken()
         val requestWithToken = if (!accessToken.isNullOrEmpty()) {
             originalRequest.newBuilder()
                 .addHeader("Authorization", "Bearer $accessToken")
@@ -36,17 +35,17 @@ class AuthInterceptor @Inject constructor(
         val response = chain.proceed(requestWithToken)
         
         // 如果返回401且有refresh token，尝试刷新token
-        if (response.code == 401 && !tokenManager.getRefreshToken().isNullOrEmpty()) {
+        if (response.code == 401 && !tokenProvider.getRefreshToken().isNullOrEmpty()) {
             response.close() // 关闭原始响应
             
             synchronized(this) {
                 // 双重检查锁定模式，避免多个线程同时刷新token
-                val currentToken = tokenManager.getAccessToken()
+                val currentToken = tokenProvider.getAccessToken()
                 if (currentToken == accessToken && isRefreshing.compareAndSet(false, true)) {
                     try {
                         if (refreshTokenSync()) {
                             // 刷新成功，用新token重新请求
-                            val newAccessToken = tokenManager.getAccessToken()
+                            val newAccessToken = tokenProvider.getAccessToken()
                             if (!newAccessToken.isNullOrEmpty()) {
                                 val newRequest = originalRequest.newBuilder()
                                     .addHeader("Authorization", "Bearer $newAccessToken")
@@ -55,7 +54,7 @@ class AuthInterceptor @Inject constructor(
                             }
                         } else {
                             // 刷新失败，清除tokens
-                            tokenManager.clearTokens()
+                            tokenProvider.clearTokens()
                         }
                     } finally {
                         isRefreshing.set(false)
@@ -65,7 +64,7 @@ class AuthInterceptor @Inject constructor(
                     waitForRefresh()
                     
                     // 检查是否有新的token
-                    val newAccessToken = tokenManager.getAccessToken()
+                    val newAccessToken = tokenProvider.getAccessToken()
                     if (!newAccessToken.isNullOrEmpty() && newAccessToken != currentToken) {
                         val newRequest = originalRequest.newBuilder()
                             .addHeader("Authorization", "Bearer $newAccessToken")
@@ -81,12 +80,14 @@ class AuthInterceptor @Inject constructor(
     
     private fun refreshTokenSync(): Boolean {
         return try {
-            val refreshToken = tokenManager.getRefreshToken()
-            val serverEndpoint = tokenManager.getServerEndpoint()
+            val refreshToken = tokenProvider.getRefreshToken()
+            val serverEndpoint = tokenProvider.getServerEndpoint()
             
             if (refreshToken.isNullOrEmpty() || serverEndpoint.isNullOrEmpty()) {
                 return false
             }
+            
+            val refreshApiService = refreshApiServiceProvider.get()
             
             // 使用保存的服务器端点而不是从URL中提取
             val result = runBlocking {
@@ -100,7 +101,7 @@ class AuthInterceptor @Inject constructor(
             if (result?.code == 0 && result.data != null) {
                 val tokenResponse = result.data!!
                 // 保存新的tokens，保持原有的服务器地址
-                tokenManager.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken, serverEndpoint)
+                tokenProvider.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken, serverEndpoint)
                 true
             } else {
                 false

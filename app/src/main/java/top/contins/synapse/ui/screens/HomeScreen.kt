@@ -28,7 +28,7 @@ import top.contins.synapse.ui.navigation.BottomNavItem
 import top.contins.synapse.ui.navigation.BottomNavigation
 import top.contins.synapse.ui.screens.tabs.*
 import top.contins.synapse.feature.profile.ProfileScreen
-import top.contins.synapse.feature.chat.ChatScreen
+import top.contins.synapse.feature.assistant.ChatScreen
 
 /**
  * 主屏幕 - 包含底部导航栏的

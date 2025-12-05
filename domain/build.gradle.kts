@@ -38,7 +38,6 @@ android {
 
 dependencies {
     implementation(project(":network"))
-    implementation(project(":data"))
 
     // inject
     implementation(libs.javax.inject)

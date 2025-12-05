@@ -40,6 +40,8 @@ android {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(project(":network"))
+    implementation(project(":core:ui"))
 
     // Compose
     implementation(platform(libs.compose.bom))
@@ -54,5 +56,6 @@ dependencies {
     
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 }

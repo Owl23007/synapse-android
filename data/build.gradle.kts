@@ -31,6 +31,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":domain"))
+    implementation(project(":network"))
     implementation(libs.bundles.android.basic)
     implementation(libs.hilt.android)
     implementation(libs.security.crypto)

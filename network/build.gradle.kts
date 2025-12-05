@@ -50,7 +50,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // 依赖data模块用于TokenManager
-    implementation(project(":data"))
+    // implementation(project(":core:common"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
