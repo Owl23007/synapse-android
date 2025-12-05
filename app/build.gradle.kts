@@ -71,6 +71,10 @@ dependencies {
     implementation(libs.bundles.compose)
 
     // Module dependencies
+    implementation(project(":core:ui"))
+    implementation(project(":feature:auth"))
+    implementation(project(":feature:profile"))
+    implementation(project(":feature:chat"))
     implementation(project(":data"))
     implementation(project(":network"))
     implementation(project(":domain"))

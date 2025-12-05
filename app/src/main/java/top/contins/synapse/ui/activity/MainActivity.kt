@@ -9,7 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import top.contins.synapse.ui.screens.MainScreen
-import top.contins.synapse.ui.theme.SynapseTheme
+import top.contins.synapse.core.ui.theme.SynapseTheme
 
 /**
  * 应用程序主Activity

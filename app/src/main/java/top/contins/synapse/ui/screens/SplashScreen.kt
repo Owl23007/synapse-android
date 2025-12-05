@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 import top.contins.synapse.R
+import top.contins.synapse.core.ui.R as CoreUiR
 import top.contins.synapse.ui.viewmodel.SplashViewModel
 import top.contins.synapse.ui.viewmodel.SplashUiState
 
@@ -115,7 +116,7 @@ fun SplashScreenContent(
         ) {
 
             Image(
-                painter = painterResource(id = R.drawable.logo),
+                painter = painterResource(id = CoreUiR.drawable.logo),
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(128.dp)

@@ -7,8 +7,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import top.contins.synapse.ui.compose.snackbar.LevelSnackbarHost
-import top.contins.synapse.ui.compose.snackbar.SnackbarControllerProvider
+import top.contins.synapse.core.ui.compose.snackbar.LevelSnackbarHost
+import top.contins.synapse.core.ui.compose.snackbar.SnackbarControllerProvider
+import top.contins.synapse.feature.auth.AuthScreen
 
 /**
  * 应用程序主屏幕

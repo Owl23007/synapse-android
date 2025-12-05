@@ -31,4 +31,8 @@ include(":feature:schedule")
 include(":feature:goal")
 include(":feature:assistant")
 include(":network")
+include(":core:ui")
+include(":feature:auth")
+include(":feature:profile")
+include(":feature:chat")
 
