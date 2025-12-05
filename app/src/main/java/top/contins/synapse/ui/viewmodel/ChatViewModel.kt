@@ -105,7 +105,7 @@ class ChatViewModel @Inject constructor(
             } catch (e: Exception) {
                 // 添加错误消息
                 val currentMessages = _messages.value.toMutableList()
-                val errorMessage = Message("抱歉，发生了错误：${e.message}", isUser = false, isStreaming = false)
+                val errorMessage = Message("抱歉，发生了错误，请稍后重试", isUser = false, isStreaming = false)
                 
                 // 如果有占位符消息，替换它；否则添加新消息
                 if (currentMessages.isNotEmpty() && !currentMessages.last().isUser) {

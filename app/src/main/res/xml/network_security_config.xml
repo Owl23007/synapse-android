@@ -13,7 +13,5 @@
         <domain includeSubdomains="true">10.15.19.136</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">localhost</domain>
-        <!-- 你可以添加更多开发服务器 -->
-        <!-- <domain includeSubdomains="true">your-dev-server.com</domain> -->
     </domain-config>
 </network-security-config>
