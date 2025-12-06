@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 import java.util.*
 
@@ -32,18 +35,15 @@ data class ScheduleEvent(
     val color: Color = Color.Blue
 )
 
-enum class EventType(val displayName: String, val color: Color) {
-    MEETING("会议", Color(0xFF2196F3)),
-    PERSONAL("个人", Color(0xFF4CAF50)),
-    WORK("工作", Color(0xFFFF9800),),
-    STUDY("学习", Color(0xFF9C27B0))
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen() {
     val today = Date()
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
+    var selectedDateTime by remember { mutableStateOf<LocalDateTime?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     var events by remember {
         mutableStateOf(
@@ -70,18 +70,41 @@ fun ScheduleScreen() {
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { /* new schedule */ }) {
+                Icon(Icons.Default.Add, contentDescription = "添加日程")
+            }
+        }
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+        ) {
         // 日历视图
         CalendarComponent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             currentDate = selectedDate,
+            viewType = viewType,
             onDateSelected = { date ->
                 selectedDate = date
                 // 这里可以根据日期筛选事件
+            },
+            onViewTypeChanged = { newViewType ->
+                viewType = newViewType
+            },
+            selectedDateTime = selectedDateTime,
+            onTimeSlotClick = { date, time ->
+                selectedDate = date
+                selectedDateTime = LocalDateTime.of(date, time)
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("选择: ${selectedDateTime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}")
+                }
             }
         )
 
@@ -128,6 +151,7 @@ fun ScheduleScreen() {
                     }
                 }
             }
+        }
         }
     }
 }
