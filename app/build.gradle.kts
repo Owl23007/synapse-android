@@ -52,12 +52,12 @@ dependencies {
     implementation(platform(libs.compose.bom))
 
     // Android Basic
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.bundles.android.basic)
+    implementation(libs.bundles.lifecycle)
+
     implementation(libs.activity.compose)
-    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
+
 
     // Hilt 依赖
     implementation(libs.hilt.android)
@@ -85,9 +85,8 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     // 网络库依赖
-    implementation(libs.okhttp)
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
+    implementation(libs.bundles.network)
+
 
     // Markdown渲染
     implementation(libs.bundles.markdown)

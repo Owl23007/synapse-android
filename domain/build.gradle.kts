@@ -46,7 +46,7 @@ dependencies {
 
 
     // 网络库依赖
-    implementation(libs.okhttp)
-    implementation(libs.retrofit)
+    implementation(libs.bundles.network)
+
     implementation(libs.converter.gson)
 }

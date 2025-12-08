@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
@@ -37,6 +37,7 @@ data class ScheduleEvent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Preview
 fun ScheduleScreen() {
     val today = Date()
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -82,7 +83,6 @@ fun ScheduleScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding)
         ) {
         // 日历视图
         CalendarComponent(

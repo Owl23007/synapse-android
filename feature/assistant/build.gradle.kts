@@ -51,10 +51,8 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.android.basic)
 
-    // Compose LiveData integration
-    implementation(libs.compose.runtime.livedata)
-    
     // Hilt
+
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)

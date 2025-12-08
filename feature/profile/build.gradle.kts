@@ -19,14 +19,14 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -35,10 +35,12 @@ dependencies {
     implementation(project(":domain"))
 
     implementation(libs.core.ktx)
-    implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.bundles.android.basic)
+    implementation(libs.bundles.lifecycle)
+
     implementation(libs.navigation.compose)
     implementation(libs.hilt.navigation.compose)
+
 
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)

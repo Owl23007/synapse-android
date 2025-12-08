@@ -103,10 +103,13 @@ compose = [
 
 # Lifecycle 组合
 lifecycle = [
+    "lifecycle-runtime-ktx",
     "lifecycle-viewmodel-ktx",
+    "lifecycle-viewmodel-compose",
     "lifecycle-livedata-ktx",
     "lifecycle-runtime-compose"
 ]
+
 
 # Android 基础 UI
 android-basic = [

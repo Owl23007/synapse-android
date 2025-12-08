@@ -10,16 +10,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.*
+import com.nlf.calendar.Lunar
 import java.time.*
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
+import java.util.Date
 import java.util.Locale
 
 enum class CalendarViewType {
@@ -66,21 +71,61 @@ private fun CalendarViewTabs(
     selectedViewType: CalendarViewType,
     onViewTypeSelected: (CalendarViewType) -> Unit
 ) {
-    TabRow(selectedTabIndex = selectedViewType.ordinal) {
-        CalendarViewType.values().forEach { viewType ->
-            Tab(
-                selected = selectedViewType == viewType,
-                onClick = { onViewTypeSelected(viewType) },
-                text = {
+    val options = CalendarViewType.entries
+    val selectedIndex = selectedViewType.ordinal
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(4.dp)
+    ) {
+        val maxWidth = maxWidth
+        val tabWidth = maxWidth / options.size
+        val indicatorOffset by animateDpAsState(
+            targetValue = tabWidth * selectedIndex,
+            label = "indicator"
+        )
+
+        // Indicator
+        Box(
+            modifier = Modifier
+                .width(tabWidth)
+                .fillMaxHeight()
+                .offset(x = indicatorOffset)
+                .shadow(2.dp, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+        )
+
+        // Text Labels
+        Row(modifier = Modifier.fillMaxSize()) {
+            options.forEach { type ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onViewTypeSelected(type) },
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = when (viewType) {
+                        text = when (type) {
                             CalendarViewType.MONTH -> "月"
                             CalendarViewType.WEEK -> "周"
                             CalendarViewType.DAY -> "日"
-                        }
+                        },
+                        color = if (selectedViewType == type) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (selectedViewType == type) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 14.sp
                     )
                 }
-            )
+            }
         }
     }
 }
@@ -323,10 +368,24 @@ private fun CalendarDayItem(
         else -> Color.Gray
     }
 
+    val lunarText = remember(day.date) {
+        if (day.position == DayPosition.MonthDate) {
+            try {
+                val date = Date.from(day.date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                val lunar = Lunar.fromDate(date)
+                lunar.dayInChinese
+            } catch (e: Exception) {
+                ""
+            }
+        } else {
+            ""
+        }
+    }
+
     Box(
         modifier = Modifier
             .aspectRatio(1f)
-            .padding(4.dp)
+            .padding(2.dp)
             .clip(CircleShape)
             .background(color = backgroundColor)
             .clickable(
@@ -335,10 +394,25 @@ private fun CalendarDayItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = day.date.dayOfMonth.toString(),
-            color = textColor
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = day.date.dayOfMonth.toString(),
+                color = textColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+            if (lunarText.isNotEmpty()) {
+                Text(
+                    text = lunarText,
+                    color = textColor.copy(alpha = 0.8f),
+                    fontSize = 9.sp,
+                    lineHeight = 9.sp
+                )
+            }
+        }
     }
 }
 
@@ -362,13 +436,23 @@ private fun WeekDayItem(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
+    val lunarText = remember(date) {
+        try {
+            val d = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+            val lunar = Lunar.fromDate(d)
+            lunar.dayInChinese
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
     Column(
         modifier = modifier
             .padding(4.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(color = backgroundColor)
             .clickable(onClick = onClick)
-            .padding(8.dp),
+            .padding(vertical = 8.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -380,8 +464,16 @@ private fun WeekDayItem(
         Text(
             text = date.dayOfMonth.toString(),
             fontSize = 16.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            fontWeight = FontWeight.Bold,
             color = textColor
         )
+        if (lunarText.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = lunarText,
+                fontSize = 10.sp,
+                color = textColor.copy(alpha = 0.8f)
+            )
+        }
     }
 }

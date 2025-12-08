@@ -57,11 +57,9 @@ dependencies {
     // Lifecycle & Basic Android
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.android.basic)
-
-    // Compose LiveData integration
-    implementation("androidx.compose.runtime:runtime-livedata:1.9.0")
     
     // Hilt
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }

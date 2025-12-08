@@ -40,14 +40,12 @@ dependencies {
     implementation(libs.appcompat)
 
     // Lifecycle
-    implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.bundles.lifecycle)
+
 
     // 网络库
-    implementation(libs.retrofit)
-    implementation(libs.okhttp)
-    implementation(libs.converter.gson)
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.bundles.network)
+
 
     // 依赖data模块用于TokenManager
     // implementation(project(":core:common"))
