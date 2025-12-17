@@ -27,18 +27,6 @@ import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
 
-enum class CalendarViewType {
-    MONTH, WEEK, DAY
-}
-
-enum class EventType(val displayName: String, val color: Color) {
-    MEETING("会议", Color(0xFF2196F3)),
-    PERSONAL("个人", Color(0xFF4CAF50)),
-    WORK("工作", Color(0xFFFF9800)),
-    STUDY("学习", Color(0xFF9C27B0)),
-    ENTERTAINMENT("娱乐", Color(0xFFE91E63))
-}
-
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
@@ -330,20 +318,6 @@ private fun DayTimeSlotsView(selectedDate: LocalDate, onTimeSlotClick: (LocalDat
                         .clickable { onTimeSlotClick(selectedDate, time) })
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        for (dayOfWeek in daysOfWeek) {
-            Text(
-                modifier = Modifier.weight(1f),
-                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                textAlign = TextAlign.Center,
-                fontSize = 12.sp
-            )
         }
     }
 }

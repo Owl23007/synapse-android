@@ -35,6 +35,9 @@ dependencies {
     implementation(project(":network"))
     implementation(libs.bundles.android.basic)
     implementation(libs.hilt.android)
+    implementation(libs.bundles.room)
     implementation(libs.security.crypto)
+    implementation(libs.converter.gson)
     ksp(libs.hilt.compiler)
+    ksp(libs.room.compiler)
 }

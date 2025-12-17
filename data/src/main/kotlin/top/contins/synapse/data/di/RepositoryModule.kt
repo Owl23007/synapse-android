@@ -46,6 +46,18 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindCalendarRepository(
+        calendarRepositoryImpl: top.contins.synapse.data.repository.CalendarRepositoryImpl
+    ): top.contins.synapse.domain.repository.CalendarRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSubscriptionRepository(
+        subscriptionRepositoryImpl: top.contins.synapse.data.repository.SubscriptionRepositoryImpl
+    ): top.contins.synapse.domain.repository.SubscriptionRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTokenRepository(
         tokenRepositoryImpl: TokenRepositoryImpl
     ): TokenRepository

@@ -68,7 +68,7 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # Retrofit & OkHttp
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
@@ -126,8 +126,7 @@ coroutines = [
 # Room（用于 data 模块）
 room = [
     "room-runtime",
-    "room-ktx",
-    "room-runtime-android"
+    "room-ktx"
 ]
 
 # 网络（用于 data/network 模块）
