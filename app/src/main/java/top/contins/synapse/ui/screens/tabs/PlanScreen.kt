@@ -50,9 +50,9 @@ fun PlanScreen(
     
     // State for dialogs
     var showAddTaskDialog by remember { mutableStateOf(false) }
-    var showAddScheduleDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showTodayActionDialog by remember { mutableStateOf(false) }
+    var scheduleAddTick by remember { mutableStateOf(0) }
 
     // Data from ViewModels
     val tasks by taskViewModel.tasks.collectAsState()
@@ -76,7 +76,7 @@ fun PlanScreen(
                 onClick = { 
                     when (selectedTab) {
                         0 -> showTodayActionDialog = true
-                        1 -> showAddScheduleDialog = true
+                        1 -> scheduleAddTick += 1
                         2 -> showAddTaskDialog = true
                         3 -> showAddGoalDialog = true
                     }
@@ -109,7 +109,7 @@ fun PlanScreen(
 
             when (selectedTab) {
                 0 -> TodayTab(todayTasks, todaySchedules)
-                1 -> ScheduleScreen(viewModel = scheduleViewModel)
+                1 -> ScheduleScreen(viewModel = scheduleViewModel, showFab = false, addTick = scheduleAddTick)
                 2 -> TaskTab(tasks)
                 3 -> GoalTab(goals)
             }
@@ -135,7 +135,7 @@ fun PlanScreen(
                     TextButton(
                         onClick = { 
                             showTodayActionDialog = false
-                            showAddScheduleDialog = true 
+                            scheduleAddTick += 1
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -158,35 +158,6 @@ fun PlanScreen(
             onConfirm = { title, priority ->
                 taskViewModel.createTask(title, priority)
                 showAddTaskDialog = false
-            }
-        )
-    }
-
-    if (showAddScheduleDialog) {
-        AddSimpleScheduleDialog(
-            onDismiss = { showAddScheduleDialog = false },
-            onConfirm = { title, time, location ->
-                // Parse time string "HH:mm - HH:mm" or just use current time for simplicity
-                // For now, creating a dummy schedule for today
-                val now = Date()
-                val newSchedule = Schedule(
-                    id = UUID.randomUUID().toString(),
-                    title = title,
-                    description = "",
-                    startTime = now.time,
-                    endTime = now.time + 3600000, // +1 hour
-                    timezoneId = ZoneId.systemDefault().id,
-                    location = location,
-                    type = ScheduleType.EVENT,
-                    color = 0xFFFF0000, // Long color
-                    calendarId = "default", // Assuming default calendar exists
-                    isAllDay = false,
-                    isFromSubscription = false,
-                    createdAt = now.time,
-                    updatedAt = now.time
-                )
-                scheduleViewModel.createSchedule(newSchedule)
-                showAddScheduleDialog = false
             }
         )
     }

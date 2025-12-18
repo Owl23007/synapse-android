@@ -9,18 +9,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +38,9 @@ import top.contins.synapse.domain.model.Schedule
 @Composable
 @Preview
 fun ScheduleScreen(
-    viewModel: ScheduleViewModel = hiltViewModel()
+    viewModel: ScheduleViewModel = hiltViewModel(),
+    showFab: Boolean = true,
+    addTick: Int = 0
 ) {
     val selectedDate by viewModel.selectedDate.collectAsState()
     val currentMonth by viewModel.currentMonth.collectAsState()
@@ -47,31 +50,61 @@ fun ScheduleScreen(
     var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // View Switcher
-        CalendarViewTabs(
-            selectedViewType = viewType,
-            onViewTypeSelected = { viewType = it }
-        )
+    LaunchedEffect(addTick) {
+        if (addTick > 0) {
+            showAddDialog = true
+        }
+    }
 
-        when (viewType) {
-            CalendarViewType.MONTH -> MonthView(
-                currentMonth = currentMonth,
-                selectedDate = selectedDate,
-                schedules = schedules,
-                onDateSelected = viewModel::onDateSelected,
-                onMonthChanged = viewModel::onMonthChanged
+    val content: @Composable (PaddingValues) -> Unit = { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // View Switcher
+            CalendarViewTabs(
+                selectedViewType = viewType,
+                onViewTypeSelected = { viewType = it }
             )
-            CalendarViewType.WEEK -> Text("周视图 (即将推出)", modifier = Modifier.padding(16.dp))
-            CalendarViewType.DAY -> Text("日视图 (即将推出)", modifier = Modifier.padding(16.dp))
+
+            when (viewType) {
+                CalendarViewType.MONTH -> {
+                    MonthView(
+                        modifier = Modifier.fillMaxWidth(),
+                        currentMonth = currentMonth,
+                        selectedDate = selectedDate,
+                        schedules = schedules,
+                        onDateSelected = viewModel::onDateSelected,
+                        onMonthChanged = viewModel::onMonthChanged
+                    )
+
+                    // 月视图下面显示日程（选中日期）
+                    ScheduleList(
+                        modifier = Modifier.weight(1f),
+                        schedules = selectedDateSchedules,
+                        onDelete = viewModel::deleteSchedule
+                    )
+                }
+
+                CalendarViewType.WEEK -> Text("周视图 (即将推出)", modifier = Modifier.padding(16.dp))
+                CalendarViewType.DAY -> Text("日视图 (即将推出)", modifier = Modifier.padding(16.dp))
+            }
         }
-        
-        // Schedule List for selected date
-        if (viewType == CalendarViewType.MONTH) {
-            ScheduleList(schedules = selectedDateSchedules)
+    }
+
+    if (showFab) {
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(onClick = { showAddDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Schedule")
+                }
+            }
+        ) { paddingValues ->
+            content(paddingValues)
         }
+    } else {
+        content(PaddingValues(0.dp))
     }
 
     if (showAddDialog) {
@@ -88,33 +121,48 @@ fun ScheduleScreen(
 }
 
 @Composable
-fun ScheduleList(schedules: List<Schedule>) {
+fun ScheduleList(
+    modifier: Modifier = Modifier,
+    schedules: List<Schedule>,
+    onDelete: (Schedule) -> Unit
+) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(schedules.size) { index ->
-            ScheduleItem(schedule = schedules[index])
+            ScheduleItem(schedule = schedules[index], onDelete = onDelete)
         }
     }
 }
 
 @Composable
-fun ScheduleItem(schedule: Schedule) {
+fun ScheduleItem(schedule: Schedule, onDelete: (Schedule) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = schedule.title, style = MaterialTheme.typography.titleMedium)
-            schedule.description?.let {
-                Text(text = it, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = schedule.title, style = MaterialTheme.typography.titleMedium)
+                schedule.description?.let {
+                    Text(text = it, style = MaterialTheme.typography.bodyMedium)
+                }
+                // Format time properly
+                Text(
+                    text = "${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
-            // Format time properly
-            Text(
-                text = "${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}",
-                style = MaterialTheme.typography.bodySmall
-            )
+            IconButton(onClick = { onDelete(schedule) }) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete Schedule")
+            }
         }
     }
 }
