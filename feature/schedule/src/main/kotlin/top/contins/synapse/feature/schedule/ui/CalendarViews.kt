@@ -2,6 +2,7 @@ package top.contins.synapse.feature.schedule.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,11 +34,14 @@ import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.daysOfWeek
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import com.nlf.calendar.Lunar
 import top.contins.synapse.domain.model.Schedule
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.TextStyle
+import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -81,7 +86,9 @@ fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
             Text(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINESE),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -89,33 +96,64 @@ fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
 
 @Composable
 fun Day(day: CalendarDay, isSelected: Boolean, onClick: (CalendarDay) -> Unit) {
+    val isToday = day.date == LocalDate.now()
+    
+    val backgroundColor = when {
+        isSelected -> MaterialTheme.colorScheme.primary
+        isToday -> MaterialTheme.colorScheme.primaryContainer
+        else -> Color.Transparent
+    }
+
+    val textColor = when {
+        isSelected -> Color.White
+        isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+        day.position == DayPosition.MonthDate -> MaterialTheme.colorScheme.onSurface
+        else -> Color.Gray
+    }
+
+    val lunarText = remember(day.date) {
+        if (day.position == DayPosition.MonthDate) {
+            try {
+                val date = Date.from(day.date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                val lunar = Lunar.fromDate(date)
+                lunar.dayInChinese
+            } catch (e: Exception) {
+                ""
+            }
+        } else {
+            ""
+        }
+    }
+
     Box(
         modifier = Modifier
             .aspectRatio(1f)
+            .padding(2.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(color = backgroundColor)
             .clickable(
                 enabled = day.position == DayPosition.MonthDate,
                 onClick = { onClick(day) }
             ),
         contentAlignment = Alignment.Center
     ) {
-        val textColor = when (day.position) {
-            DayPosition.MonthDate -> if (isSelected) Color.White else Color.Black
-            DayPosition.InDate, DayPosition.OutDate -> Color.Gray
-        }
-        
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(0.8f)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = day.date.dayOfMonth.toString(),
+                color = textColor,
+                fontSize = 16.sp,
+                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
             )
+            if (lunarText.isNotEmpty()) {
+                Text(
+                    text = lunarText,
+                    color = if (isSelected) Color.White.copy(alpha = 0.8f) else textColor.copy(alpha = 0.6f),
+                    fontSize = 10.sp,
+                )
+            }
         }
-        
-        Text(
-            text = day.date.dayOfMonth.toString(),
-            color = textColor,
-            fontSize = 16.sp,
-        )
     }
 }

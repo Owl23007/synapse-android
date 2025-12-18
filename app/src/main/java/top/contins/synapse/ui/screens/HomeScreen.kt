@@ -40,49 +40,8 @@ fun HomeScreen(
     onLogout: () -> Unit = {}
 ) {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    
-    // 根据当前路由获取标题
-    val currentTitle = when (currentRoute) {
-        "plan" -> "📅 计划"
-        "chat" -> "💬 对话"
-        "profile" -> "👤 我的"
-        else -> "Synapse"
-    }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = currentTitle,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    when (currentRoute) {
-                        "chat" -> {
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.Add, contentDescription = "新建对话")
-                            }
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.History, contentDescription = "历史记录")
-                            }
-                        }
-                        "plan" -> {
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = "日历视图")
-                            }
-                            IconButton(onClick = { }) {
-                                Icon(Icons.Default.Add, contentDescription = "添加计划")
-                            }
-                        }
-                    }
-                }
-            )
-        },
         bottomBar = {
             BottomNavigationBar(navController = navController)
         },

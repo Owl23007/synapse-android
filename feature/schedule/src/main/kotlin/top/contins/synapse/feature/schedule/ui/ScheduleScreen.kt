@@ -18,9 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
@@ -53,45 +50,11 @@ fun ScheduleScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Header Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "日程",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            IconButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "添加日程")
-            }
-        }
-        
         // View Switcher
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            CalendarViewType.entries.forEachIndexed { index, type ->
-                SegmentedButton(
-                    selected = viewType == type,
-                    onClick = { viewType = type },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = CalendarViewType.entries.size)
-                ) {
-                    Text(
-                        when (type) {
-                            CalendarViewType.MONTH -> "月"
-                            CalendarViewType.WEEK -> "周"
-                            CalendarViewType.DAY -> "日"
-                        }
-                    )
-                }
-            }
-        }
+        CalendarViewTabs(
+            selectedViewType = viewType,
+            onViewTypeSelected = { viewType = it }
+        )
 
         when (viewType) {
             CalendarViewType.MONTH -> MonthView(
@@ -162,5 +125,3 @@ fun formatTime(timestamp: Long): String {
     val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
     return instant.atZone(zoneId).format(formatter)
 }
-
-

@@ -46,7 +46,7 @@ object NetworkModule {
     @Named("refreshApi")
     fun provideRefreshApiService(@Named("noAuth") okHttpClient: OkHttpClient): ApiService {
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.example.com/")
+            .baseUrl("http://10.0.2.2/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -74,7 +74,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.example.com/")
+            .baseUrl("http://10.0.2.2/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

@@ -113,7 +113,7 @@ class AuthInterceptor(
     }
 
     private fun waitForRefresh() {
-        // 简单的等待机制
+        //等待机制
         var attempts = 0
         while (isRefreshing.get() && attempts < 50) { // 最多等待5秒
             try {

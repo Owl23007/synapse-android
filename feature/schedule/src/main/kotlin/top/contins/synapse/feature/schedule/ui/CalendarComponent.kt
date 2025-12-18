@@ -55,7 +55,7 @@ fun CalendarComponent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarViewTabs(
+fun CalendarViewTabs(
     selectedViewType: CalendarViewType,
     onViewTypeSelected: (CalendarViewType) -> Unit
 ) {
@@ -189,7 +189,7 @@ private fun DayCalendarView(
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
-            text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE", Locale.getDefault())),
+            text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE", Locale.CHINESE)),
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -360,7 +360,7 @@ private fun CalendarDayItem(
         modifier = Modifier
             .aspectRatio(1f)
             .padding(2.dp)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(8.dp))
             .background(color = backgroundColor)
             .clickable(
                 enabled = day.position == DayPosition.MonthDate,
@@ -430,7 +430,7 @@ private fun WeekDayItem(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+            text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINESE),
             fontSize = 12.sp,
             color = textColor
         )
