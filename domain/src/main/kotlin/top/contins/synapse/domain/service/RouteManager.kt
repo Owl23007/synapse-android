@@ -80,10 +80,4 @@ class RouteManager @Inject constructor(
         Log.d("RouteManager", "Routes cleared")
     }
 
-    /**
-     * 检查是否已加载路由信息
-     */
-    fun hasRoutes(): Boolean {
-        return _routes.value.isNotEmpty()
-    }
 }

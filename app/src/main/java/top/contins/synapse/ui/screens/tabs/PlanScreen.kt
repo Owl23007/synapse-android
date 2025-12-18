@@ -17,190 +17,431 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.ScheduleType
+import top.contins.synapse.domain.model.Task
+import top.contins.synapse.domain.model.TaskPriority
+import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.feature.goal.viewmodel.GoalViewModel
 import top.contins.synapse.feature.schedule.ui.ScheduleScreen
+import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
+import top.contins.synapse.feature.task.viewmodel.TaskViewModel
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 /**
- * 计划页面 - 未来扩展：写作日程、任务、目标追踪
+ * 计划页面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlanScreen() {
+fun PlanScreen(
+    taskViewModel: TaskViewModel = hiltViewModel(),
+    goalViewModel: GoalViewModel = hiltViewModel(),
+    scheduleViewModel: ScheduleViewModel = hiltViewModel()
+) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("今日", "日程", "任务", "目标")
     
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Tab栏
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) }
-                )
+    // State for dialogs
+    var showAddTaskDialog by remember { mutableStateOf(false) }
+    var showAddScheduleDialog by remember { mutableStateOf(false) }
+    var showAddGoalDialog by remember { mutableStateOf(false) }
+    var showTodayActionDialog by remember { mutableStateOf(false) }
+
+    // Data from ViewModels
+    val tasks by taskViewModel.tasks.collectAsState()
+    val goals by goalViewModel.goals.collectAsState()
+    val schedules by scheduleViewModel.schedules.collectAsState()
+
+    // Filter for Today
+    val today = LocalDate.now()
+    val todayTasks = tasks.filter { 
+        val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        taskDate.isEqual(today)
+    }
+    val todaySchedules = schedules.filter {
+        val scheduleDate = java.time.Instant.ofEpochMilli(it.startTime).atZone(ZoneId.systemDefault()).toLocalDate()
+        scheduleDate.isEqual(today)
+    }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { 
+                    when (selectedTab) {
+                        0 -> showTodayActionDialog = true
+                        1 -> showAddScheduleDialog = true
+                        2 -> showAddTaskDialog = true
+                        3 -> showAddGoalDialog = true
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "添加")
             }
         }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Tab栏
+            TabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) }
+                    )
+                }
+            }
 
-        when (selectedTab) {
-            0 -> TodayTab()
-            1 -> ScheduleScreen()
-            2 -> TaskTab()
-            3 -> GoalTab()
+            when (selectedTab) {
+                0 -> TodayTab(todayTasks, todaySchedules)
+                1 -> ScheduleScreen(viewModel = scheduleViewModel)
+                2 -> TaskTab(tasks)
+                3 -> GoalTab(goals)
+            }
         }
+    }
+
+    // Dialogs
+    if (showTodayActionDialog) {
+        AlertDialog(
+            onDismissRequest = { showTodayActionDialog = false },
+            title = { Text("添加今日事项") },
+            text = {
+                Column {
+                    TextButton(
+                        onClick = { 
+                            showTodayActionDialog = false
+                            showAddTaskDialog = true 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("添加任务")
+                    }
+                    TextButton(
+                        onClick = { 
+                            showTodayActionDialog = false
+                            showAddScheduleDialog = true 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("添加日程")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showTodayActionDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    if (showAddTaskDialog) {
+        AddTaskDialog(
+            onDismiss = { showAddTaskDialog = false },
+            onConfirm = { title, priority ->
+                taskViewModel.createTask(title, priority)
+                showAddTaskDialog = false
+            }
+        )
+    }
+
+    if (showAddScheduleDialog) {
+        AddSimpleScheduleDialog(
+            onDismiss = { showAddScheduleDialog = false },
+            onConfirm = { title, time, location ->
+                // Parse time string "HH:mm - HH:mm" or just use current time for simplicity
+                // For now, creating a dummy schedule for today
+                val now = Date()
+                val newSchedule = Schedule(
+                    id = UUID.randomUUID().toString(),
+                    title = title,
+                    description = "",
+                    startTime = now.time,
+                    endTime = now.time + 3600000, // +1 hour
+                    timezoneId = ZoneId.systemDefault().id,
+                    location = location,
+                    type = ScheduleType.EVENT,
+                    color = 0xFFFF0000, // Long color
+                    calendarId = "default", // Assuming default calendar exists
+                    isAllDay = false,
+                    isFromSubscription = false,
+                    createdAt = now.time,
+                    updatedAt = now.time
+                )
+                scheduleViewModel.createSchedule(newSchedule)
+                showAddScheduleDialog = false
+            }
+        )
+    }
+
+    if (showAddGoalDialog) {
+        AddGoalDialog(
+            onDismiss = { showAddGoalDialog = false },
+            onConfirm = { title, deadline ->
+                goalViewModel.createGoal(title, deadline)
+                showAddGoalDialog = false
+            }
+        )
     }
 }
 
 @Composable
-fun TodayTab() {
-    // 使用简化的日期显示，避免Java 8 Time API
-    val todayText = "2024年01月16日"
-    val dayOfWeekText = "星期二"
+fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var priority by remember { mutableStateOf("中") }
     
-    Column(
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建任务") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("任务标题") },
+                    singleLine = true
+                )
+                // Simple Priority Selection
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("优先级: ")
+                    listOf("高", "中", "低").forEach { p ->
+                        FilterChip(
+                            selected = priority == p,
+                            onClick = { priority = p },
+                            label = { Text(p) },
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (title.isNotBlank()) onConfirm(title, priority) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun AddSimpleScheduleDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("09:00 - 10:00") }
+    var location by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建日程") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("日程标题") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = time,
+                    onValueChange = { time = it },
+                    label = { Text("时间") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text("地点") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (title.isNotBlank()) onConfirm(title, time, location) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var deadline by remember { mutableStateOf("2024-12-31") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建目标") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("目标标题") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = deadline,
+                    onValueChange = { deadline = it },
+                    label = { Text("截止日期") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (title.isNotBlank()) onConfirm(title, deadline) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun TodayTab(
+    tasks: List<Task>,
+    schedules: List<Schedule>
+) {
+    val todayText = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date())
+    val dayOfWeekText = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+    
+    LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 日期显示
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             ) {
-                Text(
-                    text = todayText,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = dayOfWeekText,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = todayText,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = dayOfWeekText,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
         
         // 今日概览
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TodayStatCard("待办事项", "5", "2已完成", modifier = Modifier.weight(1f))
-            TodayStatCard("会议安排", "3", "1即将开始", modifier = Modifier.weight(1f))
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TodayStatCard("待办事项", "${tasks.size}", "${tasks.count { it.status == TaskStatus.COMPLETED }}已完成", modifier = Modifier.weight(1f))
+                TodayStatCard("会议安排", "${schedules.size}", "即将开始", modifier = Modifier.weight(1f))
+                TodayStatCard("目标进度", "0", "进行中", modifier = Modifier.weight(1f))
+            }
         }
         
         // 今日任务列表
-        Text(
-            text = "今日任务",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
-        )
+        item {
+            Text(
+                text = "今日任务",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
         
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(getTodayTasks()) { task ->
-                TodayTaskCard(task = task)
-            }
+        items(tasks) { task ->
+            TodayTaskCard(task = task)
+        }
+
+        // 今日日程列表
+        item {
+            Text(
+                text = "今日日程",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        items(schedules) { schedule ->
+            TodayScheduleCard(schedule = schedule)
         }
     }
 }
 
 @Composable
-fun TaskTab() {
+fun TaskTab(tasks: List<Task>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(getTaskItems()) { task ->
+        items(tasks) { task ->
             TaskCard(task = task)
         }
     }
 }
 
 @Composable
-fun GoalTab() {
+fun GoalTab(goals: List<Goal>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(getGoalItems()) { goal ->
+        items(goals) { goal ->
             GoalCard(goal = goal)
         }
     }
 }
-
-// 数据类
-data class TodayTask(
-    val title: String,
-    val time: String,
-    val isCompleted: Boolean,
-    val priority: String
-)
-
-data class TaskItem(
-    val title: String,
-    val description: String,
-    val dueDate: String,
-    val priority: String,
-    val isCompleted: Boolean
-)
-
-data class GoalItem(
-    val title: String,
-    val description: String,
-    val progress: Float,
-    val deadline: String
-)
-
-// 工具函数
-fun getDayOfWeekInChinese(dayOfWeek: Int): String {
-    return when (dayOfWeek) {
-        1 -> "一"
-        2 -> "二"
-        3 -> "三"
-        4 -> "四"
-        5 -> "五"
-        6 -> "六"
-        7 -> "日"
-        else -> ""
-    }
-}
-
-fun getTodayTasks() = listOf(
-    TodayTask("完成AI文章写作", "09:00", false, "高"),
-    TodayTask("团队会议讨论", "14:00", false, "中"),
-    TodayTask("回复客户邮件", "16:00", true, "低"),
-    TodayTask("整理学习笔记", "19:00", false, "中")
-)
-
-fun getTaskItems() = listOf(
-    TaskItem("完成月度总结报告", "撰写本月工作总结和下月计划", "2024-01-30", "高", false),
-    TaskItem("更新项目文档", "整理和更新技术文档", "2024-01-28", "中", true),
-    TaskItem("学习新技术栈", "深入了解Compose和Kotlin", "2024-02-05", "中", false),
-    TaskItem("优化应用性能", "分析并优化应用加载速度", "2024-02-01", "高", false)
-)
-
-fun getGoalItems() = listOf(
-    GoalItem("提升写作技能", "通过AI助手提高文章质量和效率", 0.7f, "2024-03-31"),
-    GoalItem("学习AI应用", "掌握AI工具在工作中的应用", 0.4f, "2024-06-30"),
-    GoalItem("完成项目开发", "按时完成Synapse应用开发", 0.6f, "2024-04-30"),
-    GoalItem("建立个人品牌", "通过优质内容建立影响力", 0.3f, "2024-12-31")
-)
 
 // UI组件
 @Composable
@@ -241,7 +482,7 @@ fun TodayStatCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayTaskCard(task: TodayTask) {
+fun TodayTaskCard(task: Task) {
     Card(
         onClick = { },
         modifier = Modifier.fillMaxWidth()
@@ -258,10 +499,10 @@ fun TodayTaskCard(task: TodayTask) {
                     .size(12.dp)
                     .clip(CircleShape)
                     .background(
-                        if (task.isCompleted) Color.Green
+                        if (task.status == TaskStatus.COMPLETED) Color.Green
                         else when (task.priority) {
-                            "高" -> Color.Red
-                            "中" -> Color.Yellow
+                            TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
+                            TaskPriority.MEDIUM -> Color.Yellow
                             else -> Color.Gray
                         }
                     )
@@ -273,18 +514,13 @@ fun TodayTaskCard(task: TodayTask) {
                 Text(
                     text = task.title,
                     fontWeight = FontWeight.Medium,
-                    color = if (task.isCompleted) 
+                    color = if (task.status == TaskStatus.COMPLETED) 
                         MaterialTheme.colorScheme.onSurfaceVariant 
                     else MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = task.time,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
             
-            if (!task.isCompleted) {
+            if (task.status != TaskStatus.COMPLETED) {
                 Checkbox(
                     checked = false,
                     onCheckedChange = { }
@@ -302,7 +538,7 @@ fun TodayTaskCard(task: TodayTask) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskCard(task: TaskItem) {
+fun TaskCard(task: Task) {
     Card(
         onClick = { },
         modifier = Modifier.fillMaxWidth()
@@ -326,23 +562,23 @@ fun TaskCard(task: TaskItem) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = when (task.priority) {
-                            "高" -> Color.Red.copy(alpha = 0.1f)
-                            "中" -> Color.Yellow.copy(alpha = 0.1f)
+                            TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red.copy(alpha = 0.1f)
+                            TaskPriority.MEDIUM -> Color.Yellow.copy(alpha = 0.1f)
                             else -> Color.Gray.copy(alpha = 0.1f)
                         }
                     ) {
                         Text(
-                            text = task.priority,
+                            text = task.priority.displayName,
                             fontSize = 10.sp,
                             color = when (task.priority) {
-                                "高" -> Color.Red
-                                "中" -> Color.Yellow
+                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
+                                TaskPriority.MEDIUM -> Color.Yellow
                                 else -> Color.Gray
                             },
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
-                    if (task.isCompleted) {
+                    if (task.status == TaskStatus.COMPLETED) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             Icons.Default.CheckCircle,
@@ -365,7 +601,7 @@ fun TaskCard(task: TaskItem) {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "截止：${task.dueDate}",
+                text = "截止：${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate)}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -375,7 +611,7 @@ fun TaskCard(task: TaskItem) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoalCard(goal: GoalItem) {
+fun GoalCard(goal: Goal) {
     Card(
         onClick = { },
         modifier = Modifier.fillMaxWidth()
@@ -412,7 +648,7 @@ fun GoalCard(goal: GoalItem) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${(goal.progress * 100).toInt()}%",
+                        text = "${goal.progress}%",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -421,7 +657,7 @@ fun GoalCard(goal: GoalItem) {
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 LinearProgressIndicator(
-                    progress = goal.progress,
+                    progress = goal.progress / 100f,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -429,10 +665,45 @@ fun GoalCard(goal: GoalItem) {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "目标时间：${goal.deadline}",
+                text = "目标时间：${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(goal.targetDate)}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TodayScheduleCard(schedule: Schedule) {
+    Card(
+        onClick = { },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = schedule.title,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(schedule.startTime))} - ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(schedule.endTime))}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!schedule.location.isNullOrEmpty()) {
+                    Text(
+                        text = schedule.location!!,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

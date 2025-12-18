@@ -3,7 +3,6 @@ package top.contins.synapse.domain.usecase
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import top.contins.synapse.domain.service.RouteManager
 import top.contins.synapse.network.api.ApiService
 import top.contins.synapse.network.model.ChatMessage
 import top.contins.synapse.network.model.ChatRequest
@@ -17,7 +16,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class ChatUseCase @Inject constructor(
-    private val routeManager: RouteManager,
     private val apiService: ApiService
 ) {
     
@@ -29,13 +27,8 @@ class ChatUseCase @Inject constructor(
      */
     suspend fun sendMessage(message: String, conversationHistory: List<ChatMessage> = emptyList()): String {
         return try {
-            // 获取 synapse AI 服务的端点
-            val synapseEndpoint = routeManager.getServiceEndpoint("synapse")
-            
-            if (synapseEndpoint == null) {
-                Log.e("ChatUseCase", "Synapse service endpoint not found")
-                return "AI服务暂时不可用，请稍后重试"
-            }
+            // synapse AI 服务的端点
+            val synapseEndpoint = "http://10.0.2.2:9080/api/synapse"
             
             Log.d("ChatUseCase", "Sending message to: $synapseEndpoint")
             
@@ -92,7 +85,7 @@ class ChatUseCase @Inject constructor(
      * 检查AI服务是否可用
      */
     fun isAiServiceAvailable(): Boolean {
-        return routeManager.getServiceEndpoint("synapse") != null
+        return true
     }
     
     /**
@@ -100,11 +93,7 @@ class ChatUseCase @Inject constructor(
      */
     suspend fun getSupportedModels(): List<String> {
         return try {
-            val synapseEndpoint = routeManager.getServiceEndpoint("synapse")
-            if (synapseEndpoint == null) {
-                Log.e("ChatUseCase", "Synapse service endpoint not found")
-                return emptyList()
-            }
+            val synapseEndpoint = "http://10.0.2.2:9080/api/synapse"
             
             val modelsUrl = "$synapseEndpoint/models"
             val response = apiService.getSupportedModels(modelsUrl)
@@ -125,12 +114,7 @@ class ChatUseCase @Inject constructor(
      * 获取AI服务状态信息
      */
     fun getAiServiceStatus(): String {
-        val endpoint = routeManager.getServiceEndpoint("synapse")
-        return if (endpoint != null) {
-            "AI服务已连接: $endpoint"
-        } else {
-            "AI服务未连接"
-        }
+        return "AI服务已连接"
     }
     
     /**

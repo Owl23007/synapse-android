@@ -144,7 +144,7 @@ fun ChatScreen(
                     }
                 }
             } else {
-                // 👇 修复：包裹 SelectionContainer 使 Markdown 内容可复制
+                // 包裹 SelectionContainer 使 Markdown 内容可复制
                 items(messages) { message ->
                     SelectionContainer {
                         MarkdownMessageItem(

@@ -10,9 +10,62 @@ import top.contins.synapse.domain.model.RepeatRule
 import top.contins.synapse.domain.model.Schedule
 import top.contins.synapse.domain.model.ScheduleType
 import top.contins.synapse.domain.model.Subscription
+import top.contins.synapse.data.local.entity.GoalEntity
+import top.contins.synapse.data.local.entity.TaskEntity
+import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.Task
+import top.contins.synapse.domain.model.TaskPriority
+import top.contins.synapse.domain.model.TaskStatus
+import java.util.Date
 
 object DataMapper {
     private val gson = Gson()
+
+    fun TaskEntity.toDomain(): Task {
+        return Task(
+            id = id,
+            title = title,
+            description = description,
+            dueDate = Date(dueDate),
+            status = TaskStatus.valueOf(status),
+            priority = TaskPriority.valueOf(priority)
+        )
+    }
+
+    fun Task.toEntity(): TaskEntity {
+        return TaskEntity(
+            id = id,
+            title = title,
+            description = description,
+            dueDate = dueDate.time,
+            status = status.name,
+            priority = priority.name
+        )
+    }
+
+    fun GoalEntity.toDomain(): Goal {
+        return Goal(
+            id = id,
+            title = title,
+            description = description,
+            startDate = Date(startDate),
+            targetDate = Date(targetDate),
+            isCompleted = isCompleted,
+            progress = progress
+        )
+    }
+
+    fun Goal.toEntity(): GoalEntity {
+        return GoalEntity(
+            id = id,
+            title = title,
+            description = description,
+            startDate = startDate.time,
+            targetDate = targetDate.time,
+            isCompleted = isCompleted,
+            progress = progress
+        )
+    }
 
     fun CalendarEntity.toDomain(): CalendarAccount {
         val reminderList = defaultReminderMinutes?.let {

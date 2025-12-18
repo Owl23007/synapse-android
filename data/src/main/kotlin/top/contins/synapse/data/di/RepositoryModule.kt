@@ -5,10 +5,12 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import top.contins.synapse.data.repository.AuthRepositoryImpl
+import top.contins.synapse.data.repository.GoalRepositoryImpl
 import top.contins.synapse.data.repository.ScheduleRepositoryImpl
 import top.contins.synapse.data.repository.TaskRepositoryImpl
 import top.contins.synapse.data.repository.TokenRepositoryImpl
 import top.contins.synapse.domain.repository.AuthRepository
+import top.contins.synapse.domain.repository.GoalRepository
 import top.contins.synapse.domain.repository.ScheduleRepository
 import top.contins.synapse.domain.repository.TaskRepository
 import top.contins.synapse.domain.repository.TokenRepository
@@ -37,6 +39,12 @@ abstract class RepositoryModule {
     abstract fun bindTaskRepository(
         taskRepositoryImpl: TaskRepositoryImpl
     ): TaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(
+        goalRepositoryImpl: GoalRepositoryImpl
+    ): GoalRepository
 
     @Binds
     @Singleton

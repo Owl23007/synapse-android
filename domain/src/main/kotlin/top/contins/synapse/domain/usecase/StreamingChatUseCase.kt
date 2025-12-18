@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import top.contins.synapse.domain.service.RouteManager
 import top.contins.synapse.network.api.ApiService
 import top.contins.synapse.network.model.ChatMessage
 import top.contins.synapse.network.model.ChatRequest
@@ -22,7 +21,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class StreamingChatUseCase @Inject constructor(
-    private val routeManager: RouteManager,
     private val apiService: ApiService
 ) {
 
@@ -36,14 +34,8 @@ class StreamingChatUseCase @Inject constructor(
         message: String,
         conversationHistory: List<ChatMessage> = emptyList()
     ): Flow<String> = flow {
-        // 获取 synapse AI 服务的端点
-        val synapseEndpoint = routeManager.getServiceEndpoint("synapse")
-
-        if (synapseEndpoint == null) {
-            Log.e("StreamingChatUseCase", "Synapse service endpoint not found")
-            emit("AI服务暂时不可用，请稍后重试")
-            return@flow
-        }
+        // synapse AI 服务的端点
+        val synapseEndpoint = "http://10.0.2.2:9080/api/synapse"
 
         // 构建聊天请求
         val messages = conversationHistory + ChatMessage(role = "user", content = message)

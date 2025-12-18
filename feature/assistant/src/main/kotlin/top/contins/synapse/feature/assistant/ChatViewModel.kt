@@ -51,7 +51,7 @@ class ChatViewModel @Inject constructor(
                 _isLoading.value = true
                 
                 // 添加用户消息
-                _messages.value = _messages.value + Message(messageText, isUser = true)
+                _messages.value += Message(messageText, isUser = true)
                 
                 // 清空输入框
                 _inputText.value = ""
@@ -66,7 +66,7 @@ class ChatViewModel @Inject constructor(
                 
                 // 添加一个空的AI消息占位符（标记为正在流式传输）
                 val aiMessageIndex = _messages.value.size
-                _messages.value = _messages.value + Message("", isUser = false, isStreaming = true)
+                _messages.value += Message("", isUser = false, isStreaming = true)
                 Log.d("ChatViewModel", "Added placeholder message at index: $aiMessageIndex")
                 
                 // 使用流式响应

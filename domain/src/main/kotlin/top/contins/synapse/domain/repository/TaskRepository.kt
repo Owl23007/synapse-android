@@ -7,5 +7,9 @@ import kotlinx.coroutines.flow.Flow
  * 任务数据仓库接口
  */
 interface TaskRepository {
-    // TODO: Add methods
+    fun getAllTasks(): Flow<List<Task>>
+    suspend fun getTaskById(id: String): Task?
+    suspend fun createTask(task: Task)
+    suspend fun updateTask(task: Task)
+    suspend fun deleteTask(id: String)
 }
