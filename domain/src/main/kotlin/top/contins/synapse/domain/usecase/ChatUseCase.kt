@@ -3,11 +3,18 @@ package top.contins.synapse.domain.usecase
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import top.contins.synapse.network.api.ApiService
+import top.contins.synapse.network.api.TokenProvider
+import top.contins.synapse.network.api.ApiManager
 import top.contins.synapse.network.model.ChatMessage
 import top.contins.synapse.network.model.ChatRequest
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,7 +23,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class ChatUseCase @Inject constructor(
-    private val apiService: ApiService
+    private val apiManager: ApiManager,
+    private val tokenProvider: TokenProvider
 ) {
     
     /**
@@ -27,10 +35,17 @@ class ChatUseCase @Inject constructor(
      */
     suspend fun sendMessage(message: String, conversationHistory: List<ChatMessage> = emptyList()): String {
         return try {
-            // synapse AI 服务的端点
-            val synapseEndpoint = "http://10.0.2.2:9080/api/synapse"
+            // 从TokenProvider获取服务器端点
+            val serverEndpoint = tokenProvider.getServerEndpoint() ?: throw IllegalStateException("用户未登录或服务器端点未设置")
+
+            Log.d("ChatUseCase", "Sending message to: $serverEndpoint")
             
-            Log.d("ChatUseCase", "Sending message to: $synapseEndpoint")
+            // 确保API管理器已初始化
+            if (!apiManager.isInitialized() || apiManager.getCurrentBaseUrl() != serverEndpoint) {
+                apiManager.initializeWithBaseUrl(serverEndpoint)
+            }
+            
+            val apiService = apiManager.getApiService()
             
             // 构建聊天请求
             val messages = conversationHistory + ChatMessage(role = "user", content = message)
@@ -40,17 +55,16 @@ class ChatUseCase @Inject constructor(
             )
             
             // 发起聊天请求
-            val chatUrl = "$synapseEndpoint/chat"
-            val taskResponse = apiService.startChat(chatUrl, chatRequest)
-            
+            val taskResponse = apiService.startChat(chatRequest)
+
             if (taskResponse.code == 0 && taskResponse.data != null) {
                 val taskId = taskResponse.data!!.taskId
                 Log.d("ChatUseCase", "Chat task started with ID: $taskId")
                 
                 // 获取流式响应
-                val streamUrl = "$synapseEndpoint/chat/$taskId"
-                val response = apiService.streamChat(streamUrl)
-                
+                val streamUrl = "$serverEndpoint/api/synapse/chat/$taskId"
+                val response = apiService.streamChat(taskId)
+
                 if (response.isSuccessful && response.body() != null) {
                     // 解析Server-Sent Events格式的流式响应
                     val fullResponse = withContext(Dispatchers.IO) {
@@ -58,9 +72,8 @@ class ChatUseCase @Inject constructor(
                     }
                     
                     // 停止聊天任务
-                    val stopUrl = "$synapseEndpoint/chat/$taskId"
                     try {
-                        apiService.stopChat(stopUrl)
+                        apiService.stopChat(taskId)
                     } catch (e: Exception) {
                         Log.w("ChatUseCase", "Failed to stop chat task", e)
                     }
@@ -93,11 +106,17 @@ class ChatUseCase @Inject constructor(
      */
     suspend fun getSupportedModels(): List<String> {
         return try {
-            val synapseEndpoint = "http://10.0.2.2:9080/api/synapse"
+            val serverEndpoint = tokenProvider.getServerEndpoint() ?: throw IllegalStateException("用户未登录或服务器端点未设置")
+
+            // 确保API管理器已初始化
+            if (!apiManager.isInitialized() || apiManager.getCurrentBaseUrl() != serverEndpoint) {
+                apiManager.initializeWithBaseUrl(serverEndpoint)
+            }
             
-            val modelsUrl = "$synapseEndpoint/models"
-            val response = apiService.getSupportedModels(modelsUrl)
+            val apiService = apiManager.getApiService()
             
+            val response = apiService.getSupportedModels()
+
             if (response.code == 0 && response.data != null) {
                 response.data!!.map { it.id }
             } else {

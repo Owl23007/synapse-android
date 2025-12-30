@@ -10,7 +10,7 @@ import top.contins.synapse.domain.model.AuthResult
 import top.contins.synapse.domain.model.User
 import top.contins.synapse.domain.model.CaptchaResponse
 import top.contins.synapse.domain.repository.AuthRepository
-import top.contins.synapse.network.api.ApiService
+import top.contins.synapse.network.api.ApiManager
 import top.contins.synapse.network.model.LoginRequest
 import top.contins.synapse.network.model.RegisterRequest
 import java.io.IOException
@@ -21,7 +21,7 @@ import java.security.spec.InvalidKeySpecException
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
-    private val apiService: ApiService,
+    private val apiManager: ApiManager,
     private val tokenManager: TokenManager
 ) : AuthRepository {
 
@@ -29,10 +29,14 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun login(identifier: String, password: String, serverEndpoint: String): AuthResult<User> {
         Log.d("Auth", "Logging in user: $identifier")
 
+        // 初始化API管理器，使用用户提供的服务器端点
+        apiManager.initializeWithBaseUrl(serverEndpoint)
+        val apiService = apiManager.getApiService()
+        
         val request = LoginRequest(identifier, password)
 
         return try {
-            val result = apiService.login("$serverEndpoint/auth/login", request)
+            val result = apiService.login(request)
 
             if (result.code == 0 && result.data != null) {
                 val tokenResponse = result.data!!
@@ -40,7 +44,7 @@ class AuthRepositoryImpl @Inject constructor(
                 tokenManager.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken, serverEndpoint)
                 
                 try {
-                    val profileResult = apiService.getUserProfile("$serverEndpoint/profile/me")
+                    val profileResult = apiService.getUserProfile()
                     if (profileResult.code == 0 && profileResult.data != null) {
                         val user = mapProfileToUser(profileResult.data!!, serverEndpoint)
                         AuthResult.Success(user)
@@ -88,9 +92,16 @@ class AuthRepositoryImpl @Inject constructor(
             return AuthResult.Error("未登录")
         }
 
+        // 确保API管理器使用正确的端点
+        if (!apiManager.isInitialized() || apiManager.getCurrentBaseUrl() != serverEndpoint) {
+            apiManager.initializeWithBaseUrl(serverEndpoint)
+        }
+        
+        val apiService = apiManager.getApiService()
+
         return try {
-            val profileResult = apiService.getUserProfile("$serverEndpoint/profile/me")
-            
+            val profileResult = apiService.getUserProfile()
+
             if (profileResult.code == 0 && profileResult.data != null) {
                 val user = mapProfileToUser(profileResult.data!!, serverEndpoint)
                 AuthResult.Success(user)
@@ -127,10 +138,14 @@ class AuthRepositoryImpl @Inject constructor(
     ): AuthResult<String?> {
         Log.d("Auth", "Registering user: $username")
 
+        // 初始化API管理器，使用用户提供的服务器端点
+        apiManager.initializeWithBaseUrl(serverEndpoint)
+        val apiService = apiManager.getApiService()
+
         val request = RegisterRequest(username, email, password, captchaId, captchaCode)
 
         return try {
-            val result = apiService.register("$serverEndpoint/registration/register", request)
+            val result = apiService.register(request)
 
             if (result.code == 0 && result.data != null) {
                 AuthResult.Success(result.data)
@@ -150,7 +165,12 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun getCaptcha(serverEndpoint: String): CaptchaResponse {
         Log.d("Auth", "Fetching captcha from $serverEndpoint/auth/captcha")
-        val result = apiService.getCaptcha("$serverEndpoint/auth/captcha")
+        
+        // 初始化API管理器，使用用户提供的服务器端点
+        apiManager.initializeWithBaseUrl(serverEndpoint)
+        val apiService = apiManager.getApiService()
+        
+        val result = apiService.getCaptcha()
 
         Log.d("Auth", "Captcha response: ${result.data}")
         if (result.code != 0) {

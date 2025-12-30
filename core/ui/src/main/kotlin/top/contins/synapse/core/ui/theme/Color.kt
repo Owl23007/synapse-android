@@ -63,15 +63,3 @@ val UserMessageBackground = Color(0xFF2196F3)
 val UserMessageText = Color(0xFFFFFFFF)
 val AssistantMessageBackground = Color(0xFFF3F4F6)
 val AssistantMessageText = Color(0xFF374151)
-
-// 保留旧的变量名以保持兼容性
-val SynapsePrimary = LightBluePrimary
-val SynapsePrimaryContainer = LightBluePrimaryContainer
-val SynapseSecondary = LightBlueSecondary
-val SynapseAccent = LightBlueSecondary
-val SynapseBackground = LightBlueBackground
-val SynapseSurface = LightBlueSurface
-val SynapseOnPrimary = LightBlueOnPrimary
-val SynapseOnSecondary = LightBlueOnSecondary
-val SynapseOnBackground = LightBlueOnBackground
-val SynapseOnSurface = LightBlueOnSurface

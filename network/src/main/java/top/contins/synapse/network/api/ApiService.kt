@@ -4,14 +4,11 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Streaming
-import retrofit2.http.Url
-import top.contins.synapse.network.model.ChatModels
 import top.contins.synapse.network.model.ChatRequest
 import top.contins.synapse.network.model.LoginRequest
 import top.contins.synapse.network.model.ModelInfo
@@ -23,35 +20,38 @@ import top.contins.synapse.network.model.TokenResponse
 import top.contins.synapse.network.model.UserSelfProfileResponse
 
 interface ApiService {
-    @GET
-    suspend fun getCaptcha(@Url fullUrl: String): Result<String>
+    @GET("auth/captcha")
+    suspend fun getCaptcha(): Result<String>
 
-    @POST
-    suspend fun login(@Url fullUrl: String, @Body loginRequest: LoginRequest): Result<TokenResponse>
+    @POST("auth/login")
+    suspend fun login(@Body loginRequest: LoginRequest): Result<TokenResponse>
 
-    @GET
-    suspend fun getUserProfile(@Url fullUrl: String): Result<UserSelfProfileResponse>
+    @GET("profile/me")
+    suspend fun getUserProfile(): Result<UserSelfProfileResponse>
 
-    @POST
-    suspend fun refreshToken(@Url fullUrl: String, @retrofit2.http.Header("Refresh-Token") refreshToken: String): Result<TokenResponse>
+    @POST("auth/refresh")
+    suspend fun refreshToken(@Header("Refresh-Token") refreshToken: String): Result<TokenResponse>
 
-    @POST
-    suspend fun register(@Url fullUrl: String, @Body registerRequest: RegisterRequest): Result<String>
+    @POST("auth/register")
+    suspend fun register(@Body registerRequest: RegisterRequest): Result<String>
 
-    @GET
-    suspend fun getServiceRoutes(@Url fullUrl: String): ServiceRoutesResponse
+    @GET("service-registry/routes")
+    suspend fun getServiceRoutes(): ServiceRoutesResponse
 
     // AI聊天相关API
-    @GET
-    suspend fun getSupportedModels(@Url fullUrl: String): Result<List<ModelInfo>>
+    @GET("ai/models")
+    suspend fun getSupportedModels(): Result<List<ModelInfo>>
 
-    @POST
-    suspend fun startChat(@Url fullUrl: String, @Body chatRequest: ChatRequest): Result<TaskResponse>
+    @POST("synapse/chat")
+    suspend fun startChat(@Body chatRequest: ChatRequest): Result<TaskResponse>
 
-    @GET
+    @GET("synapse/chat/{taskId}")
     @Streaming
-    suspend fun streamChat(@Url fullUrl: String): Response<ResponseBody>
+    suspend fun streamChat(@Path("taskId") taskId: String): Response<ResponseBody>
 
-    @DELETE
-    suspend fun stopChat(@Url fullUrl: String): Result<String>
+    @DELETE("synapse/chat/{taskId}")
+    suspend fun stopChat(@Path("taskId") taskId: String): Result<String>
+
+    @POST("synapse/chat/{taskId}/continue")
+    suspend fun continueChat(@Path("taskId") taskId: String, @Body chatRequest: ChatRequest): Result<TaskResponse>
 }

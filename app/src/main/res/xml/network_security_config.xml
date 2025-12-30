@@ -11,5 +11,8 @@
     <!-- 为特定域名/IP 配置例外 -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">8.148.68.32</domain>
+        <domain includeSubdomains="true">www.contins.top</domain>
+
     </domain-config>
 </network-security-config>

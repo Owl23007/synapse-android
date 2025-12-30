@@ -19,7 +19,9 @@ data class ChatRequest(
     @SerializedName("messages")
     val messages: List<ChatMessage>,
     @SerializedName("model")
-    val model: String
+    val model: String,
+    @SerializedName("taskId")
+    val taskId: String? = null
 )
 
 /**
@@ -48,4 +50,30 @@ data class ModelInfo(
 data class ChatModels(
     @SerializedName("models")
     val models: List<ModelInfo>
+)
+
+data class StreamResponse(
+    @SerializedName("choices") val choices: List<ChatChoice>?,
+    @SerializedName("type") val type: String?,
+    @SerializedName("tool_calls") val toolCalls: List<ToolCall>?
+)
+
+data class ChatChoice(
+    @SerializedName("delta") val delta: ChatDelta
+)
+
+data class ChatDelta(
+    @SerializedName("content") val content: String?,
+    @SerializedName("tool_calls") val toolCalls: List<ToolCall>?
+)
+
+data class ToolCall(
+    @SerializedName("id") val id: String?,
+    @SerializedName("type") val type: String?,
+    @SerializedName("function") val function: ToolCallFunction?
+)
+
+data class ToolCallFunction(
+    @SerializedName("name") val name: String?,
+    @SerializedName("arguments") val arguments: String?
 )

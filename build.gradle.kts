@@ -11,6 +11,7 @@ plugins {
 allprojects {
     // 为所有子项目配置依赖仓库
     repositories {
+        mavenCentral()
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/central") }
         maven { url = uri("https://jitpack.io") }
@@ -21,8 +22,6 @@ allprojects {
                 includeGroupByRegex("androidx.*")
             }
         }
-
-        mavenCentral()
         maven { url = uri("https://maven.google.com") }
     }
 }

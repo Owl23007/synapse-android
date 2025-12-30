@@ -83,6 +83,7 @@ dependencies {
     implementation(project(":feature:task"))
 
     debugImplementation(libs.compose.ui.tooling)
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
 
     // 网络库依赖
     implementation(libs.bundles.network)

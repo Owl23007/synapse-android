@@ -26,22 +26,10 @@ data class Message(
     val isStreaming: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 ) {
-    fun getFormattedText(): String {
-        if (isUser) return text
-        Log.d("Message", "【预处理前】\n$text")
-        val result = preprocessMarkdown(text)
-        Log.d("Message", "【预处理后】\n$result")
-        return result
-    }
-
     /**
-     * 预处理 Markdown 文本
-     * 保持原始格式，不做额外处理
+     * 获取格式化文本 - 直接返回原始文本，让Markdown渲染器处理
      */
-    private fun preprocessMarkdown(content: String): String {
-        // replace "data: "with ’‘’
-        return content
-    }
+    fun getFormattedText(): String = text
 }
 @Composable
 fun ChatScreen(

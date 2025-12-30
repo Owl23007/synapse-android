@@ -10,6 +10,7 @@ import androidx.compose.runtime.SideEffect
 
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.core.graphics.toColorInt
 
 // 浅蓝色亮色主题
 private val LightBlueColorScheme = lightColorScheme(
@@ -89,9 +90,9 @@ fun SynapseTheme(
             // 设置导航栏颜色跟随主题
             @Suppress("DEPRECATION")
             window.navigationBarColor = if (darkTheme) {
-                android.graphics.Color.parseColor("#1A1D26")  // 偏亮的深灰色
+                "#1A1D26".toColorInt()  // 偏亮的深灰色
             } else {
-                android.graphics.Color.parseColor("#F5F5F5")  // 偏亮的灰色
+                "#F5F5F5".toColorInt()  // 偏亮的灰色
             }
         }
     }

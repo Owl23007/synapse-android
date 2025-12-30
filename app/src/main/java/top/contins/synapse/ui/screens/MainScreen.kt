@@ -1,5 +1,6 @@
 package top.contins.synapse.ui.screens
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,7 +23,7 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     
-    // 使用 SnackbarControllerProvider 包装整个应用，支持级别颜色
+    // 使用 SnackbarControllerProvider 包装整个应用
     SnackbarControllerProvider { snackbarHostState, currentLevel ->
         Scaffold(
             snackbarHost = {
@@ -35,7 +36,9 @@ fun MainScreen(
             NavHost(
                 navController = navController,
                 startDestination = "splash",
-                modifier = Modifier.then(modifier)
+                modifier = Modifier
+                    .then(modifier)
+                    .padding(paddingValues)
             ) {
                 composable("splash") {
                     SplashScreen(

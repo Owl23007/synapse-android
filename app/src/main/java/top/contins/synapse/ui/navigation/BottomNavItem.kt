@@ -1,6 +1,8 @@
 package top.contins.synapse.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,8 +31,8 @@ object BottomNavigation {
         BottomNavItem(
             route = "chat",
             title = "对话",
-            iconSelected = Icons.Filled.Chat,
-            iconUnselected = Icons.Outlined.Chat
+            iconSelected = Icons.AutoMirrored.Filled.Chat,
+            iconUnselected = Icons.AutoMirrored.Outlined.Chat
         ),
         BottomNavItem(
             route = "profile",

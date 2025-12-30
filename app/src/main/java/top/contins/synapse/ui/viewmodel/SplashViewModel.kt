@@ -13,10 +13,13 @@ import top.contins.synapse.domain.usecase.ValidateTokenOnStartupUseCase
 import top.contins.synapse.domain.model.TokenValidationResult
 import javax.inject.Inject
 
+/**
+ * 启动页UI状态封装
+ */
 sealed class SplashUiState {
-    object Loading : SplashUiState()
-    object NavigateToAuth : SplashUiState()
-    object NavigateToMain : SplashUiState()
+    object Loading : SplashUiState()        // 加载中状态
+    object NavigateToAuth : SplashUiState() // 导航到认证页面
+    object NavigateToMain : SplashUiState() // 导航到主页面
 }
 
 @HiltViewModel
@@ -76,7 +79,6 @@ class SplashViewModel @Inject constructor(
                     _uiState.value = SplashUiState.NavigateToMain
                 } else {
                     // 路由加载失败，但token是有效的，仍然进入主界面
-                    // 可以在主界面再次尝试加载路由或显示错误信息
                     _uiState.value = SplashUiState.NavigateToMain
                 }
             } else {

@@ -1,5 +1,7 @@
 pluginManagement {
     repositories {
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         google {
@@ -9,8 +11,9 @@ pluginManagement {
                 includeGroupByRegex("androidx.*")
             }
         }
-        mavenCentral()
+
         gradlePluginPortal()
+
         maven { url = uri("https://maven.google.com") }
         resolutionStrategy {
             eachPlugin {
@@ -19,6 +22,8 @@ pluginManagement {
                 }
             }
         }
+
+
     }
 }
 

@@ -9,18 +9,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.domain.model.Goal
 import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.ScheduleType
 import top.contins.synapse.domain.model.Task
 import top.contins.synapse.domain.model.TaskPriority
 import top.contins.synapse.domain.model.TaskStatus
@@ -33,26 +34,26 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 /**
  * 计划页面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Preview
 fun PlanScreen(
     taskViewModel: TaskViewModel = hiltViewModel(),
     goalViewModel: GoalViewModel = hiltViewModel(),
     scheduleViewModel: ScheduleViewModel = hiltViewModel()
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("今日", "日程", "任务", "目标")
     
     // State for dialogs
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showTodayActionDialog by remember { mutableStateOf(false) }
-    var scheduleAddTick by remember { mutableStateOf(0) }
+    var scheduleAddTick by remember { mutableIntStateOf(0) }
 
     // Data from ViewModels
     val tasks by taskViewModel.tasks.collectAsState()
@@ -87,11 +88,10 @@ fun PlanScreen(
                 Icon(Icons.Filled.Add, contentDescription = "添加")
             }
         }
-    ) { paddingValues ->
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             // Tab栏
             TabRow(

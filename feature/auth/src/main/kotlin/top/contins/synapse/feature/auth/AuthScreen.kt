@@ -113,7 +113,7 @@ fun AuthScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var serverIp by remember { mutableStateOf("http://10.0.2.2:9080/api") }
+    var serverIp by remember { mutableStateOf("http://8.148.68.32/api") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }

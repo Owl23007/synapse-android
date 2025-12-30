@@ -4,10 +4,15 @@ import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import top.contins.synapse.network.api.ApiService
+import top.contins.synapse.network.api.ApiManager
 import top.contins.synapse.network.model.ServiceRoute
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -15,7 +20,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class RouteManager @Inject constructor(
-    @field:Named("noAuth") private val apiService: ApiService
+    private val apiManager: ApiManager
 ) {
     private val _routes = MutableStateFlow<Map<String, ServiceRoute>>(emptyMap())
     val routes: StateFlow<Map<String, ServiceRoute>> = _routes.asStateFlow()
@@ -32,9 +37,28 @@ class RouteManager @Inject constructor(
             _isLoading.value = true
             Log.d("RouteManager", "Loading routes from: $serviceRegistryUrl")
             
-            val routesUrl = "$serviceRegistryUrl/service-registry/routes"
-            val response = apiService.getServiceRoutes(routesUrl)
+            // 创建一个临时的API服务实例用于获取路由信息（不需要认证）
+            val noAuthOkHttpClient = OkHttpClient.Builder()
+                .addInterceptor(HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                })
+                .readTimeout(0, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .cache(null)
+                .retryOnConnectionFailure(false)
+                .build()
             
+            val retrofit = Retrofit.Builder()
+                .baseUrl(serviceRegistryUrl)
+                .client(noAuthOkHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            
+            val apiService = retrofit.create(ApiService::class.java)
+            
+            val response = apiService.getServiceRoutes()
+
             if (response.code == 0 && response.data != null) {
                 val routesData = response.data!!
                 _routes.value = routesData

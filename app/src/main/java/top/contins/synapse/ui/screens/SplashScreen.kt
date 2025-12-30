@@ -62,11 +62,11 @@ fun SplashScreen(
     LaunchedEffect(uiState) {
         when (uiState) {
             SplashUiState.NavigateToAuth -> {
-                delay(500) // 短暂延迟确保用户看到启动屏幕
+                delay(100) // 短暂延迟确保用户看到启动屏幕
                 onNavigateToAuth()
             }
             SplashUiState.NavigateToMain -> {
-                delay(500) // 短暂延迟确保用户看到启动屏幕
+                delay(100) // 短暂延迟确保用户看到启动屏幕
                 onNavigateToMain()
             }
             SplashUiState.Loading -> {

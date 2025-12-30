@@ -33,7 +33,6 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)
-    
-    // Markdown if needed in common ui
+
     implementation(libs.bundles.markdown)
 }

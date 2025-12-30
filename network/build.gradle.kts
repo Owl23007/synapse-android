@@ -52,6 +52,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
 
     implementation(libs.javax.inject)
     implementation(libs.hilt.android)
