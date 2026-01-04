@@ -3,10 +3,7 @@ package top.contins.synapse;
 import android.app.Application;
 import android.os.Build;
 
-import java.security.Security;
-
 import dagger.hilt.android.HiltAndroidApp;
-import org.conscrypt.Conscrypt;
 
 /**
  * Synapse应用的Application类
@@ -20,8 +17,6 @@ public class SynapseApplication extends Application {
         super.onCreate();
         // 禁用动态颜色功能
         disableDynamicColors();
-        Security.insertProviderAt(Conscrypt.newProvider(), 1);
-
     }
 
     /**
