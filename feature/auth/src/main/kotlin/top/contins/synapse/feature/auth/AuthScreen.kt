@@ -41,7 +41,6 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.core.ui.R
 import top.contins.synapse.domain.model.AuthUiState
-import top.contins.synapse.core.ui.compose.snackbar.SnackbarAction
 import top.contins.synapse.core.ui.compose.snackbar.SnackbarController
 import kotlin.io.encoding.Base64
 
@@ -107,7 +106,6 @@ fun validateLoginForm( password: String, serverIp: String): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
 fun AuthScreen(
     onLoginSuccess: () -> Unit = {}, viewModel: AuthViewModel = hiltViewModel()
 ) {
@@ -592,4 +590,10 @@ fun base64ToBitmap(base64String: String): Bitmap? {
         e.printStackTrace()
         null
     }
+}
+
+@Preview
+@Composable
+fun AuthScreenPreview() {
+    AuthScreen()
 }

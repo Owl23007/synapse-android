@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
     implementation(libs.bundles.compose)
+    debugImplementation(libs.compose.ui.tooling)
 
     // Module dependencies
     implementation(project(":core:ui"))

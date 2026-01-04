@@ -46,6 +46,7 @@ dependencies {
     // Compose
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
+    debugImplementation(libs.compose.ui.tooling)
 
     // Lifecycle & Basic Android
     implementation(libs.bundles.lifecycle)

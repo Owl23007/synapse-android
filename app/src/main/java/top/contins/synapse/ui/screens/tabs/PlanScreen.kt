@@ -49,7 +49,7 @@ fun PlanScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("今日", "日程", "任务", "目标")
     
-    // State for dialogs
+    // Dialogs
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showTodayActionDialog by remember { mutableStateOf(false) }
@@ -423,7 +423,10 @@ fun TodayStatCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Column(
             modifier = Modifier

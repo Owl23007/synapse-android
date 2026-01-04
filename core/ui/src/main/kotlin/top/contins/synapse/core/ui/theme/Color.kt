@@ -15,8 +15,8 @@ val LightBlueOnSecondaryContainer = Color(0xFF002114)
 
 // 表面和背景色
 val LightBlueSurface = Color(0xFFFEFBFF)
-val LightBlueOnSurface = Color(0xFF1C1B1F)
-val LightBlueSurfaceVariant = Color(0xFFE7E0EC)
+val LightBlueOnSurface = Color(0xFF1B1E1F)
+val LightBlueSurfaceVariant = Color(0xFFEAECF1)
 val LightBlueOnSurfaceVariant = Color(0xFF49454F)
 
 val LightBlueBackground = Color(0xFFFEFBFF)
