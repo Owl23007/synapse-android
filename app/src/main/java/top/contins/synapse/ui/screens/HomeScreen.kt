@@ -36,6 +36,9 @@ fun HomeScreen(
     onLogout: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val isChatSelected = currentRoute == "chat"
     
     Scaffold(
         bottomBar = {
@@ -52,12 +55,18 @@ fun HomeScreen(
                         restoreState = true
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = if (isChatSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                contentColor = if (isChatSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                 shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    focusedElevation = 0.dp,
+                    hoveredElevation = 0.dp
+                ),
                 modifier = Modifier
-                    .size(72.dp)
-                    .offset(y = 50.dp) // 向下偏移，使其覆盖在 BottomBar 上
+                    .size(64.dp)
+                    .offset(y = 84.dp) // 向下偏移，使其居中在 BottomBar 上
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Chat,
@@ -66,8 +75,7 @@ fun HomeScreen(
                 )
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         NavHost(
             navController = navController,

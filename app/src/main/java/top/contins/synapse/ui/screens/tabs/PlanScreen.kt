@@ -972,30 +972,35 @@ fun TodayTab(
     val expandedHeightPx = with(density) { expandedHeight.toPx() }
     val collapsedHeightPx = with(density) { collapsedHeight.toPx() }
     
-    // 阈值：当滑动超过40%的折叠距离时，自动折叠
-    val collapseThreshold = (expandedHeightPx - collapsedHeightPx) * 0.4f
+    val maxCollapseDistance = expandedHeightPx - collapsedHeightPx
     
-    // 根据滚动位置判断是否应该折叠
-    val shouldCollapse = remember { derivedStateOf {
+    // 计算目标折叠进度
+    val targetCollapseFraction = remember { derivedStateOf {
         val firstVisibleItemIndex = listState.firstVisibleItemIndex
         val firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset
         
         if (firstVisibleItemIndex > 0) {
-            true
+            1f
         } else {
-            firstVisibleItemScrollOffset > collapseThreshold
+            (firstVisibleItemScrollOffset / maxCollapseDistance).coerceIn(0f, 1f)
         }
     }}
     
-    // 使用动画平滑过渡到折叠或展开状态
-    val targetCollapseFraction = if (shouldCollapse.value) 1f else 0f
+    // 使用弹性动画
     val collapseFraction by animateFloatAsState(
-        targetValue = targetCollapseFraction,
-        animationSpec = tween(durationMillis = 300),
-        label = "collapse"
+        targetValue = targetCollapseFraction.value,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "collapseFraction"
     )
     
-    val headerOffset = -(expandedHeightPx - collapsedHeightPx) * collapseFraction
+    val headerOffset = -maxCollapseDistance * collapseFraction
+    
+    // 使用阈值切换，确保任何时候只显示一个状态
+    val showExpanded = collapseFraction < 0.5f
+    val showCollapsed = collapseFraction >= 0.5f
 
     Box(
         modifier = Modifier
@@ -1009,7 +1014,7 @@ fun TodayTab(
             contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Spacer for Header
+            // Spacer for Header - 固定高度
             item {
                 Spacer(modifier = Modifier.height(expandedHeight))
             }
@@ -1245,13 +1250,10 @@ fun TodayTab(
                 .background(MaterialTheme.colorScheme.primaryContainer)
         ) {
             // Expanded Content (Image + Text)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = 1f - collapseFraction
-                    }
-            ) {
+            if (showExpanded) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 // 必应每日一图背景
                 if (bingImageUrl != null) {
                     AsyncImage(
@@ -1303,36 +1305,37 @@ fun TodayTab(
                     )
                 }
             }
+            }
             
             // Collapsed Content
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(collapsedHeight)
-                    .align(Alignment.BottomStart)
-                    .padding(horizontal = 20.dp)
-                    .graphicsLayer {
-                        alpha = collapseFraction
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = todayText,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = dayOfWeekText,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
+            if (showCollapsed) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(collapsedHeight)
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = todayText,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = dayOfWeekText,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun TaskTab(
