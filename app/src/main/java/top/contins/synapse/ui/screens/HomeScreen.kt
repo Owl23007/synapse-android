@@ -94,13 +94,18 @@ fun BottomNavigationBar(navController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val isDarkTheme = isSystemInDarkTheme()
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp),
-        color = if (isDarkTheme) Color(0xFF1A1D26) else Color(0xFFF5F5F5),  // 响应式灰色
-        tonalElevation = 0.dp
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = if (isDarkTheme) Color(0xFF2D2F39) else Color(0xFFE0E0E0)
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp),
+            color = if (isDarkTheme) Color(0xFF1A1D26) else Color(0xFFF5F5F5),  // 响应式灰色
+            tonalElevation = 0.dp
+        ) {
         Row(
             modifier = Modifier.fillMaxSize() ,
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -132,6 +137,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 }
             }
         }
+    }
     }
 }
 

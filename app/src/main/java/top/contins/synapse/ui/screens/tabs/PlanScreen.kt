@@ -1,7 +1,7 @@
 package top.contins.synapse.ui.screens.tabs
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -61,10 +61,12 @@ fun PlanScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("今日", "日程", "任务", "目标")
     
+    // FAB展开状态
+    var isFabExpanded by remember { mutableStateOf(false) }
+    
     // 模态框状态
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
-    var showTodayActionDialog by remember { mutableStateOf(false) }
     var scheduleAddTick by remember { mutableIntStateOf(0) }
 
     // 数据状态
@@ -100,20 +102,23 @@ fun PlanScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { 
-                    when (selectedTab) {
-                        0 -> showTodayActionDialog = true
-                        1 -> scheduleAddTick += 1
-                        2 -> showAddTaskDialog = true
-                        3 -> showAddGoalDialog = true
-                    }
+            ExpandableFab(
+                expanded = isFabExpanded,
+                onExpandToggle = { isFabExpanded = !isFabExpanded },
+                selectedTab = selectedTab,
+                onTaskAdd = { 
+                    isFabExpanded = false
+                    showAddTaskDialog = true 
                 },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "添加")
-            }
+                onScheduleAdd = { 
+                    isFabExpanded = false
+                    scheduleAddTick += 1 
+                },
+                onGoalAdd = { 
+                    isFabExpanded = false
+                    showAddGoalDialog = true 
+                }
+            )
         }
     ) { _ ->
         Column(
@@ -163,41 +168,6 @@ fun PlanScreen(
     }
 
     // Dialogs
-    if (showTodayActionDialog) {
-        AlertDialog(
-            onDismissRequest = { showTodayActionDialog = false },
-            title = { Text("添加今日事项") },
-            text = {
-                Column {
-                    TextButton(
-                        onClick = { 
-                            showTodayActionDialog = false
-                            showAddTaskDialog = true 
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("添加任务")
-                    }
-                    TextButton(
-                        onClick = { 
-                            showTodayActionDialog = false
-                            scheduleAddTick += 1
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("添加日程")
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showTodayActionDialog = false }) {
-                    Text("取消")
-                }
-            }
-        )
-    }
-
     if (showAddTaskDialog) {
         AddTaskDialog(
             onDismiss = { showAddTaskDialog = false },
@@ -216,6 +186,141 @@ fun PlanScreen(
                 showAddGoalDialog = false
             }
         )
+    }
+}
+
+@Composable
+fun ExpandableFab(
+    expanded: Boolean,
+    onExpandToggle: () -> Unit,
+    selectedTab: Int,
+    onTaskAdd: () -> Unit,
+    onScheduleAdd: () -> Unit,
+    onGoalAdd: () -> Unit
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 45f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "rotation"
+    )
+    
+    val fabColor by animateColorAsState(
+        targetValue = if (expanded) Color.White else MaterialTheme.colorScheme.primary,
+        animationSpec = tween(durationMillis = 300),
+        label = "fabColor"
+    )
+    
+    val iconColor by animateColorAsState(
+        targetValue = if (expanded) MaterialTheme.colorScheme.primary else Color.White,
+        animationSpec = tween(durationMillis = 300),
+        label = "iconColor"
+    )
+    
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 小FAB按钮（根据当前tab显示不同选项）
+        if (selectedTab == 0) {
+            // 今日tab：显示任务和日程按钮
+            MiniFab(
+                icon = Icons.Filled.Event,
+                text = "日程",
+                onClick = onScheduleAdd,
+                expanded = expanded
+            )
+            MiniFab(
+                icon = Icons.Filled.Task,
+                text = "任务",
+                onClick = onTaskAdd,
+                expanded = expanded
+            )
+        } else {
+            // 其他tab：显示单个对应按钮
+            val (icon, text, onClick) = when (selectedTab) {
+                1 -> Triple(Icons.Filled.Event, "日程", onScheduleAdd)
+                2 -> Triple(Icons.Filled.Task, "任务", onTaskAdd)
+                3 -> Triple(Icons.Filled.Flag, "目标", onGoalAdd)
+                else -> Triple(Icons.Filled.Add, "", {})
+            }
+            
+            MiniFab(
+                icon = icon,
+                text = text,
+                onClick = onClick,
+                expanded = expanded
+            )
+        }
+        
+        // 主FAB
+        FloatingActionButton(
+            onClick = onExpandToggle,
+            containerColor = fabColor,
+            contentColor = iconColor
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "添加",
+                modifier = Modifier.graphicsLayer {
+                    rotationZ = rotation
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun MiniFab(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    expanded: Boolean
+) {
+    val alpha by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "alpha"
+    )
+    
+    val scale by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+    
+    if (expanded) {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.graphicsLayer {
+                this.alpha = alpha
+                scaleX = scale
+                scaleY = scale
+            }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = text,
+                    modifier = Modifier.size(20.dp)
+                )
+                if (text.isNotEmpty()) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 
