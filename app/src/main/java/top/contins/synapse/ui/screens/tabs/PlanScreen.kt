@@ -74,10 +74,25 @@ fun PlanScreen(
 
     // 筛选今日任务和日程
     val today = LocalDate.now()
+    
+    // 今日任务：今天截止的未完成任务
     val todayTasks = tasks.filter { 
         val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        taskDate.isEqual(today)
+        taskDate.isEqual(today) && it.status != TaskStatus.COMPLETED
     }
+    
+    // 逾期任务：截止日期早于今天的未完成任务
+    val overdueTasks = tasks.filter {
+        val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        taskDate.isBefore(today) && it.status != TaskStatus.COMPLETED
+    }.sortedBy { it.dueDate }
+    
+    // 未来任务：截止日期晚于今天的未完成任务
+    val upcomingTasks = tasks.filter {
+        val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        taskDate.isAfter(today) && it.status != TaskStatus.COMPLETED
+    }.sortedBy { it.dueDate }
+    
     val todaySchedules = schedules.filter {
         val scheduleDate = java.time.Instant.ofEpochMilli(it.startTime).atZone(ZoneId.systemDefault()).toLocalDate()
         scheduleDate.isEqual(today)
@@ -121,7 +136,9 @@ fun PlanScreen(
 
             when (selectedTab) {
                 0 -> TodayTab(
-                    tasks = todayTasks,
+                    todayTasks = todayTasks,
+                    overdueTasks = overdueTasks,
+                    upcomingTasks = upcomingTasks,
                     schedules = todaySchedules,
                     onTaskStatusChange = { task, isCompleted ->
                         taskViewModel.updateTaskStatus(task, isCompleted)
@@ -184,8 +201,8 @@ fun PlanScreen(
     if (showAddTaskDialog) {
         AddTaskDialog(
             onDismiss = { showAddTaskDialog = false },
-            onConfirm = { title, priority ->
-                taskViewModel.createTask(title, priority)
+            onConfirm = { title, priority, dueDate ->
+                taskViewModel.createTask(title, priority, dueDate)
                 showAddTaskDialog = false
             }
         )
@@ -202,50 +219,536 @@ fun PlanScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) -> Unit) {
     var title by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf("中") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
+    var selectedHour by remember { mutableIntStateOf(20) }
+    var selectedMinute by remember { mutableIntStateOf(30) }
     
-    AlertDialog(
+    val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("新建任务") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        dragHandle = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 16.dp, bottom = 6.dp)
+                        .width(32.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                )
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp)
+        ) {
+            // 标题区
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "新建任务",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            // 分隔线
+            HorizontalDivider(
+                modifier = Modifier.padding(bottom = 20.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            
+            // 任务内容区域
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "任务内容",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                // 任务内容输入
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("任务标题") },
-                    singleLine = true
+                    placeholder = { Text("还有什么没做？快想想 ") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
-                // Simple Priority Selection
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("优先级: ")
-                    listOf("高", "中", "低").forEach { p ->
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // 优先级选择区域
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "优先级",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    listOf(
+                        "高" to Color(0xFFEF5350),
+                        "中" to Color(0xFFFFA726),
+                        "低" to Color(0xFF66BB6A)
+                    ).forEach { (p, color) ->
                         FilterChip(
                             selected = priority == p,
                             onClick = { priority = p },
-                            label = { Text(p) },
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            label = { 
+                                Text(
+                                    p, 
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (priority == p) Color.White else color
+                                ) 
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = color,
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                labelColor = color
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = priority == p,
+                                borderColor = color.copy(alpha = 0.5f),
+                                selectedBorderColor = color,
+                                borderWidth = 1.5.dp
+                            )
                         )
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (title.isNotBlank()) onConfirm(title, priority) },
-                enabled = title.isNotBlank()
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // 截止时间选择区域
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("确定")
+                // 标题行和清除按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "截止时间",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    if (selectedDateMillis != null) {
+                        TextButton(
+                            onClick = { selectedDateMillis = null }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("清除", style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                // 快捷预设按钮
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                        // 判断是否为今天内
+                        val isTodayEnd = remember(selectedDateMillis, selectedHour, selectedMinute) {
+                            selectedDateMillis?.let {
+                                val selected = java.util.Calendar.getInstance()
+                                selected.timeInMillis = it
+                                val today = java.util.Calendar.getInstance()
+                                selected.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) &&
+                                selected.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR) &&
+                                selectedHour == 23 && selectedMinute == 59
+                            } ?: false
+                        }
+                        
+                        // 判断是否为明天
+                        val isTomorrow = remember(selectedDateMillis, selectedHour, selectedMinute) {
+                            selectedDateMillis?.let {
+                                val selected = java.util.Calendar.getInstance()
+                                selected.timeInMillis = it
+                                val tomorrow = java.util.Calendar.getInstance()
+                                tomorrow.add(java.util.Calendar.DAY_OF_MONTH, 1)
+                                selected.get(java.util.Calendar.YEAR) == tomorrow.get(java.util.Calendar.YEAR) &&
+                                selected.get(java.util.Calendar.DAY_OF_YEAR) == tomorrow.get(java.util.Calendar.DAY_OF_YEAR) &&
+                                selectedHour == 23 && selectedMinute == 59
+                            } ?: false
+                        }
+                        
+                        // 判断是否为本周日
+                        val isThisWeekEnd = remember(selectedDateMillis, selectedHour, selectedMinute) {
+                            selectedDateMillis?.let {
+                                val selected = java.util.Calendar.getInstance()
+                                selected.timeInMillis = it
+                                val thisWeekSunday = java.util.Calendar.getInstance()
+                                val currentDayOfWeek = thisWeekSunday.get(java.util.Calendar.DAY_OF_WEEK)
+                                val daysUntilSunday = (java.util.Calendar.SUNDAY - currentDayOfWeek + 7) % 7
+                                if (daysUntilSunday == 0) {
+                                    thisWeekSunday.add(java.util.Calendar.DAY_OF_MONTH, 7)
+                                } else {
+                                    thisWeekSunday.add(java.util.Calendar.DAY_OF_MONTH, daysUntilSunday)
+                                }
+                                selected.get(java.util.Calendar.YEAR) == thisWeekSunday.get(java.util.Calendar.YEAR) &&
+                                selected.get(java.util.Calendar.DAY_OF_YEAR) == thisWeekSunday.get(java.util.Calendar.DAY_OF_YEAR) &&
+                                selectedHour == 23 && selectedMinute == 59
+                            } ?: false
+                        }
+                        
+                        // 今天内
+                        FilterChip(
+                            selected = isTodayEnd,
+                            onClick = {
+                                val calendar = java.util.Calendar.getInstance()
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                calendar.set(java.util.Calendar.MINUTE, 59)
+                                calendar.set(java.util.Calendar.SECOND, 59)
+                                selectedDateMillis = calendar.timeInMillis
+                                selectedHour = 23
+                                selectedMinute = 59
+                            },
+                            label = { 
+                                Text(
+                                    "今天内", 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    fontWeight = if (isTodayEnd) FontWeight.Medium else FontWeight.Normal,
+                                    color = if (isTodayEnd) Color.White else MaterialTheme.colorScheme.primary
+                                ) 
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isTodayEnd,
+                                borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 1.dp
+                            )
+                        )
+                        
+                        // 明天
+                        FilterChip(
+                            selected = isTomorrow,
+                            onClick = {
+                                val calendar = java.util.Calendar.getInstance()
+                                calendar.add(java.util.Calendar.DAY_OF_MONTH, 1)
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                calendar.set(java.util.Calendar.MINUTE, 59)
+                                calendar.set(java.util.Calendar.SECOND, 59)
+                                selectedDateMillis = calendar.timeInMillis
+                                selectedHour = 23
+                                selectedMinute = 59
+                            },
+                            label = { 
+                                Text(
+                                    "明天", 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    fontWeight = if (isTomorrow) FontWeight.Medium else FontWeight.Normal,
+                                    color = if (isTomorrow) Color.White else MaterialTheme.colorScheme.primary
+                                ) 
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isTomorrow,
+                                borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 1.dp
+                            )
+                        )
+                        
+                        // 本周
+                        FilterChip(
+                            selected = isThisWeekEnd,
+                            onClick = {
+                                val calendar = java.util.Calendar.getInstance()
+                                val currentDayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
+                                val daysUntilSunday = (java.util.Calendar.SUNDAY - currentDayOfWeek + 7) % 7
+                                if (daysUntilSunday == 0) {
+                                    calendar.add(java.util.Calendar.DAY_OF_MONTH, 7)
+                                } else {
+                                    calendar.add(java.util.Calendar.DAY_OF_MONTH, daysUntilSunday)
+                                }
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                calendar.set(java.util.Calendar.MINUTE, 59)
+                                calendar.set(java.util.Calendar.SECOND, 59)
+                                selectedDateMillis = calendar.timeInMillis
+                                selectedHour = 23
+                                selectedMinute = 59
+                            },
+                            label = { 
+                                Text(
+                                    "本周", 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    fontWeight = if (isThisWeekEnd) FontWeight.Medium else FontWeight.Normal,
+                                    color = if (isThisWeekEnd) Color.White else MaterialTheme.colorScheme.primary
+                                ) 
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isThisWeekEnd,
+                                borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 1.dp
+                            )
+                        )
+                    }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Surface(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (selectedDateMillis != null) 
+                        MaterialTheme.colorScheme.primaryContainer 
+                    else 
+                        MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 2.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp),
+                                tint = if (selectedDateMillis != null)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (selectedDateMillis != null) {
+                                    val calendar = java.util.Calendar.getInstance()
+                                    calendar.timeInMillis = selectedDateMillis!!
+                                    dateFormatter.format(calendar.time)
+                                } else {
+                                    "点击设置截止时间"
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (selectedDateMillis != null) FontWeight.Medium else FontWeight.Normal,
+                                color = if (selectedDateMillis != null)
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        if (selectedDateMillis != null) {
+                            Text(
+                                text = String.format("%02d:%02d", selectedHour, selectedMinute),
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // 底部按钮
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                ) {
+                    Text("取消", style = MaterialTheme.typography.bodyLarge)
+                }
+                
+                Button(
+                    onClick = { 
+                        if (title.isNotBlank()) {
+                            val finalDueDate = selectedDateMillis?.let { millis ->
+                                val calendar = java.util.Calendar.getInstance()
+                                calendar.timeInMillis = millis
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, selectedHour)
+                                calendar.set(java.util.Calendar.MINUTE, selectedMinute)
+                                calendar.set(java.util.Calendar.SECOND, 0)
+                                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+                            }
+                            onConfirm(title, priority, finalDueDate)
+                        }
+                    },
+                    enabled = title.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                ) {
+                    Text("确定", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                }
             }
         }
-    )
+    }
+    
+    // DatePicker Dialog
+    if (showDatePicker) {
+        val currentTime = System.currentTimeMillis()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDateMillis ?: currentTime,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    // 只允许选择今天及以后的日期
+                    return utcTimeMillis >= currentTime - (24 * 60 * 60 * 1000)
+                }
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedDateMillis = datePickerState.selectedDateMillis
+                        showDatePicker = false
+                        showTimePicker = true // 选择完日期后显示时间选择器
+                    }
+                ) {
+                    Text("下一步")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+    
+    // TimePicker Dialog
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = selectedHour,
+            initialMinute = selectedMinute,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("选择时间") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // 检查选择的时间是否早于当前时间
+                        val calendar = java.util.Calendar.getInstance()
+                        val now = java.util.Calendar.getInstance()
+                        
+                        calendar.timeInMillis = selectedDateMillis ?: System.currentTimeMillis()
+                        calendar.set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        calendar.set(java.util.Calendar.MINUTE, timePickerState.minute)
+                        calendar.set(java.util.Calendar.SECOND, 0)
+                        
+                        if (calendar.timeInMillis < now.timeInMillis) {
+                            // 如果选择的时间早于当前时间，可以在这里显示提示
+                            // 暂时直接使用当前时间
+                            selectedHour = now.get(java.util.Calendar.HOUR_OF_DAY)
+                            selectedMinute = now.get(java.util.Calendar.MINUTE)
+                        } else {
+                            selectedHour = timePickerState.hour
+                            selectedMinute = timePickerState.minute
+                        }
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -337,11 +840,14 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
 
 @Composable
 fun TodayTab(
-    tasks: List<Task>,
+    todayTasks: List<Task>,
+    overdueTasks: List<Task>,
+    upcomingTasks: List<Task>,
     schedules: List<Schedule>,
     onTaskStatusChange: (Task, Boolean) -> Unit,
     onTaskDelete: (Task) -> Unit
 ) {
+    val totalInboxTasks = overdueTasks.size + upcomingTasks.size
     val context = LocalContext.current
     val todayText = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date())
     val dayOfWeekText = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
@@ -389,6 +895,7 @@ fun TodayTab(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .clip(RoundedCornerShape(0.dp)) // 裁剪超出边界的内容
     ) {
         LazyColumn(
@@ -408,40 +915,217 @@ fun TodayTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TodayStatCard("待办事项", "${tasks.size}", "${tasks.count { it.status == TaskStatus.COMPLETED }}已完成", modifier = Modifier.weight(1f))
-                    TodayStatCard("会议安排", "${schedules.size}", "即将开始", modifier = Modifier.weight(1f))
-                    TodayStatCard("目标进度", "0", "进行中", modifier = Modifier.weight(1f))
+                    TodayStatCard(
+                        title = "今日任务",
+                        count = "${todayTasks.size}",
+                        subtitle = "待完成",
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    TodayStatCard(
+                        title = "日程规划",
+                        count = "${schedules.size}",
+                        subtitle = "今日",
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    TodayStatCard(
+                        title = if (overdueTasks.isNotEmpty()) "逾期任务" else "待办事项",
+                        count = if (overdueTasks.isNotEmpty()) "${overdueTasks.size}" else "$totalInboxTasks",
+                        subtitle = if (overdueTasks.isNotEmpty()) "需处理" else "未来",
+                        modifier = Modifier.weight(1f),
+                        color = if (overdueTasks.isNotEmpty()) Color(0xFFEF5350) else MaterialTheme.colorScheme.secondary,
+                        isHighlight = overdueTasks.isNotEmpty()
+                    )
                 }
             }
             
             // 今日任务列表
-            item {
-                Text(
-                    text = "今日任务",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
+            if (todayTasks.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "今日任务",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = "${todayTasks.size}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                
+                items(todayTasks) { task ->
+                    TodayTaskCard(
+                        task = task,
+                        onStatusChange = { onTaskStatusChange(task, it) },
+                        onDelete = { onTaskDelete(task) }
+                    )
+                }
+            }
+
+            // 逾期任务列表
+            if (overdueTasks.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFEF5350),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "逾期任务",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEF5350)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFEF5350).copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                text = "${overdueTasks.size}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFEF5350),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "需要处理",
+                            fontSize = 12.sp,
+                            color = Color(0xFFEF5350).copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                
+                items(overdueTasks) { task ->
+                    OverdueTaskCard(
+                        task = task,
+                        onStatusChange = { onTaskStatusChange(task, it) },
+                        onDelete = { onTaskDelete(task) }
+                    )
+                }
             }
             
-            items(tasks) { task ->
-                TodayTaskCard(
-                    task = task,
-                    onStatusChange = { onTaskStatusChange(task, it) },
-                    onDelete = { onTaskDelete(task) }
-                )
+            // 未来任务列表
+            if (upcomingTasks.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inbox,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "未来任务",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "${upcomingTasks.size}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "未来截止",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                items(upcomingTasks) { task ->
+                    InboxTaskCard(
+                        task = task,
+                        onStatusChange = { onTaskStatusChange(task, it) },
+                        onDelete = { onTaskDelete(task) }
+                    )
+                }
             }
-
+            
             // 今日日程列表
-            item {
-                Text(
-                    text = "今日日程",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            if (schedules.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "今日日程",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.tertiaryContainer
+                        ) {
+                            Text(
+                                text = "${schedules.size}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
 
-            items(schedules) { schedule ->
-                TodayScheduleCard(schedule = schedule)
+                items(schedules) { schedule ->
+                    TodayScheduleCard(schedule = schedule)
+                }
             }
         }
         
@@ -585,12 +1269,17 @@ fun TodayStatCard(
     title: String,
     count: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    isHighlight: Boolean = false
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isHighlight) 
+                color.copy(alpha = 0.1f)
+            else 
+                MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(
@@ -603,17 +1292,18 @@ fun TodayStatCard(
                 text = count,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = color
             )
             Text(
                 text = title,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = if (isHighlight) color else MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
                 fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isHighlight) color.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -666,7 +1356,10 @@ fun TodayTaskCard(
     ) {
         Card(
             onClick = { },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Row(
                 modifier = Modifier
@@ -895,10 +1588,240 @@ fun GoalCard(goal: Goal) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun OverdueTaskCard(
+    task: Task,
+    onStatusChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
+        positionalThreshold = { it * 0.5f }
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            kotlinx.coroutines.delay(20)
+            onDelete()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Color.Red
+            } else {
+                Color.Transparent
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false
+    ) {
+        Card(
+            onClick = { },
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFFFFF5F5)
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF5350).copy(alpha = 0.3f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = task.status == TaskStatus.COMPLETED,
+                    onCheckedChange = onStatusChange,
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = Color(0xFFEF5350),
+                        uncheckedColor = Color(0xFFEF5350)
+                    )
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFEF5350))
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    // 计算逾期天数
+                    val dueDate = task.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    val today = LocalDate.now()
+                    val daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(dueDate, today)
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFEF5350),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "已逾期 ${daysOverdue} 天",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFEF5350)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InboxTaskCard(
+    task: Task,
+    onStatusChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
+        positionalThreshold = { it * 0.5f }
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            kotlinx.coroutines.delay(20)
+            onDelete()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Color.Red
+            } else {
+                Color.Transparent
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false
+    ) {
+        Card(
+            onClick = { },
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = task.status == TaskStatus.COMPLETED,
+                    onCheckedChange = onStatusChange
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when (task.priority) {
+                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
+                                TaskPriority.MEDIUM -> Color.Yellow
+                                else -> Color.Gray
+                            }
+                        )
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    // 显示截止日期
+                    val dueDate = task.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    val today = LocalDate.now()
+                    val daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, dueDate)
+                    
+                    val dueDateText = when {
+                        daysUntil == 1L -> "明天截止"
+                        daysUntil <= 7 -> "${daysUntil} 天后截止"
+                        else -> SimpleDateFormat("MM月dd日", Locale.getDefault()).format(task.dueDate)
+                    }
+                    
+                    val dueDateColor = when {
+                        daysUntil <= 1 -> Color(0xFFFFA726)
+                        daysUntil <= 3 -> Color(0xFFFFA726).copy(alpha = 0.7f)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    
+                    Text(
+                        text = dueDateText,
+                        fontSize = 12.sp,
+                        color = dueDateColor
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun TodayScheduleCard(schedule: Schedule) {
     Card(
         onClick = { },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier

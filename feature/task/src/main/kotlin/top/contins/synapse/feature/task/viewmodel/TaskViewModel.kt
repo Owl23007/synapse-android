@@ -11,7 +11,9 @@ import top.contins.synapse.domain.model.Task
 import top.contins.synapse.domain.model.TaskPriority
 import top.contins.synapse.domain.model.TaskStatus
 import top.contins.synapse.domain.repository.TaskRepository
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -30,13 +32,26 @@ class TaskViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    fun createTask(title: String, priority: String) {
+    fun createTask(title: String, priority: String, dueDate: String? = null) {
         viewModelScope.launch {
+            val parsedDueDate = if (!dueDate.isNullOrBlank()) {
+                try {
+                    // 尝试解析带时间的格式 "yyyy-MM-dd HH:mm:ss"
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(dueDate)
+                        ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dueDate)
+                        ?: Date()
+                } catch (e: Exception) {
+                    Date() // 解析失败时默认使用今天
+                }
+            } else {
+                Date() // 未提供截止日期时默认使用今天
+            }
+            
             val newTask = Task(
                 id = UUID.randomUUID().toString(),
                 title = title,
                 description = "",
-                dueDate = Date(), // Default to today
+                dueDate = parsedDueDate,
                 status = TaskStatus.TODO,
                 priority = when(priority) {
                     "高" -> TaskPriority.HIGH
