@@ -1,9 +1,12 @@
 package top.contins.synapse.ui.screens.tabs
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,11 +18,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import top.contins.synapse.domain.model.Goal
 import top.contins.synapse.domain.model.Schedule
 import top.contins.synapse.domain.model.Task
@@ -29,11 +39,13 @@ import top.contins.synapse.feature.goal.viewmodel.GoalViewModel
 import top.contins.synapse.feature.schedule.ui.ScheduleScreen
 import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
 import top.contins.synapse.feature.task.viewmodel.TaskViewModel
+import top.contins.synapse.utils.BingImageHelper
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * 计划页面
@@ -49,18 +61,18 @@ fun PlanScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("今日", "日程", "任务", "目标")
     
-    // Dialogs
+    // 模态框状态
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showTodayActionDialog by remember { mutableStateOf(false) }
     var scheduleAddTick by remember { mutableIntStateOf(0) }
 
-    // Data from ViewModels
+    // 数据状态
     val tasks by taskViewModel.tasks.collectAsState()
     val goals by goalViewModel.goals.collectAsState()
     val schedules by scheduleViewModel.schedules.collectAsState()
 
-    // Filter for Today
+    // 筛选今日任务和日程
     val today = LocalDate.now()
     val todayTasks = tasks.filter { 
         val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
@@ -108,9 +120,26 @@ fun PlanScreen(
             }
 
             when (selectedTab) {
-                0 -> TodayTab(todayTasks, todaySchedules)
+                0 -> TodayTab(
+                    tasks = todayTasks,
+                    schedules = todaySchedules,
+                    onTaskStatusChange = { task, isCompleted ->
+                        taskViewModel.updateTaskStatus(task, isCompleted)
+                    },
+                    onTaskDelete = { task ->
+                        taskViewModel.deleteTask(task.id)
+                    }
+                )
                 1 -> ScheduleScreen(viewModel = scheduleViewModel, showFab = false, addTick = scheduleAddTick)
-                2 -> TaskTab(tasks)
+                2 -> TaskTab(
+                    tasks = tasks,
+                    onTaskStatusChange = { task, isCompleted ->
+                        taskViewModel.updateTaskStatus(task, isCompleted)
+                    },
+                    onTaskDelete = { task ->
+                        taskViewModel.deleteTask(task.id)
+                    }
+                )
                 3 -> GoalTab(goals)
             }
         }
@@ -309,30 +338,196 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
 @Composable
 fun TodayTab(
     tasks: List<Task>,
-    schedules: List<Schedule>
+    schedules: List<Schedule>,
+    onTaskStatusChange: (Task, Boolean) -> Unit,
+    onTaskDelete: (Task) -> Unit
 ) {
+    val context = LocalContext.current
     val todayText = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date())
     val dayOfWeekText = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
     
-    LazyColumn(
+    // 必应图片URL状态
+    var bingImageUrl by remember { mutableStateOf<String?>(null) }
+    
+    // 加载必应图片
+    LaunchedEffect(Unit) {
+        bingImageUrl = BingImageHelper.getTodayImageUrl(context)
+    }
+    
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val expandedHeight = 200.dp
+    val collapsedHeight = 80.dp
+    val expandedHeightPx = with(density) { expandedHeight.toPx() }
+    val collapsedHeightPx = with(density) { collapsedHeight.toPx() }
+    
+    // 阈值：当滑动超过40%的折叠距离时，自动折叠
+    val collapseThreshold = (expandedHeightPx - collapsedHeightPx) * 0.4f
+    
+    // 根据滚动位置判断是否应该折叠
+    val shouldCollapse = remember { derivedStateOf {
+        val firstVisibleItemIndex = listState.firstVisibleItemIndex
+        val firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset
+        
+        if (firstVisibleItemIndex > 0) {
+            true
+        } else {
+            firstVisibleItemScrollOffset > collapseThreshold
+        }
+    }}
+    
+    // 使用动画平滑过渡到折叠或展开状态
+    val targetCollapseFraction = if (shouldCollapse.value) 1f else 0f
+    val collapseFraction by animateFloatAsState(
+        targetValue = targetCollapseFraction,
+        animationSpec = tween(durationMillis = 300),
+        label = "collapse"
+    )
+    
+    val headerOffset = -(expandedHeightPx - collapsedHeightPx) * collapseFraction
+
+    Box(
         modifier = Modifier
-            .fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxSize()
+            .clip(RoundedCornerShape(0.dp)) // 裁剪超出边界的内容
     ) {
-        // 日期显示
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Spacer for Header
+            item {
+                Spacer(modifier = Modifier.height(expandedHeight))
+            }
+
+            // 今日概览
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TodayStatCard("待办事项", "${tasks.size}", "${tasks.count { it.status == TaskStatus.COMPLETED }}已完成", modifier = Modifier.weight(1f))
+                    TodayStatCard("会议安排", "${schedules.size}", "即将开始", modifier = Modifier.weight(1f))
+                    TodayStatCard("目标进度", "0", "进行中", modifier = Modifier.weight(1f))
+                }
+            }
+            
+            // 今日任务列表
+            item {
+                Text(
+                    text = "今日任务",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
                 )
+            }
+            
+            items(tasks) { task ->
+                TodayTaskCard(
+                    task = task,
+                    onStatusChange = { onTaskStatusChange(task, it) },
+                    onDelete = { onTaskDelete(task) }
+                )
+            }
+
+            // 今日日程列表
+            item {
+                Text(
+                    text = "今日日程",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            items(schedules) { schedule ->
+                TodayScheduleCard(schedule = schedule)
+            }
+        }
+        
+        // Collapsing Header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(expandedHeight)
+                .graphicsLayer {
+                    translationY = headerOffset
+                }
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            // Expanded Content (Image + Text)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = 1f - collapseFraction
+                    }
             ) {
+                // 必应每日一图背景
+                if (bingImageUrl != null) {
+                    AsyncImage(
+                        model = bingImageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        alpha = 0.4f
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    )
+                }
+                
+                // 渐变遮罩，提高文字可读性
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                                ),
+                                startY = 0f,
+                                endY = Float.POSITIVE_INFINITY
+                            )
+                        )
+                )
+                
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+                        .align(Alignment.BottomStart)
+                        .padding(20.dp)
                 ) {
+                    Text(
+                        text = todayText,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = dayOfWeekText,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    )
+                }
+            }
+            
+            // Collapsed Content
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(collapsedHeight)
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 20.dp)
+                    .graphicsLayer {
+                        alpha = collapseFraction
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
                     Text(
                         text = todayText,
                         fontSize = 18.sp,
@@ -347,56 +542,26 @@ fun TodayTab(
                 }
             }
         }
-        
-        // 今日概览
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TodayStatCard("待办事项", "${tasks.size}", "${tasks.count { it.status == TaskStatus.COMPLETED }}已完成", modifier = Modifier.weight(1f))
-                TodayStatCard("会议安排", "${schedules.size}", "即将开始", modifier = Modifier.weight(1f))
-                TodayStatCard("目标进度", "0", "进行中", modifier = Modifier.weight(1f))
-            }
-        }
-        
-        // 今日任务列表
-        item {
-            Text(
-                text = "今日任务",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-        
-        items(tasks) { task ->
-            TodayTaskCard(task = task)
-        }
-
-        // 今日日程列表
-        item {
-            Text(
-                text = "今日日程",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        items(schedules) { schedule ->
-            TodayScheduleCard(schedule = schedule)
-        }
     }
 }
 
 @Composable
-fun TaskTab(tasks: List<Task>) {
+fun TaskTab(
+    tasks: List<Task>,
+    onTaskStatusChange: (Task, Boolean) -> Unit,
+    onTaskDelete: (Task) -> Unit
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tasks) { task ->
-            TaskCard(task = task)
+            TaskCard(
+                task = task,
+                onStatusChange = { onTaskStatusChange(task, it) },
+                onDelete = { onTaskDelete(task) }
+            )
         }
     }
 }
@@ -456,55 +621,91 @@ fun TodayStatCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayTaskCard(task: Task) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 完成状态指示器
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (task.status == TaskStatus.COMPLETED) Color.Green
-                        else when (task.priority) {
-                            TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
-                            TaskPriority.MEDIUM -> Color.Yellow
-                            else -> Color.Gray
-                        }
-                    )
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = task.title,
-                    fontWeight = FontWeight.Medium,
-                    color = if (task.status == TaskStatus.COMPLETED) 
-                        MaterialTheme.colorScheme.onSurfaceVariant 
-                    else MaterialTheme.colorScheme.onSurface
-                )
+fun TodayTaskCard(
+    task: Task,
+    onStatusChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
+        positionalThreshold = { it * 0.5f }
+    )
+
+    // 监听dismiss状态，当完全滑动到位时执行删除
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            kotlinx.coroutines.delay(20) // 等待动画完成
+            onDelete()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Color.Red
+            } else {
+                Color.Transparent
             }
             
-            if (task.status != TaskStatus.COMPLETED) {
-                Checkbox(
-                    checked = false,
-                    onCheckedChange = { }
-                )
-            } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
                 Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = "已完成",
-                    tint = Color.Green
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
                 )
+            }
+        },
+        enableDismissFromStartToEnd = false
+    ) {
+        Card(
+            onClick = { },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = task.status == TaskStatus.COMPLETED,
+                    onCheckedChange = onStatusChange
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when (task.priority) {
+                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
+                                TaskPriority.MEDIUM -> Color.Yellow
+                                else -> Color.Gray
+                            }
+                        )
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Medium,
+                        color = if (task.status == TaskStatus.COMPLETED) 
+                            MaterialTheme.colorScheme.onSurfaceVariant 
+                        else MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (task.status == TaskStatus.COMPLETED) TextDecoration.LineThrough else null
+                    )
+                }
             }
         }
     }
@@ -512,73 +713,118 @@ fun TodayTaskCard(task: Task) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskCard(task: Task) {
-    Card(
-        onClick = { },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = task.title,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                Row {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = when (task.priority) {
-                            TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red.copy(alpha = 0.1f)
-                            TaskPriority.MEDIUM -> Color.Yellow.copy(alpha = 0.1f)
-                            else -> Color.Gray.copy(alpha = 0.1f)
-                        }
-                    ) {
-                        Text(
-                            text = task.priority.displayName,
-                            fontSize = 10.sp,
-                            color = when (task.priority) {
-                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
-                                TaskPriority.MEDIUM -> Color.Yellow
-                                else -> Color.Gray
-                            },
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                    if (task.status == TaskStatus.COMPLETED) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = "已完成",
-                            tint = Color.Green,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
+fun TaskCard(
+    task: Task,
+    onStatusChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
+        positionalThreshold = { it * 0.5f }
+    )
+
+    // 监听dismiss状态，当完全滑动到位时执行删除
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            kotlinx.coroutines.delay(200) // 等待动画完成
+            onDelete()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Color.Red
+            } else {
+                Color.Transparent
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = task.description,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "截止：${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate)}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false
+    ) {
+        Card(
+            onClick = { },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Checkbox(
+                        checked = task.status == TaskStatus.COMPLETED,
+                        onCheckedChange = onStatusChange,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f),
+                        textDecoration = if (task.status == TaskStatus.COMPLETED) TextDecoration.LineThrough else null
+                    )
+                    Row {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = when (task.priority) {
+                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red.copy(alpha = 0.1f)
+                                TaskPriority.MEDIUM -> Color.Yellow.copy(alpha = 0.1f)
+                                else -> Color.Gray.copy(alpha = 0.1f)
+                            }
+                        ) {
+                            Text(
+                                text = task.priority.displayName,
+                                fontSize = 10.sp,
+                                color = when (task.priority) {
+                                    TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
+                                    TaskPriority.MEDIUM -> Color.Yellow
+                                    else -> Color.Gray
+                                },
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = task.description,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 36.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "截止：${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate)}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 36.dp)
+                )
+            }
         }
     }
 }
@@ -631,7 +877,7 @@ fun GoalCard(goal: Goal) {
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 LinearProgressIndicator(
-                    progress = goal.progress / 100f,
+                    progress = { goal.progress / 100f },
                     modifier = Modifier.fillMaxWidth()
                 )
             }

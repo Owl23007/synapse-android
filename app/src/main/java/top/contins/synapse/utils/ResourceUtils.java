@@ -1,4 +1,4 @@
-package top.contins.synapse.util;
+package top.contins.synapse.utils;
 
 import android.content.Context;
 import android.content.res.Resources;
