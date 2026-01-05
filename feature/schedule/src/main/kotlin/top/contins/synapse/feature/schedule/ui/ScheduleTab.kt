@@ -26,8 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.domain.model.schedule.ScheduleType
 import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
+import java.util.TimeZone
+import java.util.UUID
 
 /**
  * 日程 Tab - 用于在 PlanScreen 中显示日程内容
@@ -92,13 +95,13 @@ fun ScheduleTab(
             onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
                 val currentTime = System.currentTimeMillis()
                 val schedule = Schedule(
-                    id = java.util.UUID.randomUUID().toString(),
+                    id = UUID.randomUUID().toString(),
                     title = title,
                     startTime = startTime,
                     endTime = endTime,
-                    timezoneId = java.util.TimeZone.getDefault().id,
+                    timezoneId = TimeZone.getDefault().id,
                     location = location.ifBlank { null },
-                    type = top.contins.synapse.domain.model.ScheduleType.EVENT,
+                    type = ScheduleType.EVENT,
                     calendarId = "default",
                     isAllDay = isAllDay,
                     reminderMinutes = reminderMinutes,

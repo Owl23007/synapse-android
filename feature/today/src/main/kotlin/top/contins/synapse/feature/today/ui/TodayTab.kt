@@ -25,10 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.Task
-import top.contins.synapse.domain.model.TaskPriority
-import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.domain.model.task.Task
+import top.contins.synapse.domain.model.task.TaskPriority
+import top.contins.synapse.domain.model.task.TaskStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

@@ -1,20 +1,15 @@
-package top.contins.synapse.domain.usecase
+package top.contins.synapse.domain.usecase.chat
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import top.contins.synapse.network.api.ApiService
+import okhttp3.ResponseBody
 import top.contins.synapse.network.api.TokenProvider
 import top.contins.synapse.network.api.ApiManager
 import top.contins.synapse.network.model.ChatMessage
 import top.contins.synapse.network.model.ChatRequest
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -139,7 +134,7 @@ class ChatUseCase @Inject constructor(
     /**
      * 解析Server-Sent Events格式的流式响应
      */
-    private fun parseStreamResponse(responseBody: okhttp3.ResponseBody): String {
+    private fun parseStreamResponse(responseBody: ResponseBody): String {
         return try {
             val reader = BufferedReader(InputStreamReader(responseBody.byteStream(), "UTF-8"))
             val result = StringBuilder()

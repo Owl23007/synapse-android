@@ -1,4 +1,7 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.auth
+
+import top.contins.synapse.domain.model.auth.CaptchaResponse
+import top.contins.synapse.domain.model.auth.User
 
 sealed class AuthUiState {
     object Idle : AuthUiState()
@@ -7,7 +10,7 @@ sealed class AuthUiState {
     data class LoginError(val message: String) : AuthUiState()
     data class RegisterSuccess(val message: String) : AuthUiState()
     data class RegisterError(val message: String) : AuthUiState()
-    data class CaptchaLoaded(val response:CaptchaResponse) : AuthUiState()
+    data class CaptchaLoaded(val response: CaptchaResponse) : AuthUiState()
     data class CaptchaError(val message: String) : AuthUiState()
     data class AfterLoginError(val message: String) : AuthUiState()
 }

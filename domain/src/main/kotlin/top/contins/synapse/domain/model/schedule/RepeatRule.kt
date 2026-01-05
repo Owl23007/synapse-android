@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.schedule
 
 enum class Frequency {
     DAILY,      // 每天

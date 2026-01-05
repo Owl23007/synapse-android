@@ -6,9 +6,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.model.AuthResult
-import top.contins.synapse.domain.model.AuthUiState
-import top.contins.synapse.domain.usecase.AuthUseCase
+import top.contins.synapse.domain.model.auth.AuthResult
+import top.contins.synapse.domain.model.auth.AuthUiState
+import top.contins.synapse.domain.usecase.auth.AuthUseCase
 import javax.inject.Inject
 
 @HiltViewModel

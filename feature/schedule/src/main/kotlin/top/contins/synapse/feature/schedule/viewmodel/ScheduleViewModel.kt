@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.model.CalendarAccount
-import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.schedule.CalendarAccount
+import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.usecase.calendar.GetCalendarsUseCase
 import top.contins.synapse.domain.usecase.schedule.CreateScheduleUseCase
 import top.contins.synapse.domain.usecase.schedule.DeleteScheduleUseCase

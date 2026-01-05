@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens.home
+package top.contins.synapse.ui.home
 
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -15,13 +15,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import top.contins.synapse.ui.screens.home.components.BottomNavigationBar
-import top.contins.synapse.ui.screens.home.plan.PlanScreen
+import top.contins.synapse.ui.home.components.BottomNavigationBar
+import top.contins.synapse.ui.home.plan.PlanScreen
 import top.contins.synapse.feature.profile.ProfileScreen
 import top.contins.synapse.feature.assistant.ChatScreen
 import androidx.compose.foundation.layout.offset

@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.usecase
+package top.contins.synapse.domain.usecase.auth
 
 import top.contins.synapse.domain.repository.TokenRepository
 import javax.inject.Inject

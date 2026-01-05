@@ -25,7 +25,7 @@ fun CustomSnackbar(
     val containerColor = level.getContainerColor()
     val contentColor = level.getContentColor()
 
-    // 获取屏幕高度并计算底部边距 - 使用推荐的现代方法
+    // 获取屏幕高度并计算底部边距
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
 

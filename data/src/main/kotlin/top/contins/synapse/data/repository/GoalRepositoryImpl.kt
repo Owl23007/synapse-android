@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.map
 import top.contins.synapse.data.local.converter.DataMapper.toDomain
 import top.contins.synapse.data.local.converter.DataMapper.toEntity
 import top.contins.synapse.data.local.dao.GoalDao
-import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.goal.Goal
 import top.contins.synapse.domain.repository.GoalRepository
 import javax.inject.Inject
 

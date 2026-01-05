@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.CalendarAccount
+import top.contins.synapse.domain.model.schedule.CalendarAccount
 
 interface CalendarRepository {
     fun getAllCalendars(): Flow<List<CalendarAccount>>

@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.map
 import top.contins.synapse.data.local.dao.CalendarDao
 import top.contins.synapse.data.local.converter.DataMapper.toDomain
 import top.contins.synapse.data.local.converter.DataMapper.toEntity
-import top.contins.synapse.domain.model.CalendarAccount
+import top.contins.synapse.domain.model.schedule.CalendarAccount
 import top.contins.synapse.domain.repository.CalendarRepository
 import javax.inject.Inject
 

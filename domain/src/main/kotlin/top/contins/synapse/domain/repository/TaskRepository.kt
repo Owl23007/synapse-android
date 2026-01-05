@@ -1,6 +1,6 @@
 package top.contins.synapse.domain.repository
 
-import top.contins.synapse.domain.model.Task
+import top.contins.synapse.domain.model.task.Task
 import kotlinx.coroutines.flow.Flow
 
 /**

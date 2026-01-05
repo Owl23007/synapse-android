@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens.home.components
+package top.contins.synapse.ui.home.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,8 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import top.contins.synapse.ui.screens.home.components.BottomNavItem
-import top.contins.synapse.ui.screens.home.components.BottomNavigation
 
 /**
  * 底部导航栏

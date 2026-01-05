@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.map
 import top.contins.synapse.data.local.dao.SubscriptionDao
 import top.contins.synapse.data.local.converter.DataMapper.toDomain
 import top.contins.synapse.data.local.converter.DataMapper.toEntity
-import top.contins.synapse.domain.model.Subscription
+import top.contins.synapse.domain.model.schedule.Subscription
 import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 

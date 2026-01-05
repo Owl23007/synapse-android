@@ -2,7 +2,7 @@ package top.contins.synapse.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// 浅蓝色主题色彩 - 固定配色方案
+// 浅蓝色主题色彩
 val LightBluePrimary = Color(0xFF2196F3)  // 浅蓝主色
 val LightBluePrimaryContainer = Color(0xFFE3F2FD)
 val LightBlueOnPrimary = Color(0xFFFFFFFF)

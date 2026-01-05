@@ -16,9 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.contins.synapse.domain.model.Task
-import top.contins.synapse.domain.model.TaskPriority
-import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.task.Task
+import top.contins.synapse.domain.model.task.TaskPriority
+import top.contins.synapse.domain.model.task.TaskStatus
 import java.text.SimpleDateFormat
 import java.util.Locale
 

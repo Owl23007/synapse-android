@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import top.contins.synapse.domain.model.User
+import top.contins.synapse.domain.model.auth.User
 import coil.compose.AsyncImage
 
 

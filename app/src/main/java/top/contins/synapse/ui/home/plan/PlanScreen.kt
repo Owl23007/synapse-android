@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens.home.plan
+package top.contins.synapse.ui.home.plan
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,9 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
-import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.ScheduleType
-import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.domain.model.schedule.ScheduleType
+import top.contins.synapse.domain.model.task.TaskStatus
 import top.contins.synapse.feature.goal.viewmodel.GoalViewModel
 import top.contins.synapse.feature.schedule.ui.ScheduleTab
 import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
@@ -31,8 +31,9 @@ import top.contins.synapse.feature.today.ui.TodayTab
 import top.contins.synapse.feature.task.ui.TaskTab
 import top.contins.synapse.feature.goal.ui.GoalTab
 import top.contins.synapse.network.utils.BingImageHelper
-import top.contins.synapse.ui.screens.home.plan.components.ExpandableFab
-import top.contins.synapse.ui.screens.home.plan.components.PlanDialogs
+import top.contins.synapse.ui.home.plan.components.ExpandableFab
+import top.contins.synapse.ui.home.plan.components.PlanDialogs
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.TimeZone
@@ -87,7 +88,7 @@ fun PlanScreen(
     }
     
     val todaySchedules = schedules.filter {
-        val scheduleDate = java.time.Instant.ofEpochMilli(it.startTime).atZone(ZoneId.systemDefault()).toLocalDate()
+        val scheduleDate = Instant.ofEpochMilli(it.startTime).atZone(ZoneId.systemDefault()).toLocalDate()
         scheduleDate.isEqual(today)
     }
 
@@ -103,11 +104,11 @@ fun PlanScreen(
                 expanded = isFabExpanded,
                 onExpandToggle = { isFabExpanded = !isFabExpanded },
                 selectedTab = selectedTab,
-                onTaskAdd = { 
+                onTaskAdd = {
                     isFabExpanded = false
-                    showAddTaskDialog = true 
+                    showAddTaskDialog = true
                 },
-                onScheduleAdd = { 
+                onScheduleAdd = {
                     isFabExpanded = false
                     if (selectedTab == 0) {
                         showAddScheduleDialog = true
@@ -115,9 +116,9 @@ fun PlanScreen(
                         scheduleAddTick += 1
                     }
                 },
-                onGoalAdd = { 
+                onGoalAdd = {
                     isFabExpanded = false
-                    showAddGoalDialog = true 
+                    showAddGoalDialog = true
                 }
             )
         }
@@ -178,14 +179,14 @@ fun PlanScreen(
         onConfirmAddTask = { title, priority, dueDate ->
             showAddTaskDialog = false
         },
-        
+
         showAddGoalDialog = showAddGoalDialog,
         onDismissAddGoal = { showAddGoalDialog = false },
         onConfirmAddGoal = { title, deadline ->
             goalViewModel.createGoal(title, deadline)
             showAddGoalDialog = false
         },
-        
+
         showAddScheduleDialog = showAddScheduleDialog,
         onDismissAddSchedule = { showAddScheduleDialog = false },
         onConfirmAddSchedule = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->

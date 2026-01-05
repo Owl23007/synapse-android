@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.core.ui.R
-import top.contins.synapse.domain.model.AuthUiState
+import top.contins.synapse.domain.model.auth.AuthUiState
 import top.contins.synapse.core.ui.compose.snackbar.SnackbarController
 import kotlin.io.encoding.Base64
 

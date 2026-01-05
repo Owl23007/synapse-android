@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.goal.Goal
 
 interface GoalRepository {
     fun getAllGoals(): Flow<List<Goal>>

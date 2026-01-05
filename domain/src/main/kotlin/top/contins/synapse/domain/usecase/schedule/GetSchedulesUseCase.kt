@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.usecase.schedule
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.repository.ScheduleRepository
 import javax.inject.Inject
 

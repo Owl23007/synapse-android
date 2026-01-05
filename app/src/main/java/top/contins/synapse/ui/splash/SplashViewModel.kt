@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens.splash
+package top.contins.synapse.ui.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.usecase.ValidateTokenOnStartupUseCase
-import top.contins.synapse.domain.model.TokenValidationResult
+import top.contins.synapse.domain.usecase.auth.ValidateTokenOnStartupUseCase
+import top.contins.synapse.domain.model.auth.TokenValidationResult
 import javax.inject.Inject
 
 /**

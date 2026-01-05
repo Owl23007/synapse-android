@@ -1,14 +1,10 @@
-package top.contins.synapse.ui.screens.home.plan.components
+package top.contins.synapse.ui.home.plan.components
 
 import androidx.compose.runtime.Composable
-import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.RepeatRule
+import top.contins.synapse.domain.model.schedule.RepeatRule
 import top.contins.synapse.feature.task.ui.AddTaskDialog
 import top.contins.synapse.feature.goal.ui.AddGoalDialog
 import top.contins.synapse.feature.schedule.ui.AddScheduleDialog
-import top.contins.synapse.domain.model.ScheduleType
-import java.util.TimeZone
-import java.util.UUID
 
 /**
  * 计划页面对话框组件

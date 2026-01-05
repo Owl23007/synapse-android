@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens
+package top.contins.synapse.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -11,8 +11,8 @@ import androidx.navigation.compose.rememberNavController
 import top.contins.synapse.core.ui.compose.snackbar.LevelSnackbarHost
 import top.contins.synapse.core.ui.compose.snackbar.SnackbarControllerProvider
 import top.contins.synapse.feature.auth.AuthScreen
-import top.contins.synapse.ui.screens.splash.SplashScreen
-import top.contins.synapse.ui.screens.home.HomeScreen
+import top.contins.synapse.ui.home.HomeScreen
+import top.contins.synapse.ui.splash.SplashScreen
 
 /**
  * 应用主入口

@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.Subscription
+import top.contins.synapse.domain.model.schedule.Subscription
 
 interface SubscriptionRepository {
     fun getAllSubscriptions(): Flow<List<Subscription>>

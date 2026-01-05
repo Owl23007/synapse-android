@@ -36,7 +36,6 @@ object DatabaseModule {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
                 val now = System.currentTimeMillis()
-                // 0xFF2196F3 = 4280391411
                 db.execSQL("INSERT OR IGNORE INTO calendars (id, name, color, is_visible, is_default, created_at, updated_at) VALUES ('default', '默认日历', 4280391411, 1, 1, $now, $now)")
             }
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -45,7 +44,7 @@ object DatabaseModule {
                 db.execSQL("INSERT OR IGNORE INTO calendars (id, name, color, is_visible, is_default, created_at, updated_at) VALUES ('default', '默认日历', 4280391411, 1, 1, $now, $now)")
             }
         })
-        .fallbackToDestructiveMigration() // For development simplicity
+        .fallbackToDestructiveMigration() // 如果数据库结构发生变化，则删除旧数据库并重新创建
         .build()
     }
 

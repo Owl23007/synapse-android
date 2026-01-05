@@ -1,7 +1,8 @@
-package top.contins.synapse.domain.usecase
+package top.contins.synapse.domain.usecase.chat
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -9,8 +10,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.ScheduleType
+import okhttp3.ResponseBody
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.domain.model.schedule.ScheduleType
 import top.contins.synapse.domain.usecase.schedule.CreateScheduleUseCase
 import top.contins.synapse.network.api.TokenProvider
 import top.contins.synapse.network.api.ApiManager
@@ -106,7 +108,7 @@ class StreamingChatUseCase @Inject constructor(
      * 解析Server-Sent Events格式的流式响应为Flow
      * 让每个HTTP chunk直接传递给UI，避免重新组装
      *我该复习什么内容   | 我今天晚上6.00-8.00 计算机网络考试*/
-    private fun parseStreamResponseFlow(responseBody: okhttp3.ResponseBody): Flow<String> = flow {
+    private fun parseStreamResponseFlow(responseBody: ResponseBody): Flow<String> = flow {
         val reader = BufferedReader(InputStreamReader(responseBody.byteStream(), "UTF-8"))
         val gson = Gson()
 
@@ -183,7 +185,7 @@ class StreamingChatUseCase @Inject constructor(
 
         try {
             val gson = Gson()
-            val type = object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
+            val type = object : TypeToken<Map<String, Any>>() {}.type
             val args: Map<String, Any> = gson.fromJson(argumentsJson, type)
             
             val title = args["summary"] as? String ?: "未命名日程"

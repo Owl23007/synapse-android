@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.model.Task
-import top.contins.synapse.domain.model.TaskPriority
-import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.task.Task
+import top.contins.synapse.domain.model.task.TaskPriority
+import top.contins.synapse.domain.model.task.TaskStatus
 import top.contins.synapse.domain.repository.TaskRepository
 import java.text.SimpleDateFormat
 import java.util.Date

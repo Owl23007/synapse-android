@@ -5,17 +5,17 @@ import com.google.gson.reflect.TypeToken
 import top.contins.synapse.data.local.entity.CalendarEntity
 import top.contins.synapse.data.local.entity.ScheduleEntity
 import top.contins.synapse.data.local.entity.SubscriptionEntity
-import top.contins.synapse.domain.model.CalendarAccount
-import top.contins.synapse.domain.model.RepeatRule
-import top.contins.synapse.domain.model.Schedule
-import top.contins.synapse.domain.model.ScheduleType
-import top.contins.synapse.domain.model.Subscription
+import top.contins.synapse.domain.model.schedule.CalendarAccount
+import top.contins.synapse.domain.model.schedule.RepeatRule
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.domain.model.schedule.ScheduleType
+import top.contins.synapse.domain.model.schedule.Subscription
 import top.contins.synapse.data.local.entity.GoalEntity
 import top.contins.synapse.data.local.entity.TaskEntity
-import top.contins.synapse.domain.model.Goal
-import top.contins.synapse.domain.model.Task
-import top.contins.synapse.domain.model.TaskPriority
-import top.contins.synapse.domain.model.TaskStatus
+import top.contins.synapse.domain.model.goal.Goal
+import top.contins.synapse.domain.model.task.Task
+import top.contins.synapse.domain.model.task.TaskPriority
+import top.contins.synapse.domain.model.task.TaskStatus
 import java.util.Date
 
 object DataMapper {

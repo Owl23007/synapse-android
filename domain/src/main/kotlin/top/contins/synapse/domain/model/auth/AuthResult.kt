@@ -1,4 +1,6 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.auth
+
+import top.contins.synapse.domain.model.auth.CaptchaResponse
 
 sealed class AuthResult<out T> {
     data class Success<T>(val data: T) : AuthResult<T>()

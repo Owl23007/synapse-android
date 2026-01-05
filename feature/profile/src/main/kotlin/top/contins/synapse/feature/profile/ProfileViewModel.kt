@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.model.AuthResult
-import top.contins.synapse.domain.model.User
-import top.contins.synapse.domain.usecase.AuthUseCase
-import top.contins.synapse.domain.usecase.LogoutUseCase
+import top.contins.synapse.domain.model.auth.AuthResult
+import top.contins.synapse.domain.model.auth.User
+import top.contins.synapse.domain.usecase.auth.AuthUseCase
+import top.contins.synapse.domain.usecase.auth.LogoutUseCase
 import javax.inject.Inject
 
 sealed class ProfileUiState {

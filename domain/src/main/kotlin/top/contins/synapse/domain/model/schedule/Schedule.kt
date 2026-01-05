@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.schedule
 
 data class Schedule(
     val id: String,

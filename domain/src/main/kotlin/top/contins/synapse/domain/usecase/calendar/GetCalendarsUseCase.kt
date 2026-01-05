@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.usecase.calendar
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.CalendarAccount
+import top.contins.synapse.domain.model.schedule.CalendarAccount
 import top.contins.synapse.domain.repository.CalendarRepository
 import javax.inject.Inject
 

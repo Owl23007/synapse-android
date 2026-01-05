@@ -1,7 +1,7 @@
 package top.contins.synapse.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.schedule.Schedule
 
 interface ScheduleRepository {
     fun getAllSchedules(): Flow<List<Schedule>>

@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.map
 import top.contins.synapse.data.local.dao.ScheduleDao
 import top.contins.synapse.data.local.converter.DataMapper.toDomain
 import top.contins.synapse.data.local.converter.DataMapper.toEntity
-import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.repository.ScheduleRepository
 import javax.inject.Inject
 

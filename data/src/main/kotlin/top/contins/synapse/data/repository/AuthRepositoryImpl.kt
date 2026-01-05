@@ -2,22 +2,17 @@ package top.contins.synapse.data.repository
 
 import android.net.http.HttpException
 import android.os.Build
-import android.util.Base64
 import android.util.Log
 import androidx.annotation.RequiresExtension
 import top.contins.synapse.data.storage.TokenManager
-import top.contins.synapse.domain.model.AuthResult
-import top.contins.synapse.domain.model.User
-import top.contins.synapse.domain.model.CaptchaResponse
+import top.contins.synapse.domain.model.auth.AuthResult
+import top.contins.synapse.domain.model.auth.User
+import top.contins.synapse.domain.model.auth.CaptchaResponse
 import top.contins.synapse.domain.repository.AuthRepository
 import top.contins.synapse.network.api.ApiManager
 import top.contins.synapse.network.model.LoginRequest
 import top.contins.synapse.network.model.RegisterRequest
 import java.io.IOException
-import java.security.NoSuchAlgorithmException
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
-import java.security.spec.InvalidKeySpecException
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -73,7 +68,7 @@ class AuthRepositoryImpl @Inject constructor(
             } else {
                 AuthResult.Error(result.message ?: "登录失败")
             }
-        } catch(e: HttpException) {
+        } catch(_: HttpException) {
             return AuthResult.Error("登录失败，服务器响应错误")
         } catch (e: IOException) {
             Log.e("Auth", "Network error during login", e)
@@ -152,7 +147,7 @@ class AuthRepositoryImpl @Inject constructor(
             } else {
                 AuthResult.Error(result.message ?: "注册失败")
             }
-        } catch(e: HttpException) {
+        } catch(_: HttpException) {
             return AuthResult.Error("注册失败，服务器响应错误")
         } catch (e: IOException) {
             Log.e("Auth", "Network error during registration", e)
@@ -188,26 +183,5 @@ class AuthRepositoryImpl @Inject constructor(
             captchaId = parts[0].trim(),
             captchaImageBase64 = parts[1].trim()
         )
-    }
-
-    override suspend fun afterLogin(serverEndpoint: String, email: String, password: String): AuthResult<User> {
-        TODO("Not yet implemented")
-    }
-
-    private fun encryptPassword(password: String, username: String): String {
-        val salt = username.toByteArray()
-        val iterations = 10000
-        val keyLength = 256
-
-        return try {
-            val spec = PBEKeySpec(password.toCharArray(), salt, iterations, keyLength)
-            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-            val hash = factory.generateSecret(spec).encoded
-            Base64.encodeToString(hash, Base64.NO_WRAP)
-        } catch (e: NoSuchAlgorithmException) {
-            throw RuntimeException("加密算法不支持", e)
-        } catch (e: InvalidKeySpecException) {
-            throw RuntimeException("密钥规范无效", e)
-        }
     }
 }

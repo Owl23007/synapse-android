@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.schedule
 
 enum class ScheduleType(val displayName: String, val defaultColor: Long) {
     MEETING("会议", 0xFF2196F3),      // 蓝色

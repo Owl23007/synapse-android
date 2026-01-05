@@ -1,7 +1,7 @@
-package top.contins.synapse.domain.usecase
+package top.contins.synapse.domain.usecase.auth
 
-import top.contins.synapse.domain.model.AuthResult
-import top.contins.synapse.domain.model.User
+import top.contins.synapse.domain.model.auth.AuthResult
+import top.contins.synapse.domain.model.auth.User
 import top.contins.synapse.domain.repository.AuthRepository
 import javax.inject.Inject
 

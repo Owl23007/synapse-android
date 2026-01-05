@@ -1,4 +1,4 @@
-package top.contins.synapse.domain.model
+package top.contins.synapse.domain.model.task
 
 enum class TaskStatus(val displayName: String) {
     TODO("待办"),

@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.goal.Goal
 import java.text.SimpleDateFormat
 import java.util.Locale
 

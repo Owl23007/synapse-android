@@ -71,7 +71,6 @@ private val DarkBlueColorScheme = darkColorScheme(
 @Composable
 fun SynapseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,  // 禁用动态颜色
     content: @Composable () -> Unit
 ) {
     // 强制使用固定的浅蓝色主题，不跟随系统动态颜色
@@ -90,9 +89,9 @@ fun SynapseTheme(
             // 设置导航栏颜色跟随主题
             @Suppress("DEPRECATION")
             window.navigationBarColor = if (darkTheme) {
-                "#1A1D26".toColorInt()  // 偏亮的深灰色
+                "#1A1D26".toColorInt()
             } else {
-                "#F5F5F5".toColorInt()  // 偏亮的灰色
+                "#F5F5F5".toColorInt()
             }
         }
     }

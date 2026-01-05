@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.model.Goal
+import top.contins.synapse.domain.model.goal.Goal
 import top.contins.synapse.domain.repository.GoalRepository
 import java.text.SimpleDateFormat
 import java.util.Date

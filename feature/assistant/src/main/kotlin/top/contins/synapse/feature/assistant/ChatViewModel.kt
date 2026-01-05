@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.usecase.ChatUseCase
-import top.contins.synapse.domain.usecase.StreamingChatUseCase
+import top.contins.synapse.domain.usecase.chat.ChatUseCase
+import top.contins.synapse.domain.usecase.chat.StreamingChatUseCase
 import top.contins.synapse.network.model.ChatMessage
 import javax.inject.Inject
 

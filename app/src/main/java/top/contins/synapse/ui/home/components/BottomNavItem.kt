@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens.home.components
+package top.contins.synapse.ui.home.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
