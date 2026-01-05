@@ -1,4 +1,4 @@
-package top.contins.synapse.utils
+package top.contins.synapse.network.utils
 
 import android.content.Context
 import android.util.Log

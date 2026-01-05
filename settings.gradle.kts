@@ -39,4 +39,5 @@ include(":network")
 include(":core:ui")
 include(":feature:auth")
 include(":feature:profile")
+include(":feature:today")
 

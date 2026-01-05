@@ -82,6 +82,7 @@ dependencies {
     implementation(project(":feature:goal"))
     implementation(project(":feature:schedule"))
     implementation(project(":feature:task"))
+    implementation(project(":feature:today"))
 
     debugImplementation(libs.compose.ui.tooling)
     implementation("org.conscrypt:conscrypt-android:2.5.3")

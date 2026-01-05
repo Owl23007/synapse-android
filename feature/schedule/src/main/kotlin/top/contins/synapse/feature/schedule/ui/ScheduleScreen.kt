@@ -109,10 +109,25 @@ fun ScheduleScreen(
 
     if (showAddDialog) {
         AddScheduleDialog(
-            selectedDate = selectedDate,
-            calendars = calendars,
+            initialDate = selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
             onDismiss = { showAddDialog = false },
-            onConfirm = { schedule ->
+            onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
+                val currentTime = System.currentTimeMillis()
+                val schedule = Schedule(
+                    id = java.util.UUID.randomUUID().toString(),
+                    title = title,
+                    startTime = startTime,
+                    endTime = endTime,
+                    timezoneId = java.util.TimeZone.getDefault().id,
+                    location = location.ifBlank { null },
+                    type = top.contins.synapse.domain.model.ScheduleType.EVENT,
+                    calendarId = "default",
+                    isAllDay = isAllDay,
+                    reminderMinutes = reminderMinutes,
+                    repeatRule = repeatRule,
+                    createdAt = currentTime,
+                    updatedAt = currentTime
+                )
                 viewModel.createSchedule(schedule)
                 showAddDialog = false
             }
