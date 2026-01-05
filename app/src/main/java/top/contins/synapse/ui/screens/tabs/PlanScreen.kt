@@ -19,7 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.domain.model.Schedule
 import top.contins.synapse.domain.model.TaskStatus
 import top.contins.synapse.feature.goal.viewmodel.GoalViewModel
-import top.contins.synapse.feature.schedule.ui.ScheduleScreen
+import top.contins.synapse.feature.schedule.ui.ScheduleTab
 import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
 import top.contins.synapse.feature.task.viewmodel.TaskViewModel
 import top.contins.synapse.feature.today.ui.TodayTab
@@ -135,7 +135,7 @@ fun PlanScreen(
                         taskViewModel.deleteTask(task.id)
                     }
                 )
-                1 -> ScheduleScreen(viewModel = scheduleViewModel, showFab = false, addTick = scheduleAddTick)
+                1 -> ScheduleTab(viewModel = scheduleViewModel, addTick = scheduleAddTick)
                 2 -> TaskTab(
                     tasks = tasks,
                     onTaskStatusChange = { task, isCompleted ->

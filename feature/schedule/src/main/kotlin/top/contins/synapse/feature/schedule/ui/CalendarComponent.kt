@@ -3,7 +3,6 @@ package top.contins.synapse.feature.schedule.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,7 +12,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.animateDpAsState
@@ -167,12 +165,11 @@ private fun WeekCalendarView(
         Row(modifier = Modifier.fillMaxWidth()) {
             weekDates.forEach { date ->
                 WeekDayItem(
+                    modifier = Modifier.weight(1f),
                     date = date,
                     isSelected = selectedDate == date,
-                    isToday = LocalDate.now() == date,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onDateSelected(date) }
-                )
+                    isToday = LocalDate.now() == date
+                ) { onDateSelected(date) }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -392,10 +389,10 @@ private fun CalendarDayItem(
 
 @Composable
 private fun WeekDayItem(
+    modifier: Modifier = Modifier,
     date: LocalDate,
     isSelected: Boolean,
     isToday: Boolean = false,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val backgroundColor = when {

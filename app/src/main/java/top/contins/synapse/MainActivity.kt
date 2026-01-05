@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.activity
+package top.contins.synapse
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,8 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
-import top.contins.synapse.ui.screens.MainScreen
 import top.contins.synapse.core.ui.theme.SynapseTheme
+import top.contins.synapse.ui.screens.MainEntry
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -20,10 +20,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             SynapseTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.Companion.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    MainEntry()
                 }
             }
         }

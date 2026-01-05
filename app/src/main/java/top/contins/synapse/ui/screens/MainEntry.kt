@@ -18,7 +18,7 @@ import top.contins.synapse.feature.auth.AuthScreen
  */
 @Composable
 @Preview
-fun MainScreen(
+fun MainEntry(
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()

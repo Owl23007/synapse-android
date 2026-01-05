@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun CustomSnackbar(
+    modifier: Modifier = Modifier,
     snackbarData: SnackbarData,
     level: SnackbarLevel = SnackbarLevel.INFO,
-    modifier: Modifier = Modifier
 ) {
     val containerColor = level.getContainerColor()
     val contentColor = level.getContentColor()
@@ -55,9 +55,10 @@ fun CustomSnackbar(
  */
 @Composable
 fun LevelSnackbarHost(
+    modifier: Modifier = Modifier,
     hostState: SnackbarHostState,
     level: SnackbarLevel = SnackbarLevel.INFO,
-    modifier: Modifier = Modifier
+
 ) {
     SnackbarHost(
         hostState = hostState,

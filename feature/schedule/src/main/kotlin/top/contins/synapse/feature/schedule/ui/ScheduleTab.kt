@@ -3,23 +3,18 @@ package top.contins.synapse.feature.schedule.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,26 +22,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
 import top.contins.synapse.domain.model.Schedule
+import top.contins.synapse.feature.schedule.viewmodel.ScheduleViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * 日程 Tab - 用于在 PlanScreen 中显示日程内容
+ */
 @Composable
-@Preview
-fun ScheduleScreen(
+fun ScheduleTab(
     viewModel: ScheduleViewModel = hiltViewModel(),
-    showFab: Boolean = true,
-    addTick: Int = 0
+    addTick: Int = 0,
+    onShowAddDialog: () -> Unit = {}
 ) {
     val selectedDate by viewModel.selectedDate.collectAsState()
     val currentMonth by viewModel.currentMonth.collectAsState()
     val schedules by viewModel.schedules.collectAsState()
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
-    val calendars by viewModel.calendars.collectAsState()
     var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -56,55 +51,38 @@ fun ScheduleScreen(
         }
     }
 
-    val content: @Composable (PaddingValues) -> Unit = { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // View Switcher
-            CalendarViewTabs(
-                selectedViewType = viewType,
-                onViewTypeSelected = { viewType = it }
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        // View Switcher
+        CalendarViewTabs(
+            selectedViewType = viewType,
+            onViewTypeSelected = { viewType = it }
+        )
 
-            when (viewType) {
-                CalendarViewType.MONTH -> {
-                    MonthView(
-                        modifier = Modifier.fillMaxWidth(),
-                        currentMonth = currentMonth,
-                        selectedDate = selectedDate,
-                        schedules = schedules,
-                        onDateSelected = viewModel::onDateSelected,
-                        onMonthChanged = viewModel::onMonthChanged
-                    )
+        when (viewType) {
+            CalendarViewType.MONTH -> {
+                MonthView(
+                    modifier = Modifier.fillMaxWidth(),
+                    currentMonth = currentMonth,
+                    selectedDate = selectedDate,
+                    schedules = schedules,
+                    onDateSelected = viewModel::onDateSelected,
+                    onMonthChanged = viewModel::onMonthChanged
+                )
 
-                    // 月视图下面显示日程（选中日期）
-                    ScheduleList(
-                        modifier = Modifier.weight(1f),
-                        schedules = selectedDateSchedules,
-                        onDelete = viewModel::deleteSchedule
-                    )
-                }
-
-                CalendarViewType.WEEK -> Text("周视图 (即将推出)", modifier = Modifier.padding(16.dp))
-                CalendarViewType.DAY -> Text("日视图 (即将推出)", modifier = Modifier.padding(16.dp))
+                // 月视图下面显示日程（选中日期）
+                ScheduleList(
+                    modifier = Modifier.weight(1f),
+                    schedules = selectedDateSchedules,
+                    onDelete = viewModel::deleteSchedule
+                )
             }
-        }
-    }
 
-    if (showFab) {
-        Scaffold(
-            floatingActionButton = {
-                FloatingActionButton(onClick = { showAddDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Schedule")
-                }
-            }
-        ) { paddingValues ->
-            content(paddingValues)
+            CalendarViewType.WEEK -> Text("周视图 (即将推出)", modifier = Modifier.padding(16.dp))
+            CalendarViewType.DAY -> Text("日视图 (即将推出)", modifier = Modifier.padding(16.dp))
         }
-    } else {
-        content(PaddingValues(0.dp))
     }
 
     if (showAddDialog) {
