@@ -6,8 +6,10 @@ import android.os.Build;
 import dagger.hilt.android.HiltAndroidApp;
 
 /**
- * Synapse应用的Application类
- * 使用Hilt进行依赖注入
+ * Synapse 应用的 Application 类
+ * 负责应用全局的初始化工作，包括：
+ * - Hilt 依赖注入框架初始化
+ * - 禁用 Android 12+ 的动态颜色功能，保持应用自定义主题一致性
  */
 @HiltAndroidApp
 public class SynapseApplication extends Application {

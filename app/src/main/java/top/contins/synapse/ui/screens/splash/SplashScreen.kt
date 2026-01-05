@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.screens
+package top.contins.synapse.ui.screens.splash
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -43,8 +43,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 import top.contins.synapse.R
 import top.contins.synapse.core.ui.R as CoreUiR
-import top.contins.synapse.ui.viewmodel.SplashViewModel
-import top.contins.synapse.ui.viewmodel.SplashUiState
 
 /**
  * 启动屏幕组件
@@ -103,52 +101,87 @@ fun SplashScreenContent(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primaryContainer
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        MaterialTheme.colorScheme.background
                     )
                 )
             ),
         contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
-            Image(
-                painter = painterResource(id = CoreUiR.drawable.logo),
-                contentDescription = "App Logo",
+            // 应用标志/Logo
+            Box(
                 modifier = Modifier
-                    .size(128.dp)
-                    .clip(RoundedCornerShape(12.dp)) // 圆角
-            )
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_launcher_image),
+                    contentDescription = "App Logo",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .rotate(if (isLoading) rotationAngle else 0f)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // 应用名称
             Text(
                 text = "Synapse",
-                fontSize = 28.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // 应用描述
             Text(
-                text = "智能助手平台",
-                fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.8f),
+                text = "智能任务管理助手",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(48.dp))
 
+            // 加载指示器或错误提示
             if (isLoading) {
                 CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(50.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+            } else {
+                // 错误状态（如需要）
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Text(
+                        text = "加载失败",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { /* 重试逻辑 */ }) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "重试",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("重试")
+                    }
+                }
             }
         }
     }

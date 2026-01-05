@@ -1,4 +1,4 @@
-package top.contins.synapse.ui.viewmodel
+package top.contins.synapse.ui.screens.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,12 +14,19 @@ import top.contins.synapse.domain.model.TokenValidationResult
 import javax.inject.Inject
 
 /**
- * 启动页UI状态封装
+ * 启动页 UI 状态
+ * 
+ * 表示启动屏幕在不同阶段的状态
  */
 sealed class SplashUiState {
-    object Loading : SplashUiState()        // 加载中状态
-    object NavigateToAuth : SplashUiState() // 导航到认证页面
-    object NavigateToMain : SplashUiState() // 导航到主页面
+    /** 初始加载中状态，验证token并获取路由信息 */
+    object Loading : SplashUiState()
+    
+    /** Token 无效或不存在，需要导航到认证页面 */
+    object NavigateToAuth : SplashUiState()
+    
+    /** Token 有效，导航到主页面 */
+    object NavigateToMain : SplashUiState()
 }
 
 @HiltViewModel
