@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import top.contins.synapse.data.storage.TokenManager
-import top.contins.synapse.domain.service.RouteManager
 import top.contins.synapse.domain.usecase.ValidateTokenOnStartupUseCase
 import top.contins.synapse.domain.model.TokenValidationResult
 import javax.inject.Inject
@@ -32,7 +31,6 @@ sealed class SplashUiState {
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val validateTokenOnStartupUseCase: ValidateTokenOnStartupUseCase,
-    private val routeManager: RouteManager,
     private val tokenManager: TokenManager
 ) : ViewModel() {
     
@@ -55,7 +53,7 @@ class SplashViewModel @Inject constructor(
                     }
                     TokenValidationResult.Refreshed -> {
                         // 通过refresh token刷新成功，加载路由信息
-                        loadRoutesAndNavigate()
+                        _uiState.value = SplashUiState.NavigateToMain
                     }
                     TokenValidationResult.Invalid -> {
                         // tokens无效，需要重新登录
@@ -69,34 +67,7 @@ class SplashViewModel @Inject constructor(
         }
     }
     
-    /**
-     * 加载路由信息并导航到主界面
-     */
-    private suspend fun loadRoutesAndNavigate() {
-        try {
-            // 获取服务器端点用于加载路由
-            val serverEndpoint = tokenManager.getServerEndpoint()
-            
-            if (!serverEndpoint.isNullOrEmpty()) {
-                // 尝试加载路由信息
-                val routeLoadSuccess = routeManager.loadRoutes(serverEndpoint)
-                
-                if (routeLoadSuccess) {
-                    // 路由加载成功，进入主界面
-                    _uiState.value = SplashUiState.NavigateToMain
-                } else {
-                    // 路由加载失败，但token是有效的，仍然进入主界面
-                    _uiState.value = SplashUiState.NavigateToMain
-                }
-            } else {
-                // 没有服务器端点信息，直接进入主界面
-                _uiState.value = SplashUiState.NavigateToMain
-            }
-        } catch (e: Exception) {
-            // 路由加载出错，但仍然进入主界面
-            _uiState.value = SplashUiState.NavigateToMain
-        }
-    }
+
     
     fun resetState() {
         _uiState.value = SplashUiState.Loading
