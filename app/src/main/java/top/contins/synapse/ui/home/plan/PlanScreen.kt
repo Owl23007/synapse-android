@@ -134,7 +134,10 @@ fun PlanScreen(
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        onClick = { 
+                            selectedTab = index
+                            isFabExpanded = false
+                        },
                         text = { Text(title) }
                     )
                 }
@@ -173,15 +176,12 @@ fun PlanScreen(
         showAddTaskDialog = showAddTaskDialog,
         onDismissAddTask = { showAddTaskDialog = false },
         onConfirmAddTask = { title, priority, dueDate ->
-            // priority 和 dueDate 都是 String 类型（从对话框返回）
-            taskViewModel.createTask(title, priority, dueDate)
             showAddTaskDialog = false
         },
         
         showAddGoalDialog = showAddGoalDialog,
         onDismissAddGoal = { showAddGoalDialog = false },
         onConfirmAddGoal = { title, deadline ->
-            // deadline 从对话框返回为 String 类型
             goalViewModel.createGoal(title, deadline)
             showAddGoalDialog = false
         },
@@ -200,8 +200,8 @@ fun PlanScreen(
                 type = ScheduleType.EVENT,
                 calendarId = "default",
                 isAllDay = isAllDay,
-                reminderMinutes = reminderMinutes,  // 已是 List<Int>? 类型
-                repeatRule = repeatRule,             // 已是 RepeatRule? 类型
+                reminderMinutes = reminderMinutes,
+                repeatRule = repeatRule,
                 createdAt = currentTime,
                 updatedAt = currentTime
             )

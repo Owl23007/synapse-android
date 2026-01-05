@@ -84,16 +84,7 @@ fun SplashScreen(
 fun SplashScreenContent(
     isLoading: Boolean = true
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "splash_animation")
-    val rotationAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+    rememberInfiniteTransition(label = "splash_animation")
 
     Box(
         modifier = Modifier
@@ -117,7 +108,7 @@ fun SplashScreenContent(
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -125,8 +116,7 @@ fun SplashScreenContent(
                     painter = painterResource(id = R.mipmap.ic_launcher_image),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .size(80.dp)
-                        .rotate(if (isLoading) rotationAngle else 0f)
+                        .size(120.dp)
                 )
             }
 
@@ -159,29 +149,6 @@ fun SplashScreenContent(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-            } else {
-                // 错误状态（如需要）
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 32.dp)
-                ) {
-                    Text(
-                        text = "加载失败",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { /* 重试逻辑 */ }) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "重试",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("重试")
-                    }
-                }
             }
         }
     }

@@ -86,6 +86,12 @@ fun ExpandableFab(
                 onClick = onTaskAdd,
                 expanded = expanded
             )
+            MiniFab(
+                icon = Icons.Filled.Flag,
+                text = "目标",
+                onClick = onGoalAdd,
+                expanded = expanded
+            )
         } else {
             // 其他tab：显示单个对应按钮
             val (icon, text, onClick) = when (selectedTab) {

@@ -3,11 +3,11 @@ package top.contins.synapse.ui.screens.splash
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.contins.synapse.data.storage.TokenManager
 import top.contins.synapse.domain.usecase.ValidateTokenOnStartupUseCase
 import top.contins.synapse.domain.model.TokenValidationResult
 import javax.inject.Inject
@@ -30,8 +30,7 @@ sealed class SplashUiState {
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val validateTokenOnStartupUseCase: ValidateTokenOnStartupUseCase,
-    private val tokenManager: TokenManager
+    private val validateTokenOnStartupUseCase: ValidateTokenOnStartupUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
@@ -45,6 +44,8 @@ class SplashViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = validateTokenOnStartupUseCase()
+                // 等待 3 秒以展示启动屏幕
+                delay(1000)
                 
                 when (result) {
                     TokenValidationResult.NoTokens -> {
@@ -60,16 +61,12 @@ class SplashViewModel @Inject constructor(
                         _uiState.value = SplashUiState.NavigateToAuth
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // 如果验证过程中出现错误，导航到登录页面
                 _uiState.value = SplashUiState.NavigateToAuth
             }
         }
     }
-    
 
-    
-    fun resetState() {
-        _uiState.value = SplashUiState.Loading
-    }
+
 }

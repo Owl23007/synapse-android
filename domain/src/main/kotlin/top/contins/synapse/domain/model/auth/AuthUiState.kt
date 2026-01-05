@@ -9,7 +9,6 @@ sealed class AuthUiState {
     data class RegisterError(val message: String) : AuthUiState()
     data class CaptchaLoaded(val response:CaptchaResponse) : AuthUiState()
     data class CaptchaError(val message: String) : AuthUiState()
-    data class AfterLoginSuccess(val user: User) : AuthUiState()
     data class AfterLoginError(val message: String) : AuthUiState()
 }
 
