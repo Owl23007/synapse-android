@@ -177,6 +177,7 @@ fun PlanScreen(
         showAddTaskDialog = showAddTaskDialog,
         onDismissAddTask = { showAddTaskDialog = false },
         onConfirmAddTask = { title, priority, dueDate ->
+            taskViewModel.createTask(title, priority, dueDate)
             showAddTaskDialog = false
         },
 

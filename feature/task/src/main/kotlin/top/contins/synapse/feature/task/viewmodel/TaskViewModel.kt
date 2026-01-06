@@ -35,14 +35,21 @@ class TaskViewModel @Inject constructor(
     fun createTask(title: String, priority: String, dueDate: String? = null) {
         viewModelScope.launch {
             val parsedDueDate = if (!dueDate.isNullOrBlank()) {
-                try {
-                    // 尝试解析带时间的格式 "yyyy-MM-dd HH:mm:ss"
-                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(dueDate)
-                        ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dueDate)
-                        ?: Date()
-                } catch (e: Exception) {
-                    Date() // 解析失败时默认使用今天
+                val formats = listOf(
+                    "yyyy-MM-dd HH:mm:ss",
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-MM-dd"
+                )
+                var date: Date? = null
+                for (format in formats) {
+                    try {
+                        date = SimpleDateFormat(format, Locale.getDefault()).parse(dueDate)
+                        if (date != null) break
+                    } catch (e: Exception) {
+                        continue
+                    }
                 }
+                date ?: Date()
             } else {
                 Date() // 未提供截止日期时默认使用今天
             }

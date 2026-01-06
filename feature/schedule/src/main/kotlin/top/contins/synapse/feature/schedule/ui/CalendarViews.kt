@@ -180,11 +180,6 @@ fun MonthView(
                                     onClick = { clickedDate ->
                                         onDateSelected(clickedDate)
                                         if (!isCurrentMonth) {
-                                            // When clicking a gray date, we might want to switch to that month?
-                                            // Leaving as per previous logic (only select), but usually good UX is to switch.
-                                            // The user didn't ask to change this logic, just "add left/right scroll".
-                                            // Wait, if I click previous month date, pager should technically scroll?
-                                            // Let's stick to update selectedDate. Parent might update currentMonth if they want.
                                             onMonthChanged(YearMonth.from(clickedDate))
                                         }
                                     }
