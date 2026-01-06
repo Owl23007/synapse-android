@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Event
@@ -77,9 +78,11 @@ fun ScheduleTab(
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
     var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
 
     LaunchedEffect(addTick) {
         if (addTick > 0) {
+            editingSchedule = null
             showAddDialog = true
         }
     }
@@ -109,7 +112,11 @@ fun ScheduleTab(
                 ScheduleList(
                     modifier = Modifier.weight(1f),
                     schedules = selectedDateSchedules,
-                    onDelete = viewModel::deleteSchedule
+                    onDelete = viewModel::deleteSchedule,
+                    onEdit = { schedule ->
+                        editingSchedule = schedule
+                        showAddDialog = true
+                    }
                 )
             }
 
@@ -120,11 +127,25 @@ fun ScheduleTab(
 
     if (showAddDialog) {
         AddScheduleDialog(
-            initialDate = selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
-            onDismiss = { showAddDialog = false },
+            initialDate = editingSchedule?.startTime
+                ?: selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            initialSchedule = editingSchedule,
+            onDismiss = {
+                showAddDialog = false
+                editingSchedule = null
+            },
             onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
                 val currentTime = System.currentTimeMillis()
-                val schedule = Schedule(
+                val schedule = editingSchedule?.copy(
+                    title = title,
+                    startTime = startTime,
+                    endTime = endTime,
+                    location = location.ifBlank { null },
+                    isAllDay = isAllDay,
+                    reminderMinutes = reminderMinutes,
+                    repeatRule = repeatRule,
+                    updatedAt = currentTime
+                ) ?: Schedule(
                     id = UUID.randomUUID().toString(),
                     title = title,
                     startTime = startTime,
@@ -139,8 +160,15 @@ fun ScheduleTab(
                     createdAt = currentTime,
                     updatedAt = currentTime
                 )
-                viewModel.createSchedule(schedule)
+
+                if (editingSchedule == null) {
+                    viewModel.createSchedule(schedule)
+                } else {
+                    viewModel.updateSchedule(schedule)
+                }
+
                 showAddDialog = false
+                editingSchedule = null
             }
         )
     }
@@ -150,7 +178,8 @@ fun ScheduleTab(
 fun ScheduleList(
     modifier: Modifier = Modifier,
     schedules: List<Schedule>,
-    onDelete: (Schedule) -> Unit
+    onDelete: (Schedule) -> Unit,
+    onEdit: (Schedule) -> Unit
 ) {
     if (schedules.isEmpty()) {
         Column(
@@ -178,7 +207,11 @@ fun ScheduleList(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(items = schedules, key = { it.id }) { schedule ->
-                ScheduleItem(schedule = schedule, onDelete = onDelete)
+                ScheduleItem(
+                    schedule = schedule,
+                    onDelete = onDelete,
+                    onEdit = onEdit
+                )
             }
         }
     }
@@ -186,7 +219,7 @@ fun ScheduleList(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleItem(schedule: Schedule, onDelete: (Schedule) -> Unit) {
+fun ScheduleItem(schedule: Schedule, onDelete: (Schedule) -> Unit, onEdit: (Schedule) -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (it == SwipeToDismissBoxValue.EndToStart) {
@@ -224,15 +257,17 @@ fun ScheduleItem(schedule: Schedule, onDelete: (Schedule) -> Unit) {
             }
         },
         content = {
-            ScheduleCardContent(schedule)
+            ScheduleCardContent(schedule = schedule, onEdit = onEdit)
         }
     )
 }
 
 @Composable
-fun ScheduleCardContent(schedule: Schedule) {
+fun ScheduleCardContent(schedule: Schedule, onEdit: (Schedule) -> Unit) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit(schedule) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface

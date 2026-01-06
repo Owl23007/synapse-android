@@ -15,12 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import top.contins.synapse.domain.model.task.Task
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) -> Unit) {
+fun AddTaskDialog(
+    initialTask: Task? = null,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String?) -> Unit
+) {
+    val isEditing = initialTask != null
     var title by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf("中") }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -31,6 +37,18 @@ fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) ->
     
     val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(initialTask) {
+        initialTask?.let { task ->
+            title = task.title
+            priority = task.priority.displayName
+
+            val cal = java.util.Calendar.getInstance().apply { time = task.dueDate }
+            selectedDateMillis = task.dueDate.time
+            selectedHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+            selectedMinute = cal.get(java.util.Calendar.MINUTE)
+        }
+    }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -70,7 +88,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) ->
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "新建任务",
+                    if (isEditing) "编辑任务" else "新建任务",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -123,6 +141,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) ->
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     listOf(
+                        "紧急" to Color(0xFFD32F2F),
                         "高" to Color(0xFFEF5350),
                         "中" to Color(0xFFFFCA28),
                         "低" to Color(0xFF66BB6A)
@@ -352,7 +371,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onConfirm: (String, String, String?) ->
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("创建任务")
+                    Text(if (isEditing) "保存" else "创建任务")
                 }
             }
         }

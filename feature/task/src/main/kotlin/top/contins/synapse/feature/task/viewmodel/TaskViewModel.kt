@@ -34,40 +34,29 @@ class TaskViewModel @Inject constructor(
 
     fun createTask(title: String, priority: String, dueDate: String? = null) {
         viewModelScope.launch {
-            val parsedDueDate = if (!dueDate.isNullOrBlank()) {
-                val formats = listOf(
-                    "yyyy-MM-dd HH:mm:ss",
-                    "yyyy-MM-dd HH:mm",
-                    "yyyy-MM-dd"
-                )
-                var date: Date? = null
-                for (format in formats) {
-                    try {
-                        date = SimpleDateFormat(format, Locale.getDefault()).parse(dueDate)
-                        if (date != null) break
-                    } catch (e: Exception) {
-                        continue
-                    }
-                }
-                date ?: Date()
-            } else {
-                Date() // 未提供截止日期时默认使用今天
-            }
-            
+            val parsedDueDate = parseDueDateOrDefault(dueDate)
+
             val newTask = Task(
                 id = UUID.randomUUID().toString(),
                 title = title,
                 description = "",
                 dueDate = parsedDueDate,
                 status = TaskStatus.TODO,
-                priority = when(priority) {
-                    "高" -> TaskPriority.HIGH
-                    "中" -> TaskPriority.MEDIUM
-                    "低" -> TaskPriority.LOW
-                    else -> TaskPriority.MEDIUM
-                }
+                priority = toPriority(priority)
             )
             taskRepository.createTask(newTask)
+        }
+    }
+
+    fun updateTask(task: Task, title: String, priority: String, dueDate: String?) {
+        viewModelScope.launch {
+            val parsedDueDate = parseDueDateOrDefault(dueDate)
+            val updatedTask = task.copy(
+                title = title,
+                dueDate = parsedDueDate,
+                priority = toPriority(priority)
+            )
+            taskRepository.updateTask(updatedTask)
         }
     }
 
@@ -84,5 +73,32 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             taskRepository.deleteTask(taskId)
         }
+    }
+
+    private fun parseDueDateOrDefault(dueDate: String?): Date {
+        if (dueDate.isNullOrBlank()) return Date()
+
+        val formats = listOf(
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd"
+        )
+        for (format in formats) {
+            try {
+                val parsed = SimpleDateFormat(format, Locale.getDefault()).parse(dueDate)
+                if (parsed != null) return parsed
+            } catch (_: Exception) {
+                continue
+            }
+        }
+        return Date()
+    }
+
+    private fun toPriority(priority: String): TaskPriority = when (priority) {
+        "高" -> TaskPriority.HIGH
+        "中" -> TaskPriority.MEDIUM
+        "低" -> TaskPriority.LOW
+        "紧急" -> TaskPriority.URGENT
+        else -> TaskPriority.MEDIUM
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.model.schedule.ScheduleType
+import top.contins.synapse.domain.model.task.Task
 import top.contins.synapse.domain.model.task.TaskStatus
 import top.contins.synapse.feature.goal.viewmodel.GoalViewModel
 import top.contins.synapse.feature.schedule.ui.ScheduleTab
@@ -72,6 +73,7 @@ fun PlanScreen(
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showAddScheduleDialog by remember { mutableStateOf(false) }
     var scheduleAddTick by remember { mutableIntStateOf(0) }
+    var editingTask by remember { mutableStateOf<Task?>(null) }
 
     // 数据状态
     val tasks by taskViewModel.tasks.collectAsState()
@@ -106,6 +108,7 @@ fun PlanScreen(
                 selectedTab = selectedTab,
                 onTaskAdd = {
                     isFabExpanded = false
+                    editingTask = null
                     showAddTaskDialog = true
                 },
                 onScheduleAdd = {
@@ -165,6 +168,10 @@ fun PlanScreen(
                     },
                     onTaskDelete = { task ->
                         taskViewModel.deleteTask(task.id)
+                    },
+                    onTaskEdit = { task ->
+                        editingTask = task
+                        showAddTaskDialog = true
                     }
                 )
                 3 -> GoalTab(goals)
@@ -175,10 +182,20 @@ fun PlanScreen(
     // 对话框层
     PlanDialogs(
         showAddTaskDialog = showAddTaskDialog,
-        onDismissAddTask = { showAddTaskDialog = false },
-        onConfirmAddTask = { title, priority, dueDate ->
-            taskViewModel.createTask(title, priority, dueDate)
+        editingTask = editingTask,
+        onDismissAddTask = {
             showAddTaskDialog = false
+            editingTask = null
+        },
+        onConfirmAddTask = { title, priority, dueDate ->
+            val task = editingTask
+            if (task == null) {
+                taskViewModel.createTask(title, priority, dueDate)
+            } else {
+                taskViewModel.updateTask(task, title, priority, dueDate)
+            }
+            showAddTaskDialog = false
+            editingTask = null
         },
 
         showAddGoalDialog = showAddGoalDialog,

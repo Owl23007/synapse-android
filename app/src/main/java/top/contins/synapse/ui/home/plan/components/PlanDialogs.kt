@@ -2,6 +2,7 @@ package top.contins.synapse.ui.home.plan.components
 
 import androidx.compose.runtime.Composable
 import top.contins.synapse.domain.model.schedule.RepeatRule
+import top.contins.synapse.domain.model.task.Task
 import top.contins.synapse.feature.task.ui.AddTaskDialog
 import top.contins.synapse.feature.goal.ui.AddGoalDialog
 import top.contins.synapse.feature.schedule.ui.AddScheduleDialog
@@ -17,6 +18,7 @@ import top.contins.synapse.feature.schedule.ui.AddScheduleDialog
 @Composable
 fun PlanDialogs(
     showAddTaskDialog: Boolean,
+    editingTask: Task?,
     onDismissAddTask: () -> Unit,
     onConfirmAddTask: (title: String, priority: String, dueDate: String?) -> Unit,
     
@@ -39,6 +41,7 @@ fun PlanDialogs(
     // 添加任务对话框
     if (showAddTaskDialog) {
         AddTaskDialog(
+            initialTask = editingTask,
             onDismiss = onDismissAddTask,
             onConfirm = { title, priority, dueDate ->
                 onConfirmAddTask(title, priority, dueDate)

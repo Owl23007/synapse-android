@@ -26,7 +26,8 @@ import java.util.Locale
 fun TaskTab(
     tasks: List<Task>,
     onTaskStatusChange: (Task, Boolean) -> Unit,
-    onTaskDelete: (Task) -> Unit
+    onTaskDelete: (Task) -> Unit,
+    onTaskEdit: (Task) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -37,7 +38,8 @@ fun TaskTab(
             TaskCard(
                 task = task,
                 onStatusChange = { onTaskStatusChange(task, it) },
-                onDelete = { onTaskDelete(task) }
+                onDelete = { onTaskDelete(task) },
+                onEdit = { onTaskEdit(task) }
             )
         }
     }
@@ -48,7 +50,8 @@ fun TaskTab(
 fun TaskCard(
     task: Task,
     onStatusChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
@@ -89,7 +92,7 @@ fun TaskCard(
         enableDismissFromStartToEnd = false
     ) {
         Card(
-            onClick = { },
+            onClick = onEdit,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.contins.synapse.domain.model.schedule.RepeatRule
 import top.contins.synapse.domain.model.schedule.Frequency
+import top.contins.synapse.domain.model.schedule.Schedule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,9 +29,12 @@ import java.util.Locale
 @Preview
 fun AddScheduleDialog(
     initialDate: Long? = null,
+    initialSchedule: Schedule? = null,
     onDismiss: () -> Unit, 
     onConfirm: (String, Long, Long, String, Boolean, List<Int>?, RepeatRule?) -> Unit
 ) {
+    val isEditing = initialSchedule != null
+
     var title by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var showStartDatePicker by remember { mutableStateOf(false) }
@@ -61,6 +65,40 @@ fun AddScheduleDialog(
     
     val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(initialSchedule) {
+        initialSchedule?.let { schedule ->
+            title = schedule.title
+            location = schedule.location ?: ""
+            isAllDay = schedule.isAllDay
+            reminderMinutes = schedule.reminderMinutes ?: emptyList()
+
+            val startCal = java.util.Calendar.getInstance().apply { timeInMillis = schedule.startTime }
+            val endCal = java.util.Calendar.getInstance().apply { timeInMillis = schedule.endTime }
+
+            selectedStartDateMillis = schedule.startTime
+            selectedEndDateMillis = schedule.endTime
+
+            if (!schedule.isAllDay) {
+                selectedStartHour = startCal.get(java.util.Calendar.HOUR_OF_DAY)
+                selectedStartMinute = startCal.get(java.util.Calendar.MINUTE)
+                selectedEndHour = endCal.get(java.util.Calendar.HOUR_OF_DAY)
+                selectedEndMinute = endCal.get(java.util.Calendar.MINUTE)
+            }
+
+            schedule.repeatRule?.let { rule ->
+                repeatFrequency = rule.frequency
+                repeatInterval = rule.interval
+                repeatUntilMillis = rule.until
+                repeatCount = rule.count ?: repeatCount
+                repeatEndType = when {
+                    rule.until != null -> "until"
+                    rule.count != null -> "count"
+                    else -> "never"
+                }
+            }
+        }
+    }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -102,7 +140,7 @@ fun AddScheduleDialog(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "新建日程",
+                    if (isEditing) "编辑日程" else "新建日程",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -713,7 +751,11 @@ fun AddScheduleDialog(
                         .weight(1f)
                         .height(52.dp)
                 ) {
-                    Text("确定", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        if (isEditing) "保存" else "确定",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
