@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,10 +44,12 @@ fun AddTaskDialog(
             title = task.title
             priority = task.priority.displayName
 
-            val cal = java.util.Calendar.getInstance().apply { time = task.dueDate }
-            selectedDateMillis = task.dueDate.time
-            selectedHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
-            selectedMinute = cal.get(java.util.Calendar.MINUTE)
+            task.dueDate?.let { date ->
+                val cal = java.util.Calendar.getInstance().apply { time = date }
+                selectedDateMillis = date.time
+                selectedHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+                selectedMinute = cal.get(java.util.Calendar.MINUTE)
+            }
         }
     }
     
@@ -327,12 +330,21 @@ fun AddTaskDialog(
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         if (selectedDateMillis != null) {
-                            IconButton(onClick = { showTimePicker = true }) {
-                                Icon(
-                                    imageVector = androidx.compose.material.icons.Icons.Default.AccessTime,
-                                    contentDescription = "设置时间",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                            Row {
+                                IconButton(onClick = { showTimePicker = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccessTime,
+                                        contentDescription = "设置时间",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                IconButton(onClick = { selectedDateMillis = null }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "清除日期",
+                                        tint = MaterialTheme.colorScheme.outline
+                                    )
+                                }
                             }
                         }
                     }

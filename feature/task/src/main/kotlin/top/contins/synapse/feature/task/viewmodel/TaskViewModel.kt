@@ -75,8 +75,8 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private fun parseDueDateOrDefault(dueDate: String?): Date {
-        if (dueDate.isNullOrBlank()) return Date()
+    private fun parseDueDateOrDefault(dueDate: String?): Date? {
+        if (dueDate.isNullOrBlank()) return null
 
         val formats = listOf(
             "yyyy-MM-dd HH:mm:ss",
@@ -91,7 +91,7 @@ class TaskViewModel @Inject constructor(
                 continue
             }
         }
-        return Date()
+        return null
     }
 
     private fun toPriority(priority: String): TaskPriority = when (priority) {

@@ -26,7 +26,7 @@ object DataMapper {
             id = id,
             title = title,
             description = description,
-            dueDate = Date(dueDate),
+            dueDate = dueDate?.let { Date(it) },
             status = TaskStatus.valueOf(status),
             priority = TaskPriority.valueOf(priority)
         )
@@ -37,7 +37,7 @@ object DataMapper {
             id = id,
             title = title,
             description = description,
-            dueDate = dueDate.time,
+            dueDate = dueDate?.time,
             status = status.name,
             priority = priority.name
         )

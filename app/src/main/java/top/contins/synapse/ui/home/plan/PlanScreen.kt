@@ -83,10 +83,15 @@ fun PlanScreen(
     // 筛选今日任务和日程
     val today = LocalDate.now()
     
-    // 今日任务：今天截止的未完成任务
-    val todayTasks = tasks.filter { 
-        val taskDate = it.dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        taskDate.isEqual(today) && it.status != TaskStatus.COMPLETED
+    // 今日任务：今天截止的未完成任务 + 没有截止日期的未完成任务
+    val todayTasks = tasks.filter { task ->
+        task.status != TaskStatus.COMPLETED && (
+            task.dueDate == null ||
+            task.dueDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()?.isEqual(today) == true
+        )
+    }.sortedBy { task ->
+        // 有截止日期的任务排在前面，没有截止日期的排在后面
+        if (task.dueDate != null) 0 else 1
     }
     
     val todaySchedules = schedules.filter {
