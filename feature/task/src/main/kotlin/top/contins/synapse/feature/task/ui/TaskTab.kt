@@ -1,24 +1,35 @@
 package top.contins.synapse.feature.task.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import top.contins.synapse.domain.model.task.Task
 import top.contins.synapse.domain.model.task.TaskPriority
 import top.contins.synapse.domain.model.task.TaskStatus
@@ -50,7 +61,7 @@ fun TaskTab(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TaskCard(
     task: Task,
@@ -58,60 +69,118 @@ fun TaskCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val currentTask by rememberUpdatedState(task)
+    val currentOnStatusChange by rememberUpdatedState(onStatusChange)
+    val currentOnDelete by rememberUpdatedState(onDelete)
+    val scope = rememberCoroutineScope()
+    
     val isCompleted = task.status == TaskStatus.COMPLETED
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { 
-            if (it == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-                true
-            } else {
-                false
+        confirmValueChange = {
+            val isTaskCompleted = currentTask.status == TaskStatus.COMPLETED
+            when (it) {
+                SwipeToDismissBoxValue.StartToEnd -> { // 右滑：完成/取消完成
+                    scope.launch {
+                        delay(300) // 等待回弹动画
+                        currentOnStatusChange(!isTaskCompleted)
+                    }
+                    false // 无论如何都回弹，不删除条目
+                }
+                SwipeToDismissBoxValue.EndToStart -> { // 左滑：删除
+                    currentOnDelete()
+                    true // 确认删除，条目移出
+                }
+                else -> false
             }
         },
-        positionalThreshold = { distance -> distance * 0.7f }
+        positionalThreshold = { distance -> distance * 0.55f }
     )
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
-            val color = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-                else -> Color.Transparent
-            }
+            val direction = dismissState.dismissDirection
+            val targetValue = dismissState.targetValue
+            // 检测是否达到阈值：targetValue 变为具体的方向值（非 Settled）
+            val willDismiss = targetValue == SwipeToDismissBoxValue.StartToEnd || 
+                              targetValue == SwipeToDismissBoxValue.EndToStart
             
+            // 右滑：绿色打钩(完成) 或 灰色叉号(取消完成)
+            // 左滑：红色垃圾桶(删除)
+            val (baseColor, icon, iconTint) = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    if (isCompleted) Triple(Color.LightGray, Icons.Default.Close, Color.Black)
+                    else Triple(Color(0xFF4CAF50), Icons.Default.Check, Color.White)
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    Triple(MaterialTheme.colorScheme.errorContainer, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                }
+                else -> Triple(Color.Transparent, Icons.Default.Delete, Color.Transparent)
+            }
+
+            // 未达到阈值时透明度降低，达到阈值时完全不透明
+            val alpha by animateFloatAsState(
+                targetValue = if (willDismiss) 1f else 0.5f,
+                label = "alpha"
+            )
+            val iconScale by animateFloatAsState(
+                targetValue = if (willDismiss) 1.2f else 1.0f,
+                label = "iconScale"
+            )
+
+            val rotate = remember { Animatable(0f) }
+            LaunchedEffect(willDismiss) {
+                if (willDismiss) {
+                    repeat(2) {
+                        rotate.animateTo(15f, tween(100))
+                        rotate.animateTo(-15f, tween(100))
+                    }
+                    rotate.animateTo(0f, tween(100))
+                } else {
+                    rotate.animateTo(0f)
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color, RoundedCornerShape(16.dp))
+                    .background(baseColor.copy(alpha = if (direction == SwipeToDismissBoxValue.Settled) 0f else alpha), RoundedCornerShape(16.dp))
                     .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd
+                contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
             ) {
-                if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                if (direction != SwipeToDismissBoxValue.Settled) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier
+                            .scale(iconScale)
+                            .rotate(rotate.value)
                     )
                 }
             }
-        },
-        enableDismissFromStartToEnd = false
+        }
     ) {
         Card(
-            onClick = onEdit,
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(if (isCompleted) 0.6f else 1f),
+                // 移除 Card 的 alpha，防止滑动背景色透出
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = onEdit
+                ),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
+            // 将 alpha 移至内部内容，实现文字淡化效果
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
+                    .alpha(if (isCompleted) 0.6f else 1f)
             ) {
                 // 优先级垂直色条
                 Box(
