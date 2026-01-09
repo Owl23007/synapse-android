@@ -2,9 +2,10 @@ package top.contins.synapse.feature.task.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -283,15 +284,25 @@ fun AddTaskDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 AnimatedContent(
-                    targetState = selectedDateMillis == null,
+                    targetState = selectedDateMillis,
                     transitionSpec = {
                         (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                scaleIn(initialScale = 0.92f, animationSpec = tween(220, delayMillis = 90)))
-                            .togetherWith(fadeOut(animationSpec = tween(90)))
+                                expandHorizontally(
+                                    expandFrom = Alignment.Start,
+                                    animationSpec = tween(220, delayMillis = 90)
+                                ))
+                            .togetherWith(
+                                fadeOut(animationSpec = tween(90)) +
+                                        shrinkHorizontally(
+                                            shrinkTowards = Alignment.Start,
+                                            animationSpec = tween(90)
+                                        )
+                            )
                     },
+                    contentKey = { it == null },
                     label = "DateSelector"
-                ) { isNull ->
-                    if (isNull) {
+                ) { dateMillis ->
+                    if (dateMillis == null) {
                         Surface(
                             onClick = { showDatePicker = true },
                             modifier = Modifier.fillMaxWidth(),
@@ -349,7 +360,7 @@ fun AddTaskDialog(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            dateFormatter.format(selectedDateMillis),
+                                            dateFormatter.format(dateMillis),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -375,7 +386,7 @@ fun AddTaskDialog(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            String.format("%02d:%02d", selectedHour, selectedMinute),
+                                            text = String.format("%02d:%02d", selectedHour, selectedMinute),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -383,12 +394,25 @@ fun AddTaskDialog(
                                 }
                             }
                             
-                            IconButton(onClick = { selectedDateMillis = null }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "清除日期",
-                                    tint = MaterialTheme.colorScheme.outline
-                                )
+                            Surface(
+                                modifier = Modifier
+                                    .clickable { selectedDateMillis = null },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                tonalElevation = 2.dp
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(12.dp)
+                                        .size(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "清除日期",
+                                        tint = MaterialTheme.colorScheme.outline
+                                    )
+                                }
                             }
                         }
                     }
