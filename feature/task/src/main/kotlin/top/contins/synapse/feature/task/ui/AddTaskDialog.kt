@@ -1,6 +1,13 @@
 package top.contins.synapse.feature.task.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -129,8 +136,9 @@ fun AddTaskDialog(
             Spacer(modifier = Modifier.height(20.dp))
             
             // 优先级选择区域
-            Column(
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     "优先级",
@@ -138,16 +146,16 @@ fun AddTaskDialog(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                    modifier = Modifier.weight(1f)
                 ) {
                     listOf(
-                        "紧急" to Color(0xFFD32F2F),
-                        "高" to Color(0xFFEF5350),
-                        "中" to Color(0xFFFFCA28),
-                        "低" to Color(0xFF66BB6A)
+                        "紧急" to Color(0xFFEC407A), // Soft Red
+                        "高"   to Color(0xFFFFA726), // Soft Orange
+                        "中"   to Color(0xFFD4E157), // Soft Amber
+                        "低"   to Color(0xFF66BB6A)  // Soft Green
                     ).forEach { (p, color) ->
                         FilterChip(
                             selected = priority == p,
@@ -175,10 +183,9 @@ fun AddTaskDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 标题行和清除按钮
+                // 标题行和快捷预设按钮
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -188,30 +195,13 @@ fun AddTaskDialog(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     
-                    if (selectedDateMillis != null) {
-                        TextButton(
-                            onClick = { 
-                                selectedDateMillis = null 
-                            },
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.height(24.dp)
-                        ) {
-                            Text(
-                                "清除",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(6.dp))
-                
-                // 快捷预设按钮
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // 快捷预设按钮
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        modifier = Modifier.weight(1f)
+                    ) {
                         // 判断是否为今天内
                         val isTodayEnd = remember(selectedDateMillis, selectedHour, selectedMinute) {
                             if (selectedDateMillis == null) return@remember false
@@ -257,7 +247,7 @@ fun AddTaskDialog(
                                 selectedHour = 23
                                 selectedMinute = 59
                             },
-                            label = { Text("今天内") }
+                            label = { Text("今天") }
                         )
                         
                         // 明天
@@ -285,66 +275,120 @@ fun AddTaskDialog(
                                 selectedHour = 20
                                 selectedMinute = 0
                             },
-                            label = { Text("本周日") }
+                            label = { Text("本周") }
                         )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                Surface(
-                    onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        if (selectedDateMillis != null) {
-                            Column {
-                                Text(
-                                    dateFormatter.format(selectedDateMillis),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
+                AnimatedContent(
+                    targetState = selectedDateMillis == null,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                scaleIn(initialScale = 0.92f, animationSpec = tween(220, delayMillis = 90)))
+                            .togetherWith(fadeOut(animationSpec = tween(90)))
+                    },
+                    label = "DateSelector"
+                ) { isNull ->
+                    if (isNull) {
+                        Surface(
+                            onClick = { showDatePicker = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            tonalElevation = 2.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.CalendarToday,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    String.format("%02d:%02d", selectedHour, selectedMinute),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    "设置截止日期",
+                                    style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                        } else {
-                            Text(
-                                "设置截止日期",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
-                        Spacer(modifier = Modifier.weight(1f))
-                        if (selectedDateMillis != null) {
-                            Row {
-                                IconButton(onClick = { showTimePicker = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccessTime,
-                                        contentDescription = "设置时间",
-                                        tint = MaterialTheme.colorScheme.primary
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                tonalElevation = 2.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(IntrinsicSize.Min)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .weight(1.5f)
+                                            .clickable { showDatePicker = true }
+                                            .padding(vertical = 16.dp, horizontal = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.CalendarToday,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            dateFormatter.format(selectedDateMillis),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    VerticalDivider(
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant
                                     )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { showTimePicker = true }
+                                            .padding(vertical = 16.dp, horizontal = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AccessTime,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            String.format("%02d:%02d", selectedHour, selectedMinute),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
-                                IconButton(onClick = { selectedDateMillis = null }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = "清除日期",
-                                        tint = MaterialTheme.colorScheme.outline
-                                    )
-                                }
+                            }
+                            
+                            IconButton(onClick = { selectedDateMillis = null }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "清除日期",
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
                             }
                         }
                     }

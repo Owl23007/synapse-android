@@ -85,7 +85,7 @@ fun TodayTab(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .clip(RoundedCornerShape(0.dp)) // 裁剪超出边界的内容
     ) {
         LazyColumn(
@@ -274,7 +274,7 @@ fun TodayTab(
                             androidx.compose.ui.graphics.Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                                 ),
                                 startY = 0f,
                                 endY = Float.POSITIVE_INFINITY
