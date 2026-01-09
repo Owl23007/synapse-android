@@ -283,63 +283,48 @@ fun AddTaskDialog(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                AnimatedContent(
-                    targetState = selectedDateMillis,
-                    transitionSpec = {
-                        (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                expandHorizontally(
-                                    expandFrom = Alignment.Start,
-                                    animationSpec = tween(220, delayMillis = 90)
-                                ))
-                            .togetherWith(
-                                fadeOut(animationSpec = tween(90)) +
-                                        shrinkHorizontally(
-                                            shrinkTowards = Alignment.Start,
-                                            animationSpec = tween(90)
-                                        )
-                            )
-                    },
-                    contentKey = { it == null },
-                    label = "DateSelector"
-                ) { dateMillis ->
-                    if (dateMillis == null) {
-                        Surface(
-                            onClick = { showDatePicker = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            tonalElevation = 2.dp
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = androidx.compose.material.icons.Icons.Default.CalendarToday,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "设置截止日期",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                tonalElevation = 2.dp
-                            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 2.dp
+                    ) {
+                        AnimatedContent(
+                            targetState = selectedDateMillis,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(300))
+                                    .togetherWith(fadeOut(animationSpec = tween(300)))
+                            },
+                            contentAlignment = Alignment.Center,
+                            label = "DateSelector"
+                        ) { dateMillis ->
+                            if (dateMillis == null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showDatePicker = true }
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "设置截止日期",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -393,26 +378,32 @@ fun AddTaskDialog(
                                     }
                                 }
                             }
-                            
-                            Surface(
+                        }
+                    }
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = selectedDateMillis != null,
+                        enter = fadeIn(tween(300)) + expandHorizontally(tween(300), expandFrom = Alignment.Start),
+                        exit = fadeOut(tween(300)) + shrinkHorizontally(tween(300), shrinkTowards = Alignment.Start)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .clickable { selectedDateMillis = null },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            tonalElevation = 2.dp
+                        ) {
+                            Box(
                                 modifier = Modifier
-                                    .clickable { selectedDateMillis = null },
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                tonalElevation = 2.dp
+                                    .padding(12.dp)
+                                    .size(32.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .size(32.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = "清除日期",
-                                        tint = MaterialTheme.colorScheme.outline
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "清除日期",
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
                             }
                         }
                     }
