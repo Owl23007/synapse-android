@@ -22,19 +22,16 @@ class ChatViewModel @Inject constructor(
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
+    private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
+    val conversations: StateFlow<List<Conversation>> = _conversations.asStateFlow()
+
+    private var currentConversationId: String? = null
+
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _serviceStatus = MutableStateFlow("")
-    val serviceStatus: StateFlow<String> = _serviceStatus.asStateFlow()
-
-    init {
-        // 初始化时显示AI服务状态
-        updateServiceStatus()
-    }
 
     fun updateInputText(text: String) {
         _inputText.value = text
@@ -85,7 +82,6 @@ class ChatViewModel @Inject constructor(
                         // 强制触发状态更新
                         _messages.value = currentMessages.toList()
 
-
                         Log.d("ChatViewModel", "Updated message at index $aiMessageIndex with ${chunk.length} characters (time: $currentTime)")
                     } else {
                         Log.e("ChatViewModel", "Invalid aiMessageIndex: $aiMessageIndex, messages size: ${currentMessages.size}")
@@ -100,6 +96,9 @@ class ChatViewModel @Inject constructor(
                     _messages.value = finalMessages
                     Log.d("ChatViewModel", "Completed streaming for message at index $aiMessageIndex")
                 }
+
+                // 自动保存会话状态
+                saveCurrentConversation()
                 
             } catch (e: Exception) {
                 // 添加错误消息
@@ -119,15 +118,67 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun updateServiceStatus() {
-        _serviceStatus.value = chatUseCase.getAiServiceStatus()
+    fun startNewChat() {
+        if (_messages.value.isNotEmpty()) {
+            saveCurrentConversation()
+        }
+        _messages.value = emptyList()
+        currentConversationId = null
     }
 
-    fun refreshServiceStatus() {
-        updateServiceStatus()
+    fun loadConversation(conversation: Conversation) {
+        if (_messages.value.isNotEmpty() && currentConversationId != conversation.id) {
+            saveCurrentConversation()
+        }
+        currentConversationId = conversation.id
+        _messages.value = conversation.messages
+    }
+
+    private fun saveCurrentConversation() {
+        val messages = _messages.value
+        if (messages.isEmpty()) return
+
+        val id = currentConversationId ?: java.util.UUID.randomUUID().toString()
+        val firstMessage = messages.firstOrNull { it.isUser }
+        val title = firstMessage?.text?.take(20)?.let { if (firstMessage.text.length > 20) "$it..." else it } ?: "New Chat"
+
+        val conversation = Conversation(
+            id = id,
+            title = title,
+            messages = messages,
+            timestamp = System.currentTimeMillis()
+        )
+
+        val currentList = _conversations.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == id }
+        if (index != -1) {
+            currentList[index] = conversation
+        } else {
+            currentList.add(0, conversation)
+        }
+        _conversations.value = currentList
+        currentConversationId = id
+    }
+    
+    fun deleteConversation(conversationId: String) {
+        val currentList = _conversations.value.toMutableList()
+        currentList.removeAll { it.id == conversationId }
+        _conversations.value = currentList
+        
+        if (currentConversationId == conversationId) {
+            _messages.value = emptyList()
+            currentConversationId = null
+        }
     }
 
     fun clearMessages() {
         _messages.value = emptyList()
     }
 }
+
+data class Conversation(
+    val id: String,
+    val title: String,
+    val messages: List<Message>,
+    val timestamp: Long
+)
