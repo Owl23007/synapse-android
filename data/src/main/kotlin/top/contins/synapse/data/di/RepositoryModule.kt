@@ -69,4 +69,10 @@ abstract class RepositoryModule {
     abstract fun bindTokenRepository(
         tokenRepositoryImpl: TokenRepositoryImpl
     ): TokenRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindChatRepository(
+        chatRepositoryImpl: top.contins.synapse.data.repository.chat.ChatRepositoryImpl
+    ): top.contins.synapse.domain.repository.chat.ChatRepository
 }

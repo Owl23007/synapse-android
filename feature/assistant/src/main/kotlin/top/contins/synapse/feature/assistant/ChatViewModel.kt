@@ -4,28 +4,51 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import top.contins.synapse.domain.usecase.chat.ChatUseCase
-import top.contins.synapse.domain.usecase.chat.StreamingChatUseCase
+import top.contins.synapse.domain.model.chat.Conversation
+import top.contins.synapse.domain.model.chat.Message
+import top.contins.synapse.domain.usecase.chat.*
 import top.contins.synapse.network.model.ChatMessage
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val chatUseCase: ChatUseCase,
+    private val getConversationsUseCase: GetConversationsUseCase,
+    private val getMessagesUseCase: GetMessagesUseCase,
+    private val createConversationUseCase: CreateConversationUseCase,
+    private val saveMessageUseCase: SaveMessageUseCase,
+    private val deleteConversationUseCase: DeleteConversationUseCase,
     private val streamingChatUseCase: StreamingChatUseCase
 ) : ViewModel() {
 
-    private val _messages = MutableStateFlow<List<Message>>(emptyList())
-    val messages: StateFlow<List<Message>> = _messages.asStateFlow()
+    private val _currentConversationId = MutableStateFlow<String?>(null)
+    val currentConversationId: StateFlow<String?> = _currentConversationId.asStateFlow()
 
-    private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
-    val conversations: StateFlow<List<Conversation>> = _conversations.asStateFlow()
+    val conversations: StateFlow<List<Conversation>> = getConversationsUseCase()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private var currentConversationId: String? = null
+    private val _streamingMessage = MutableStateFlow<Message?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val messages: StateFlow<List<Message>> = _currentConversationId
+        .flatMapLatest { id ->
+            if (id == null) flowOf(emptyList())
+            else getMessagesUseCase(id)
+        }
+        .combine(_streamingMessage) { dbMessages, streamingMsg ->
+            if (streamingMsg != null) {
+                // Determine if we should replace the last message or append
+                // Wait, dbMessages are from DB. The streaming message is temporary.
+                // We want to show: Saved Messages + [Streaming Message]
+                dbMessages + streamingMsg
+            } else {
+                dbMessages
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText.asStateFlow()
@@ -37,148 +60,124 @@ class ChatViewModel @Inject constructor(
         _inputText.value = text
     }
 
-    fun sendMessage() {
-        val messageText = _inputText.value.trim()
-        if (messageText.isBlank() || _isLoading.value) {
-            return
+    fun startNewChat() {
+        _currentConversationId.value = null
+        _streamingMessage.value = null
+    }
+
+    fun loadConversation(conversation: Conversation) {
+        _currentConversationId.value = conversation.id
+        _streamingMessage.value = null
+    }
+
+    fun deleteConversation(conversationId: String) {
+        viewModelScope.launch {
+            deleteConversationUseCase(conversationId)
+            if (_currentConversationId.value == conversationId) {
+                startNewChat()
+            }
         }
+    }
+
+    fun sendMessage() {
+        val text = _inputText.value.trim()
+        if (text.isBlank() || _isLoading.value) return
 
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                
-                // 添加用户消息
-                _messages.value += Message(messageText, isUser = true)
-                
-                // 清空输入框
                 _inputText.value = ""
+
+                // Ensure Conversation Exists
+                val conversationId = _currentConversationId.value ?: run {
+                    val newConv = createConversationUseCase(
+                        title = text.take(20) + if (text.length > 20) "..." else ""
+                    )
+                    _currentConversationId.value = newConv.id
+                    newConv.id
+                }
+
+                // Save User Message
+                val userMessage = Message(
+                    id = UUID.randomUUID().toString(),
+                    conversationId = conversationId,
+                    content = text,
+                    role = Message.Role.USER,
+                    timestamp = System.currentTimeMillis()
+                )
+                saveMessageUseCase(userMessage)
+
+                // Prepare History for Context
+                // Note: We use the messages currently in the viewmodel scope + the new user message
+                // The DB update might be async, so let's manually constructing the context
+                // But for simplicity, we can just grab from DB flow (might miss the very latest if fast)
+                // Better: Use `messages.value` which currently should eventually have the user message
+                // But `saveMessageUseCase` is suspend, so by the time it returns, DB might be notifying.
                 
-                // 构建对话历史（转换为网络模型格式）
-                val conversationHistory = _messages.value.dropLast(1).map { message ->
-                    ChatMessage(
-                        role = if (message.isUser) "user" else "assistant",
-                        content = message.text
+                val currentMessages = messages.value // This might not include the just-saved one yet if Flow hasn't emitted
+                val historyContext = currentMessages.map { 
+                     ChatMessage(
+                         role = if (it.role == Message.Role.USER) "user" else "assistant",
+                         content = it.content
+                     )
+                }.takeLast(10).toMutableList()
+                
+                // Ensure the last user message is in history if not yet propagated
+                if (historyContext.none { it.content == text }) {
+                     historyContext.add(ChatMessage("user", text))
+                }
+
+                // Initialize Streaming Message Placeholder
+                var aiContent = ""
+                val aiMessageId = UUID.randomUUID().toString()
+                
+                // Update Streaming State
+                val initialStreamingMsg = Message(
+                    id = aiMessageId,
+                    conversationId = conversationId,
+                    content = "...", // Typing indicator
+                    role = Message.Role.ASSISTANT,
+                    timestamp = System.currentTimeMillis(),
+                    isStreaming = true
+                )
+                _streamingMessage.value = initialStreamingMsg
+
+                streamingChatUseCase.sendMessageStream(text, historyContext).collect { chunk ->
+                    aiContent += chunk
+                    _streamingMessage.value = initialStreamingMsg.copy(
+                        content = aiContent,
+                        isStreaming = true
                     )
                 }
-                
-                // 添加一个空的AI消息占位符（标记为正在流式传输）
-                val aiMessageIndex = _messages.value.size
-                _messages.value += Message("", isUser = false, isStreaming = true)
-                Log.d("ChatViewModel", "Added placeholder message at index: $aiMessageIndex")
-                
-                // 使用流式响应
-                var chunkCount = 0
-                var fullResponse = ""
-                streamingChatUseCase.sendMessageStream(messageText, conversationHistory).collect { chunk ->
-                    chunkCount++
-                    val currentTime = System.currentTimeMillis()
-                    fullResponse += chunk
-                    // 实时更新AI消息内容
-                    val currentMessages = _messages.value.toMutableList()
-                    if (aiMessageIndex < currentMessages.size) {
-                        val updatedMessage = Message(fullResponse, isUser = false, isStreaming = true)
-                        currentMessages[aiMessageIndex] = updatedMessage
-                        
-                        // 强制触发状态更新
-                        _messages.value = currentMessages.toList()
 
-                        Log.d("ChatViewModel", "Updated message at index $aiMessageIndex with ${chunk.length} characters (time: $currentTime)")
-                    } else {
-                        Log.e("ChatViewModel", "Invalid aiMessageIndex: $aiMessageIndex, messages size: ${currentMessages.size}")
-                    }
-                }
-                
-                // 流式传输完成，移除流式传输标识
-                val finalMessages = _messages.value.toMutableList()
-                if (aiMessageIndex < finalMessages.size) {
-                    val finalMessage = finalMessages[aiMessageIndex]
-                    finalMessages[aiMessageIndex] = finalMessage.copy(isStreaming = false)
-                    _messages.value = finalMessages
-                    Log.d("ChatViewModel", "Completed streaming for message at index $aiMessageIndex")
-                }
+                // Save Final AI Message
+                val finalAiMessage = Message(
+                    id = aiMessageId,
+                    conversationId = conversationId,
+                    content = aiContent,
+                    role = Message.Role.ASSISTANT,
+                    timestamp = System.currentTimeMillis(),
+                    isStreaming = false
+                )
+                saveMessageUseCase(finalAiMessage)
+                _streamingMessage.value = null // Clear streaming state
 
-                // 自动保存会话状态
-                saveCurrentConversation()
-                
             } catch (e: Exception) {
-                // 添加错误消息
-                val currentMessages = _messages.value.toMutableList()
-                val errorMessage = Message("抱歉，发生了错误，请稍后重试", isUser = false, isStreaming = false)
-                
-                // 如果有占位符消息，替换它；否则添加新消息
-                if (currentMessages.isNotEmpty() && !currentMessages.last().isUser) {
-                    currentMessages[currentMessages.size - 1] = errorMessage
-                } else {
-                    currentMessages.add(errorMessage)
+                Log.e("ChatViewModel", "Error sending message", e)
+                val conversationId = _currentConversationId.value
+                if (conversationId != null) {
+                    val errorMessage = Message(
+                        id = UUID.randomUUID().toString(),
+                        conversationId = conversationId,
+                        content = "Sorry, something went wrong. Please try again.",
+                        role = Message.Role.ASSISTANT
+                    )
+                    // Optionally save error message or just show in UI
+                    _streamingMessage.value = null
                 }
-                _messages.value = currentMessages
             } finally {
                 _isLoading.value = false
             }
         }
     }
-
-    fun startNewChat() {
-        if (_messages.value.isNotEmpty()) {
-            saveCurrentConversation()
-        }
-        _messages.value = emptyList()
-        currentConversationId = null
-    }
-
-    fun loadConversation(conversation: Conversation) {
-        if (_messages.value.isNotEmpty() && currentConversationId != conversation.id) {
-            saveCurrentConversation()
-        }
-        currentConversationId = conversation.id
-        _messages.value = conversation.messages
-    }
-
-    private fun saveCurrentConversation() {
-        val messages = _messages.value
-        if (messages.isEmpty()) return
-
-        val id = currentConversationId ?: java.util.UUID.randomUUID().toString()
-        val firstMessage = messages.firstOrNull { it.isUser }
-        val title = firstMessage?.text?.take(20)?.let { if (firstMessage.text.length > 20) "$it..." else it } ?: "New Chat"
-
-        val conversation = Conversation(
-            id = id,
-            title = title,
-            messages = messages,
-            timestamp = System.currentTimeMillis()
-        )
-
-        val currentList = _conversations.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == id }
-        if (index != -1) {
-            currentList[index] = conversation
-        } else {
-            currentList.add(0, conversation)
-        }
-        _conversations.value = currentList
-        currentConversationId = id
-    }
-    
-    fun deleteConversation(conversationId: String) {
-        val currentList = _conversations.value.toMutableList()
-        currentList.removeAll { it.id == conversationId }
-        _conversations.value = currentList
-        
-        if (currentConversationId == conversationId) {
-            _messages.value = emptyList()
-            currentConversationId = null
-        }
-    }
-
-    fun clearMessages() {
-        _messages.value = emptyList()
-    }
 }
-
-data class Conversation(
-    val id: String,
-    val title: String,
-    val messages: List<Message>,
-    val timestamp: Long
-)

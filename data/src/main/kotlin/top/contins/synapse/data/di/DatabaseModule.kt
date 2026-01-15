@@ -32,6 +32,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "synapse_db"
         )
+        .addMigrations(top.contins.synapse.data.local.MIGRATION_3_4)
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
@@ -76,5 +77,11 @@ object DatabaseModule {
     @Singleton
     fun provideGoalDao(database: AppDatabase): GoalDao {
         return database.goalDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatDao(database: AppDatabase): top.contins.synapse.data.local.dao.ChatDao {
+        return database.chatDao()
     }
 }
