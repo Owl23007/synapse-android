@@ -1,8 +1,13 @@
 package top.contins.synapse.feature.task.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -15,6 +20,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +44,22 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Sort
+
+private enum class SortOption(val label: String) {
+    DEFAULT("默认"),
+    DATE("日期"),
+    PRIORITY("优先级")
+}
+
+private enum class FilterOption(val label: String) {
+    ALL("全部"),
+    ACTIVE("待办"),
+    COMPLETED("已完成")
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskTab(
     tasks: List<Task>,
@@ -45,18 +67,121 @@ fun TaskTab(
     onTaskDelete: (Task) -> Unit,
     onTaskEdit: (Task) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    var sortOption by remember { mutableStateOf(SortOption.DEFAULT) }
+    var filterOption by remember { mutableStateOf(FilterOption.ALL) }
+
+    val processedTasks = remember(tasks, sortOption, filterOption) {
+        tasks.filter { task ->
+            when (filterOption) {
+                FilterOption.ALL -> true
+                FilterOption.ACTIVE -> task.status != TaskStatus.COMPLETED && task.status != TaskStatus.CANCELLED
+                FilterOption.COMPLETED -> task.status == TaskStatus.COMPLETED
+            }
+        }.sortedWith(
+            when (sortOption) {
+                SortOption.DEFAULT -> compareBy { it.status == TaskStatus.COMPLETED }
+                SortOption.DATE -> compareBy<Task> { it.status == TaskStatus.COMPLETED }
+                    .thenBy { it.dueDate ?: Date(Long.MAX_VALUE) }
+                SortOption.PRIORITY -> compareBy<Task> { it.status == TaskStatus.COMPLETED }
+                    .thenByDescending { it.priority.ordinal }
+            }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TaskFilterBar(
+            currentFilter = filterOption,
+            onFilterChange = { filterOption = it },
+            currentSort = sortOption,
+            onSortChange = { sortOption = it }
+        )
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(processedTasks, key = { it.id }) { task ->
+                TaskCard(
+                    task = task,
+                    onStatusChange = { onTaskStatusChange(task, it) },
+                    onDelete = { onTaskDelete(task) },
+                    onEdit = { onTaskEdit(task) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskFilterBar(
+    currentFilter: FilterOption,
+    onFilterChange: (FilterOption) -> Unit,
+    currentSort: SortOption,
+    onSortChange: (SortOption) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        items(tasks, key = { it.id }) { task ->
-            TaskCard(
-                task = task,
-                onStatusChange = { onTaskStatusChange(task, it) },
-                onDelete = { onTaskDelete(task) },
-                onEdit = { onTaskEdit(task) }
-            )
+        // Filter Chips
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            FilterOption.values().forEach { option ->
+                FilterChip(
+                    selected = currentFilter == option,
+                    onClick = { onFilterChange(option) },
+                    label = { Text(option.label) },
+                    leadingIcon = if (currentFilter == option) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
+        }
+
+        // Sort Button
+        Box {
+            var expanded by remember { mutableStateOf(false) }
+            IconButton(onClick = { expanded = true }) {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = "Sort",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            DropdownMenu(
+                expanded = expanded, 
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                SortOption.values().forEach { option ->
+                    DropdownMenuItem(
+                        text = { 
+                            Text(
+                                option.label,
+                                fontWeight = if (currentSort == option) FontWeight.Bold else FontWeight.Normal
+                            ) 
+                        },
+                        onClick = { 
+                            onSortChange(option)
+                            expanded = false
+                        },
+                        trailingIcon = if (currentSort == option) {
+                            { Icon(Icons.Default.Check, contentDescription = null) }
+                        } else null
+                    )
+                }
+            }
         }
     }
 }

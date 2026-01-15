@@ -3,6 +3,9 @@ package top.contins.synapse.ui.home.plan
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -19,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.model.schedule.ScheduleType
@@ -82,6 +86,15 @@ fun PlanScreen(
 
     // 筛选今日任务和日程
     val today = LocalDate.now()
+
+    // 计算逾期任务数量
+    val overdueTaskCount = remember(tasks) {
+        tasks.count {
+            it.status != TaskStatus.COMPLETED &&
+            it.status != TaskStatus.CANCELLED &&
+            it.dueDate?.before(java.util.Date()) == true
+        }
+    }
     
     // 今日任务：今天截止的未完成任务 + 没有截止日期的未完成任务
     val todayTasks = tasks.filter { task ->
@@ -147,7 +160,23 @@ fun PlanScreen(
                             selectedTab = index
                             isFabExpanded = false
                         },
-                        text = { Text(title) }
+                        text = {
+                            if (index == 2 && overdueTaskCount > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            modifier = Modifier.offset(x = 14.dp)
+                                        ) { 
+                                            Text(overdueTaskCount.toString()) 
+                                        }
+                                    }
+                                ) {
+                                    Text(title)
+                                }
+                            } else {
+                                Text(title)
+                            }
+                        }
                     )
                 }
             }
