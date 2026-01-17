@@ -8,5 +8,7 @@ data class Task(
     val description: String,
     val dueDate: Date?,
     val status: TaskStatus,
-    val priority: TaskPriority
+    val priority: TaskPriority,
+    val createdAt: Date = Date(), // Default for new tasks in domain usage
+    val completedAt: Date? = null
 )

@@ -28,7 +28,9 @@ object DataMapper {
             description = description,
             dueDate = dueDate?.let { Date(it) },
             status = TaskStatus.valueOf(status),
-            priority = TaskPriority.valueOf(priority)
+            priority = TaskPriority.valueOf(priority),
+            createdAt = Date(createdAt),
+            completedAt = completedAt?.let { Date(it) }
         )
     }
 
@@ -39,7 +41,10 @@ object DataMapper {
             description = description,
             dueDate = dueDate?.time,
             status = status.name,
-            priority = priority.name
+            priority = priority.name,
+            createdAt = createdAt.time,
+            updatedAt = System.currentTimeMillis(),
+            completedAt = completedAt?.time
         )
     }
 

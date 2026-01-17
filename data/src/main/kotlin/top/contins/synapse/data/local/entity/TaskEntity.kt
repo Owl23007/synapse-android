@@ -13,5 +13,6 @@ data class TaskEntity(
     val status: String, // Store enum name
     val priority: String, // Store enum name
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val completedAt: Long? = null
 )

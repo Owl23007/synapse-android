@@ -1,13 +1,11 @@
 package top.contins.synapse.feature.task.ui
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Unarchive
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,8 +40,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Sort
 
 private enum class SortOption(val label: String) {
@@ -56,7 +51,8 @@ private enum class SortOption(val label: String) {
 private enum class FilterOption(val label: String) {
     ALL("全部"),
     ACTIVE("待办"),
-    COMPLETED("已完成")
+    COMPLETED("已完成"),
+    ARCHIVED("已归档")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +61,9 @@ fun TaskTab(
     tasks: List<Task>,
     onTaskStatusChange: (Task, Boolean) -> Unit,
     onTaskDelete: (Task) -> Unit,
-    onTaskEdit: (Task) -> Unit
+    onTaskEdit: (Task) -> Unit,
+    onTaskArchive: (Task) -> Unit = {},
+    onTaskUnarchive: (Task) -> Unit = {}
 ) {
     var sortOption by remember { mutableStateOf(SortOption.DEFAULT) }
     var filterOption by remember { mutableStateOf(FilterOption.ALL) }
@@ -73,9 +71,12 @@ fun TaskTab(
     val processedTasks = remember(tasks, sortOption, filterOption) {
         tasks.filter { task ->
             when (filterOption) {
-                FilterOption.ALL -> true
-                FilterOption.ACTIVE -> task.status != TaskStatus.COMPLETED && task.status != TaskStatus.CANCELLED
+                FilterOption.ALL -> task.status != TaskStatus.ARCHIVED // 默认也不显示归档
+                FilterOption.ACTIVE -> task.status != TaskStatus.COMPLETED && 
+                                     task.status != TaskStatus.CANCELLED && 
+                                     task.status != TaskStatus.ARCHIVED
                 FilterOption.COMPLETED -> task.status == TaskStatus.COMPLETED
+                FilterOption.ARCHIVED -> task.status == TaskStatus.ARCHIVED
             }
         }.sortedWith(
             when (sortOption) {
@@ -99,14 +100,16 @@ fun TaskTab(
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp) // 减小卡片间距
         ) {
             items(processedTasks, key = { it.id }) { task ->
                 TaskCard(
                     task = task,
                     onStatusChange = { onTaskStatusChange(task, it) },
                     onDelete = { onTaskDelete(task) },
-                    onEdit = { onTaskEdit(task) }
+                    onEdit = { onTaskEdit(task) },
+                    onArchive = { onTaskArchive(task) },
+                    onUnarchive = { onTaskUnarchive(task) }
                 )
             }
         }
@@ -123,7 +126,7 @@ private fun TaskFilterBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp), // 减少上下 padding
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -132,30 +135,49 @@ private fun TaskFilterBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-            FilterOption.values().forEach { option ->
-                FilterChip(
-                    selected = currentFilter == option,
-                    onClick = { onFilterChange(option) },
-                    label = { Text(option.label) },
-                    leadingIcon = if (currentFilter == option) {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                    } else null,
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+            // 使用 ScrollableRow 如果筛选过多，这里简单起见假设放得下，或者可以用 LazyRow
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(FilterOption.values()) { option ->
+                     FilterChip(
+                        selected = currentFilter == option,
+                        onClick = { onFilterChange(option) },
+                        label = { Text(option.label) },
+                        leadingIcon = if (currentFilter == option) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        // 缩小 Chip 的高度和 padding 以显得更紧凑
+                        modifier = Modifier.height(32.dp),
+                        border = FilterChipDefaults.filterChipBorder(
+                             enabled = true,
+                             selected = currentFilter == option,
+                             borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
                     )
-                )
+                }
             }
         }
 
-        // Sort Button
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Sort Button (Compact)
         Box {
             var expanded by remember { mutableStateOf(false) }
-            IconButton(onClick = { expanded = true }) {
+            IconButton(
+                onClick = { expanded = true },
+                modifier = Modifier.size(32.dp) // 缩小按钮尺寸
+            ) {
                 Icon(
                     imageVector = Icons.Default.Sort,
                     contentDescription = "Sort",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
             
@@ -192,30 +214,66 @@ fun TaskCard(
     task: Task,
     onStatusChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onArchive: () -> Unit,
+    onUnarchive: () -> Unit
 ) {
     val currentTask by rememberUpdatedState(task)
     val currentOnStatusChange by rememberUpdatedState(onStatusChange)
     val currentOnDelete by rememberUpdatedState(onDelete)
+    val currentOnArchive by rememberUpdatedState(onArchive)
+    val currentOnUnarchive by rememberUpdatedState(onUnarchive)
     val scope = rememberCoroutineScope()
     
     val isCompleted = task.status == TaskStatus.COMPLETED
+    val isArchived = task.status == TaskStatus.ARCHIVED
+    
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
-            val isTaskCompleted = currentTask.status == TaskStatus.COMPLETED
-            when (it) {
-                SwipeToDismissBoxValue.StartToEnd -> { // 右滑：完成/取消完成
-                    scope.launch {
-                        delay(300) // 等待回弹动画
-                        currentOnStatusChange(!isTaskCompleted)
+            if (isArchived) {
+                 when (it) {
+                    SwipeToDismissBoxValue.StartToEnd -> { // 右滑：取消归档
+                         currentOnUnarchive()
+                         true
                     }
-                    false // 无论如何都回弹，不删除条目
+                    SwipeToDismissBoxValue.EndToStart -> { // 左滑：彻底删除
+                        currentOnDelete()
+                        true
+                    }
+                    else -> false
+                 }
+            } else {
+                val isTaskCompleted = currentTask.status == TaskStatus.COMPLETED
+                when (it) {
+                    SwipeToDismissBoxValue.StartToEnd -> { // 右滑：完成/取消完成
+                        if (isTaskCompleted) {
+                            scope.launch {
+                                delay(300)
+                                currentOnStatusChange(false)
+                            }
+                            false 
+                        } else {
+                            // 完成
+                            scope.launch {
+                                delay(300)
+                                currentOnStatusChange(true)
+                            }
+                            false
+                        }
+                    }
+                    SwipeToDismissBoxValue.EndToStart -> { // 左滑
+                        if (isTaskCompleted) {
+                            // 已完成 -> 归档
+                             currentOnArchive()
+                             true
+                        } else {
+                            // 未完成 -> 删除
+                            currentOnDelete()
+                            true
+                        }
+                    }
+                    else -> false
                 }
-                SwipeToDismissBoxValue.EndToStart -> { // 左滑：删除
-                    currentOnDelete()
-                    true // 确认删除，条目移出
-                }
-                else -> false
             }
         },
         positionalThreshold = { distance -> distance * 0.55f }
@@ -230,15 +288,25 @@ fun TaskCard(
             val willDismiss = targetValue == SwipeToDismissBoxValue.StartToEnd || 
                               targetValue == SwipeToDismissBoxValue.EndToStart
             
-            // 右滑：绿色打钩(完成) 或 灰色叉号(取消完成)
-            // 左滑：红色垃圾桶(删除)
+            // 右滑：
+            //   未归档 & 未完成 -> 绿色打钩(完成)
+            //   未归档 & 已完成 -> 灰色叉号(取消完成/重做)
+            //   已归档 -> 蓝色(全部取出/取消归档)
+            
+            // 左滑：
+            //   未归档 & 未完成 -> 红色垃圾桶(删除)
+            //   未归档 & 已完成 -> 紫色(归档)
+            //   已归档 -> 红色垃圾桶(删除)
             val (baseColor, icon, iconTint) = when (direction) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    if (isCompleted) Triple(Color.LightGray, Icons.Default.Close, Color.Black)
+                    if (isArchived) Triple(Color(0xFF2196F3), Icons.Default.Unarchive, Color.White)
+                    else if (isCompleted) Triple(Color.LightGray, Icons.Default.Close, Color.Black)
                     else Triple(Color(0xFF4CAF50), Icons.Default.Check, Color.White)
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    Triple(MaterialTheme.colorScheme.errorContainer, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                     if (isArchived) Triple(MaterialTheme.colorScheme.errorContainer, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                     else if (isCompleted) Triple(Color(0xFF9C27B0), Icons.Default.Archive, Color.White) // 归档色
+                     else Triple(MaterialTheme.colorScheme.errorContainer, Icons.Default.Delete, MaterialTheme.colorScheme.error)
                 }
                 else -> Triple(Color.Transparent, Icons.Default.Delete, Color.Transparent)
             }
@@ -269,7 +337,7 @@ fun TaskCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(baseColor.copy(alpha = if (direction == SwipeToDismissBoxValue.Settled) 0f else alpha), RoundedCornerShape(16.dp))
+                    .background(baseColor.copy(alpha = if (direction == SwipeToDismissBoxValue.Settled) 0f else alpha), RoundedCornerShape(12.dp)) // 减小圆角
                     .padding(horizontal = 24.dp),
                 contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
             ) {
@@ -294,18 +362,19 @@ fun TaskCard(
                     onClick = {},
                     onLongClick = onEdit
                 ),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp), // 减小圆角
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface,
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), // 添加边框以分离背景
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // 去除阴影，使用边框和平面风格
         ) {
             // 将 alpha 移至内部内容，实现文字淡化效果
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
-                    .alpha(if (isCompleted) 0.6f else 1f)
+                    .alpha(if (isCompleted || isArchived) 0.6f else 1f)
             ) {
                 // 优先级垂直色条
                 Box(
@@ -318,28 +387,40 @@ fun TaskCard(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(12.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp) // 减小间距
                     ) {
-                        Checkbox(
-                            checked = isCompleted,
-                            onCheckedChange = onStatusChange,
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = MaterialTheme.colorScheme.primary,
-                                uncheckedColor = MaterialTheme.colorScheme.outline
+                        // 如果是归档状态，不显示Checkbox，显示归档标识
+                        if (isArchived) {
+                             Icon(
+                                imageVector = Icons.Default.Archive,
+                                contentDescription = "Archived",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                             )
+                        } else {
+                            Checkbox(
+                                checked = isCompleted,
+                                onCheckedChange = if (isArchived) null else onStatusChange,
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    uncheckedColor = MaterialTheme.colorScheme.outline
+                                ),
+                                modifier = Modifier.size(20.dp) // 调整 checkbox 大小
                             )
-                        )
+                        }
 
                         Text(
                             text = task.title,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                textDecoration = if (isCompleted) TextDecoration.LineThrough else null
+                                fontSize = 16.sp, // 调整字体大小
+                                textDecoration = if (isCompleted || isArchived) TextDecoration.LineThrough else null
                             ),
-                            color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                            color = if (isCompleted || isArchived) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -349,51 +430,88 @@ fun TaskCard(
                     }
 
                     if (task.description.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp)) // 减小间距
                         Text(
                             text = task.description,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall, // 使用 bodySmall
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 44.dp)
+                            modifier = Modifier.padding(start = 32.dp) // 调整对齐
                         )
                     }
-
-                    task.dueDate?.let { dueDate ->
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Row(
-                            modifier = Modifier.padding(start = 44.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            val isOverdue = !isCompleted && dueDate.before(Date())
-                            Icon(
-                                imageVector = Icons.Default.CalendarToday,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = formatDueDate(dueDate),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
-                            if (isOverdue) {
-                                Text(
-                                    text = "· 已逾期",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                    
+                    // 显示时间信息：创建时间、截止时间、完成时间
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.padding(start = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                         horizontalArrangement = Arrangement.spacedBy(12.dp) // 增加信息间距
+                    ) {
+                         if (isArchived) {
+                            // 归档状态：显示创建时间和完成时间
+                            TaskTimeInfo(label = "创建", date = task.createdAt)
+                            task.completedAt?.let { TaskTimeInfo(label = "完成", date = it) }
+                            task.dueDate?.let { TaskTimeInfo(label = "截止", date = it, showIcon = true) }
+                         } else {
+                             // 普通状态：显示截止时间
+                             task.dueDate?.let { dueDate ->
+                                val isOverdue = !isCompleted && dueDate.before(Date())
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = formatDueDate(dueDate),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                     if (isOverdue) {
+                                        Text(
+                                            text = "已逾期",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
                             }
-                        }
+                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun TaskTimeInfo(label: String, date: Date, showIcon: Boolean = false) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (showIcon) {
+             Icon(
+                imageVector = Icons.Default.CalendarToday,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = "$label: ${formatCompactDate(date)}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        )
+    }
+}
+
+private fun formatCompactDate(date: Date): String {
+    val now = Calendar.getInstance()
+    val target = Calendar.getInstance().apply { time = date }
+    val isSameYear = now.get(Calendar.YEAR) == target.get(Calendar.YEAR)
+    
+    val pattern = if (isSameYear) "MM-dd" else "yyyy-MM-dd"
+    return SimpleDateFormat(pattern, Locale.getDefault()).format(date)
 }
 
 @Composable

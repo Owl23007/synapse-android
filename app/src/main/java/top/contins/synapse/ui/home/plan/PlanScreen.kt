@@ -92,13 +92,16 @@ fun PlanScreen(
         tasks.count {
             it.status != TaskStatus.COMPLETED &&
             it.status != TaskStatus.CANCELLED &&
+            it.status != TaskStatus.ARCHIVED &&
             it.dueDate?.before(java.util.Date()) == true
         }
     }
     
     // 今日任务：今天截止的未完成任务 + 没有截止日期的未完成任务
     val todayTasks = tasks.filter { task ->
-        task.status != TaskStatus.COMPLETED && (
+        task.status != TaskStatus.COMPLETED && 
+        task.status != TaskStatus.ARCHIVED &&
+        task.status != TaskStatus.CANCELLED && (
             task.dueDate == null ||
             task.dueDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()?.isEqual(today) == true
         )
@@ -206,6 +209,12 @@ fun PlanScreen(
                     onTaskEdit = { task ->
                         editingTask = task
                         showAddTaskDialog = true
+                    },
+                    onTaskArchive = { task ->
+                        taskViewModel.archiveTask(task)
+                    },
+                    onTaskUnarchive = { task ->
+                        taskViewModel.unarchiveTask(task)
                     }
                 )
                 3 -> GoalTab(goals)

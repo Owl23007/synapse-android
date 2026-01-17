@@ -62,10 +62,34 @@ class TaskViewModel @Inject constructor(
 
     fun updateTaskStatus(task: Task, isCompleted: Boolean) {
         viewModelScope.launch {
+            val pendingStatus = if (isCompleted) TaskStatus.COMPLETED else TaskStatus.TODO
             val updatedTask = task.copy(
-                status = if (isCompleted) TaskStatus.COMPLETED else TaskStatus.TODO
+                status = pendingStatus,
+                completedAt = if (pendingStatus == TaskStatus.COMPLETED) Date() else null
             )
             taskRepository.updateTask(updatedTask)
+        }
+    }
+
+    fun archiveTask(task: Task) {
+        viewModelScope.launch {
+            if (task.status == TaskStatus.COMPLETED) {
+                val updatedTask = task.copy(
+                    status = TaskStatus.ARCHIVED
+                )
+                taskRepository.updateTask(updatedTask)
+            }
+        }
+    }
+    
+    fun unarchiveTask(task: Task) {
+        viewModelScope.launch {
+             if (task.status == TaskStatus.ARCHIVED) {
+                val updatedTask = task.copy(
+                    status = TaskStatus.COMPLETED
+                )
+                taskRepository.updateTask(updatedTask)
+             }
         }
     }
 

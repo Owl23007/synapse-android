@@ -4,5 +4,6 @@ enum class TaskStatus(val displayName: String) {
     TODO("待办"),
     IN_PROGRESS("进行中"),
     COMPLETED("已完成"),
-    CANCELLED("已取消")
+    CANCELLED("已取消"),
+    ARCHIVED("已归档")
 }
