@@ -1,6 +1,7 @@
 package top.contins.synapse.feature.schedule.ui
 
 import android.widget.Toast
+import java.time.YearMonth
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -29,6 +30,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,6 +82,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.input.pointer.pointerInput
 
 import java.time.temporal.WeekFields
@@ -87,6 +93,7 @@ import top.contins.synapse.feature.schedule.ui.WeekTimeSlotsView
 /**
  * 日程 Tab - 用于在 PlanScreen 中显示日程内容
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleTab(
     viewModel: ScheduleViewModel = hiltViewModel(),
@@ -152,6 +159,7 @@ fun ScheduleTab(
     
     var isMonthView by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
     var initialAddDate by remember { mutableStateOf<Long?>(null) }
 
@@ -199,10 +207,7 @@ fun ScheduleTab(
             Column(modifier = Modifier.fillMaxWidth()) {
                 CalendarHeader(
                     currentMonth = currentMonth,
-                    onPreviousMonth = { viewModel.onMonthChanged(currentMonth.minusMonths(1)) },
-                    onNextMonth = { viewModel.onMonthChanged(currentMonth.plusMonths(1)) },
-                    onPreviousYear = { viewModel.onMonthChanged(currentMonth.minusYears(1)) },
-                    onNextYear = { viewModel.onMonthChanged(currentMonth.plusYears(1)) },
+                    onMonthClick = { showDatePicker = true },
                     onTodayClick = {
                         viewModel.onDateSelected(java.time.LocalDate.now())
                         viewModel.onMonthChanged(java.time.YearMonth.now())
@@ -234,7 +239,10 @@ fun ScheduleTab(
                                modifier = Modifier.fillMaxWidth(),
                                selectedDate = selectedDate,
                                schedulesMap = schedulesMap,
-                               onDateSelected = viewModel::onDateSelected
+                               onDateSelected = { date ->
+                                   viewModel.onDateSelected(date)
+                                   viewModel.onMonthChanged(YearMonth.from(date))
+                               }
                            )
                        }
                    }
@@ -307,7 +315,44 @@ fun ScheduleTab(
             }
         }
     }
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = currentMonth.atDay(1)
+                .atStartOfDay(java.time.ZoneId.of("UTC")) // Use UTC to avoid timezone shift in Picker
+                .toInstant()
+                .toEpochMilli()
+        )
 
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.of("UTC"))
+                                .toLocalDate()
+                            viewModel.onMonthChanged(java.time.YearMonth.from(date))
+                            viewModel.onDateSelected(date)
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false
+            )
+        }
+    }
     if (showAddDialog) {
         AddScheduleDialog(
             initialDate = initialAddDate ?: editingSchedule?.startTime

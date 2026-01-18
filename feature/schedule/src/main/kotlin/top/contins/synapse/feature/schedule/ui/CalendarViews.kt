@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +84,8 @@ fun WeekCalendarPager(
         pageCount = { WEEK_COUNT }
     )
 
-    LaunchedEffect(pagerState) {
+    // Sync Pager change to date selection (select same day of week)
+    LaunchedEffect(pagerState, selectedDate) {
         snapshotFlow { pagerState.currentPage }.collect { page ->
             val firstDayOfWeek = MIN_DATE.plusWeeks(page.toLong())
             val startOfWeek = firstDayOfWeek.minusDays(firstDayOfWeek.dayOfWeek.value.toLong() - 1)
@@ -152,6 +155,11 @@ fun MonthView(
         pageCount = { MONTH_COUNT }
     )
 
+    val currentMonthState by rememberUpdatedState(currentMonth)
+    val selectedDateState by rememberUpdatedState(selectedDate)
+    val onMonthChangedState by rememberUpdatedState(onMonthChanged)
+    val onDateSelectedState by rememberUpdatedState(onDateSelected)
+
     // Sync external currentMonth change to Pager
     LaunchedEffect(currentMonth) {
         val targetPage = ChronoUnit.MONTHS.between(MIN_MONTH, currentMonth).toInt().coerceIn(0, MONTH_COUNT - 1)
@@ -164,8 +172,13 @@ fun MonthView(
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect { page ->
             val newMonth = MIN_MONTH.plusMonths(page.toLong())
-            if (newMonth != currentMonth) {
-                onMonthChanged(newMonth)
+            if (newMonth != currentMonthState) {
+                onMonthChangedState(newMonth)
+                // When paging, also update selected date to the same day in new month
+                // Clamping to the length of the new month (e.g. Jan 31 -> Feb 28)
+                val newDayOfMonth = selectedDateState.dayOfMonth.coerceAtMost(newMonth.lengthOfMonth())
+                val newDate = newMonth.atDay(newDayOfMonth)
+                onDateSelectedState(newDate)
             }
         }
     }
@@ -235,46 +248,39 @@ fun MonthView(
 @Composable
 fun CalendarHeader(
     currentMonth: YearMonth,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit,
-    onPreviousYear: () -> Unit,
-    onNextYear: () -> Unit,
+    onMonthClick: () -> Unit,
     onTodayClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onPreviousYear) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Year")
-            }
-            IconButton(onClick = onPreviousMonth) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
-            }
-        }
-
-        Text(
-            text = "${currentMonth.year}年${currentMonth.monthValue}月",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onNextMonth) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
-            }
-            IconButton(onClick = onNextYear) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Year")
-            }
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onMonthClick)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${currentMonth.year}年${currentMonth.monthValue}月",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Select Month",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
         }
         
         OutlinedButton(
             onClick = onTodayClick,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text("今天")
         }
