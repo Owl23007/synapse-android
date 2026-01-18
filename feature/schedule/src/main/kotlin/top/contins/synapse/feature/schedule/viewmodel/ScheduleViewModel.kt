@@ -17,8 +17,13 @@ import top.contins.synapse.domain.usecase.schedule.CreateScheduleUseCase
 import top.contins.synapse.domain.usecase.schedule.DeleteScheduleUseCase
 import top.contins.synapse.domain.usecase.schedule.GetSchedulesUseCase
 import top.contins.synapse.domain.usecase.schedule.UpdateScheduleUseCase
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 @HiltViewModel
@@ -51,6 +56,32 @@ class ScheduleViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    val schedulesMap: StateFlow<Map<LocalDate, List<Schedule>>> = schedules
+        .map { list ->
+            val map = mutableMapOf<LocalDate, MutableList<Schedule>>()
+            val zoneId = ZoneId.systemDefault()
+            list.forEach { schedule ->
+                val startDate =
+                    Instant.ofEpochMilli(schedule.startTime).atZone(zoneId).toLocalDate()
+                val endInstant = if (schedule.endTime > schedule.startTime) schedule.endTime - 1 else schedule.startTime
+                val endDate =
+                    Instant.ofEpochMilli(endInstant).atZone(zoneId).toLocalDate()
+
+                var date = startDate
+                while (!date.isAfter(endDate)) {
+                    map.getOrPut(date) { mutableListOf() }.add(schedule)
+                    date = date.plusDays(1)
+                }
+            }
+            map
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
         )
 
     // 选中日期的日程过滤

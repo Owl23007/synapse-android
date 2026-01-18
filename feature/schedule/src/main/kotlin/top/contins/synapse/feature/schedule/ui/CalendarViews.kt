@@ -68,27 +68,11 @@ fun MonthView(
     modifier: Modifier = Modifier,
     currentMonth: YearMonth,
     selectedDate: LocalDate,
-    schedules: List<Schedule>,
+    schedulesMap: Map<LocalDate, List<Schedule>>,
     onDateSelected: (LocalDate) -> Unit,
     onMonthChanged: (YearMonth) -> Unit,
 ) {
     val daysOfWeek = remember { daysOfWeek() }
-    val schedulesMap = remember(schedules) {
-        val map = mutableMapOf<LocalDate, MutableList<Schedule>>()
-        val zoneId = ZoneId.systemDefault()
-        schedules.forEach { schedule ->
-            val startDate = Instant.ofEpochMilli(schedule.startTime).atZone(zoneId).toLocalDate()
-            val endInstant = if (schedule.endTime > schedule.startTime) schedule.endTime - 1 else schedule.startTime
-            val endDate = Instant.ofEpochMilli(endInstant).atZone(zoneId).toLocalDate()
-
-            var date = startDate
-            while (!date.isAfter(endDate)) {
-                map.getOrPut(date) { mutableListOf() }.add(schedule)
-                date = date.plusDays(1)
-            }
-        }
-        map
-    }
 
     val initialPage = remember(Unit) {
         ChronoUnit.MONTHS.between(MIN_MONTH, currentMonth).toInt().coerceIn(0, MONTH_COUNT - 1)
@@ -135,7 +119,7 @@ fun MonthView(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
-            beyondViewportPageCount = 3, // Preload 3 pages left and right
+            beyondViewportPageCount = 1, // Preload 1 page left and right
             verticalAlignment = Alignment.Top
         ) { page ->
             val monthForPage = MIN_MONTH.plusMonths(page.toLong())

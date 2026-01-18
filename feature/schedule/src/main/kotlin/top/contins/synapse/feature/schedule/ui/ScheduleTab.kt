@@ -138,6 +138,7 @@ fun ScheduleTab(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val currentMonth by viewModel.currentMonth.collectAsState()
     val schedules by viewModel.schedules.collectAsState()
+    val schedulesMap by viewModel.schedulesMap.collectAsState()
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
     val weekSchedules by viewModel.weekSchedules.collectAsState()
     var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
@@ -169,7 +170,7 @@ fun ScheduleTab(
                     modifier = Modifier.fillMaxWidth(),
                     currentMonth = currentMonth,
                     selectedDate = selectedDate,
-                    schedules = schedules,
+                    schedulesMap = schedulesMap,
                     onDateSelected = viewModel::onDateSelected,
                     onMonthChanged = viewModel::onMonthChanged
                 )

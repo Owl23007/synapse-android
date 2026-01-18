@@ -185,7 +185,6 @@ fun WeekCalendarView(
     val weekDates = (0..6).map { weekStart.plusDays(it.toLong()) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        DaysOfWeekTitle(daysOfWeek = daysOfWeek)
         // Week Date Header
         Row(modifier = Modifier.fillMaxWidth()) {
             weekDates.forEach { date ->
