@@ -40,9 +40,6 @@ class ChatViewModel @Inject constructor(
         }
         .combine(_streamingMessage) { dbMessages, streamingMsg ->
             if (streamingMsg != null) {
-                // Determine if we should replace the last message or append
-                // Wait, dbMessages are from DB. The streaming message is temporary.
-                // We want to show: Saved Messages + [Streaming Message]
                 dbMessages + streamingMsg
             } else {
                 dbMessages
@@ -106,28 +103,19 @@ class ChatViewModel @Inject constructor(
                     timestamp = System.currentTimeMillis()
                 )
                 saveMessageUseCase(userMessage)
-
-                // Prepare History for Context
-                // Note: We use the messages currently in the viewmodel scope + the new user message
-                // The DB update might be async, so let's manually constructing the context
-                // But for simplicity, we can just grab from DB flow (might miss the very latest if fast)
-                // Better: Use `messages.value` which currently should eventually have the user message
-                // But `saveMessageUseCase` is suspend, so by the time it returns, DB might be notifying.
                 
-                val currentMessages = messages.value // This might not include the just-saved one yet if Flow hasn't emitted
+                val currentMessages = messages.value
                 val historyContext = currentMessages.map { 
                      ChatMessage(
                          role = if (it.role == Message.Role.USER) "user" else "assistant",
                          content = it.content
                      )
                 }.takeLast(10).toMutableList()
-                
-                // Ensure the last user message is in history if not yet propagated
+
                 if (historyContext.none { it.content == text }) {
                      historyContext.add(ChatMessage("user", text))
                 }
 
-                // Initialize Streaming Message Placeholder
                 var aiContent = ""
                 val aiMessageId = UUID.randomUUID().toString()
                 

@@ -36,4 +36,5 @@ dependencies {
     implementation(libs.coil.compose)
 
     implementation(libs.bundles.markdown)
+    implementation(project(":domain"))
 }

@@ -14,24 +14,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.model.task.Task
-import top.contins.synapse.domain.model.task.TaskPriority
-import top.contins.synapse.domain.model.task.TaskStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import top.contins.synapse.core.ui.compose.task.TaskCard
+import top.contins.synapse.core.ui.compose.task.TaskCardCallbacks
 
 @Composable
 fun TodayTab(
@@ -41,7 +42,6 @@ fun TodayTab(
     onTaskStatusChange: (Task, Boolean) -> Unit,
     onTaskDelete: (Task) -> Unit
 ) {
-    val context = LocalContext.current
     val todayText = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date())
     val dayOfWeekText = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
     
@@ -160,10 +160,12 @@ fun TodayTab(
                 }
                 
                 items(todayTasks) { task ->
-                    TodayTaskCard(
+                    TaskCard(
                         task = task,
-                        onStatusChange = { onTaskStatusChange(task, it) },
-                        onDelete = { onTaskDelete(task) }
+                        callbacks = TaskCardCallbacks(
+                            onStatusChange = { onTaskStatusChange(task, it) },
+                            onDelete = { onTaskDelete(task) }
+                        )
                     )
                 }
             } else {
@@ -378,101 +380,6 @@ fun TodayStatCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayTaskCard(
-    task: Task,
-    onStatusChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
-        positionalThreshold = { it * 0.5f }
-    )
-
-    // 监听dismiss状态，当完全滑动到位时执行删除
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            kotlinx.coroutines.delay(20) // 等待动画完成
-            onDelete()
-        }
-    }
-
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
-                Color.Red
-            } else {
-                Color.Transparent
-            }
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.White
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false
-    ) {
-        Card(
-            onClick = { },
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = task.status == TaskStatus.COMPLETED,
-                    onCheckedChange = onStatusChange
-                )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when (task.priority) {
-                                TaskPriority.HIGH, TaskPriority.URGENT -> Color.Red
-                                TaskPriority.MEDIUM -> Color.Yellow
-                                else -> Color.Gray
-                            }
-                        )
-                )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = task.title,
-                        fontWeight = FontWeight.Medium,
-                        color = if (task.status == TaskStatus.COMPLETED) 
-                            MaterialTheme.colorScheme.onSurfaceVariant 
-                        else MaterialTheme.colorScheme.onSurface,
-                        textDecoration = if (task.status == TaskStatus.COMPLETED) TextDecoration.LineThrough else null
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun TodayScheduleCard(schedule: Schedule) {
     Card(
         onClick = { },
@@ -508,3 +415,4 @@ fun TodayScheduleCard(schedule: Schedule) {
         }
     }
 }
+
