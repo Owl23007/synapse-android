@@ -1,5 +1,10 @@
 package top.contins.synapse.feature.schedule.ui
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -72,17 +77,23 @@ fun ScheduleTab(
     addTick: Int = 0,
     onShowAddDialog: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val selectedDate by viewModel.selectedDate.collectAsState()
     val currentMonth by viewModel.currentMonth.collectAsState()
     val schedules by viewModel.schedules.collectAsState()
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
+    val weekSchedules by viewModel.weekSchedules.collectAsState()
     var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
     var showAddDialog by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
+    var initialAddDate by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(addTick) {
         if (addTick > 0) {
             editingSchedule = null
+            initialAddDate = null
             showAddDialog = true
         }
     }
@@ -120,55 +131,94 @@ fun ScheduleTab(
                 )
             }
 
-            CalendarViewType.WEEK -> Text("周视图 (即将推出)", modifier = Modifier.padding(16.dp))
-            CalendarViewType.DAY -> Text("日视图 (即将推出)", modifier = Modifier.padding(16.dp))
+            CalendarViewType.WEEK -> {
+                WeekCalendarView(
+                    selectedDate = selectedDate,
+                    schedules = weekSchedules,
+                    onDateSelected = viewModel::onDateSelected,
+                    onTimeSlotClick = { date, time -> 
+                        initialAddDate = date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        showAddDialog = true
+                    },
+                    onScheduleClick = { schedule ->
+                        editingSchedule = schedule
+                        showAddDialog = true
+                    }
+                )
+            }
+            CalendarViewType.DAY -> {
+                DayCalendarView(
+                    selectedDate = selectedDate,
+                    schedules = selectedDateSchedules,
+                    onDateSelected = viewModel::onDateSelected,
+                    onTimeSlotClick = { date, time -> 
+                         initialAddDate = date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                         showAddDialog = true
+                    },
+                    onScheduleClick = { schedule ->
+                        editingSchedule = schedule
+                        showAddDialog = true
+                    }
+                )
+            }
         }
     }
 
     if (showAddDialog) {
         AddScheduleDialog(
-            initialDate = editingSchedule?.startTime
+            initialDate = initialAddDate ?: editingSchedule?.startTime
                 ?: selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
             initialSchedule = editingSchedule,
             onDismiss = {
                 showAddDialog = false
                 editingSchedule = null
+                initialAddDate = null
             },
             onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
-                val currentTime = System.currentTimeMillis()
-                val schedule = editingSchedule?.copy(
-                    title = title,
-                    startTime = startTime,
-                    endTime = endTime,
-                    location = location.ifBlank { null },
-                    isAllDay = isAllDay,
-                    reminderMinutes = reminderMinutes,
-                    repeatRule = repeatRule,
-                    updatedAt = currentTime
-                ) ?: Schedule(
-                    id = UUID.randomUUID().toString(),
-                    title = title,
-                    startTime = startTime,
-                    endTime = endTime,
-                    timezoneId = TimeZone.getDefault().id,
-                    location = location.ifBlank { null },
-                    type = ScheduleType.EVENT,
-                    calendarId = "default",
-                    isAllDay = isAllDay,
-                    reminderMinutes = reminderMinutes,
-                    repeatRule = repeatRule,
-                    createdAt = currentTime,
-                    updatedAt = currentTime
-                )
+                scope.launch {
+                    val conflicts = viewModel.checkConflict(startTime, endTime)
+                    val count = conflicts.filter { it.id != editingSchedule?.id }.size
+                    
+                    if (count > 0) {
+                        Toast.makeText(context, "注意：该时段已有 $count 个日程冲突", Toast.LENGTH_SHORT).show()
+                    }
 
-                if (editingSchedule == null) {
-                    viewModel.createSchedule(schedule)
-                } else {
-                    viewModel.updateSchedule(schedule)
+                    val currentTime = System.currentTimeMillis()
+                    val schedule = editingSchedule?.copy(
+                        title = title,
+                        startTime = startTime,
+                        endTime = endTime,
+                        location = location.ifBlank { null },
+                        isAllDay = isAllDay,
+                        reminderMinutes = reminderMinutes,
+                        repeatRule = repeatRule,
+                        updatedAt = currentTime
+                    ) ?: Schedule(
+                        id = UUID.randomUUID().toString(),
+                        title = title,
+                        startTime = startTime,
+                        endTime = endTime,
+                        timezoneId = TimeZone.getDefault().id,
+                        location = location.ifBlank { null },
+                        type = ScheduleType.EVENT,
+                        calendarId = "default",
+                        isAllDay = isAllDay,
+                        reminderMinutes = reminderMinutes,
+                        repeatRule = repeatRule,
+                        createdAt = currentTime,
+                        updatedAt = currentTime
+                    )
+
+                    if (editingSchedule == null) {
+                        viewModel.createSchedule(schedule)
+                    } else {
+                        viewModel.updateSchedule(schedule)
+                    }
+
+                    showAddDialog = false
+                    editingSchedule = null
+                    initialAddDate = null
                 }
-
-                showAddDialog = false
-                editingSchedule = null
             }
         )
     }

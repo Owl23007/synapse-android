@@ -24,14 +24,25 @@ import java.time.*
 import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
+import top.contins.synapse.domain.model.schedule.Schedule
+import top.contins.synapse.feature.schedule.ui.util.ScheduleLayoutHelper
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.absoluteOffset
 
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
     currentDate: LocalDate = LocalDate.now(),
     viewType: CalendarViewType = CalendarViewType.MONTH,
+    schedules: List<Schedule> = emptyList(),
     onDateSelected: (LocalDate) -> Unit,
     onTimeSlotClick: (LocalDate, LocalTime) -> Unit = { _, _ -> },
+    onScheduleClick: (Schedule) -> Unit = {},
     onViewTypeChanged: (CalendarViewType) -> Unit = {},
     selectedDateTime: LocalDateTime? = null
 ) {
@@ -45,8 +56,20 @@ fun CalendarComponent(
 
         when (viewType) {
             CalendarViewType.MONTH -> MonthCalendarView(selectedDate) { onDateSelected(it) }
-            CalendarViewType.WEEK -> WeekCalendarView(selectedDate, onDateSelected, onTimeSlotClick, selectedDateTime)
-            CalendarViewType.DAY -> DayCalendarView(selectedDate, onDateSelected, onTimeSlotClick, selectedDateTime)
+            CalendarViewType.WEEK -> WeekCalendarView(
+                selectedDate = selectedDate, 
+                schedules = schedules, 
+                onDateSelected = onDateSelected, 
+                onTimeSlotClick = onTimeSlotClick, 
+                onScheduleClick = onScheduleClick
+            )
+            CalendarViewType.DAY -> DayCalendarView(
+                selectedDate = selectedDate, 
+                schedules = schedules, 
+                onDateSelected = onDateSelected, 
+                onTimeSlotClick = onTimeSlotClick, 
+                onScheduleClick = onScheduleClick
+            )
         }
     }
 }
@@ -150,18 +173,20 @@ private fun MonthCalendarView(
 }
 
 @Composable
-private fun WeekCalendarView(
+fun WeekCalendarView(
     selectedDate: LocalDate,
+    schedules: List<Schedule>,
     onDateSelected: (LocalDate) -> Unit,
     onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
-    selectedDateTime: LocalDateTime? = null
+    onScheduleClick: (Schedule) -> Unit
 ) {
     val daysOfWeek = remember { daysOfWeek() }
     val weekStart = selectedDate.with(DayOfWeek.MONDAY)
     val weekDates = (0..6).map { weekStart.plusDays(it.toLong()) }
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         DaysOfWeekTitle(daysOfWeek = daysOfWeek)
+        // Week Date Header
         Row(modifier = Modifier.fillMaxWidth()) {
             weekDates.forEach { date ->
                 WeekDayItem(
@@ -172,149 +197,241 @@ private fun WeekCalendarView(
                 ) { onDateSelected(date) }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        WeekTimeSlotsView(selectedDate = selectedDate, onTimeSlotClick = onTimeSlotClick, selectedDateTime = selectedDateTime)
+        
+        // Week Scheduler Grid
+        WeekTimeSlotsView(
+            weekDates = weekDates,
+            schedules = schedules, 
+            onTimeSlotClick = onTimeSlotClick,
+            onScheduleClick = onScheduleClick
+        )
     }
 }
 
 @Composable
-private fun DayCalendarView(
+fun DayCalendarView(
     selectedDate: LocalDate,
+    schedules: List<Schedule>,
     onDateSelected: (LocalDate) -> Unit,
     onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
-    selectedDateTime: LocalDateTime? = null
+    onScheduleClick: (Schedule) -> Unit
 ) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE", Locale.CHINESE)),
-            style = MaterialTheme.typography.headlineSmall
+    val (allDaySchedules, timeSchedules) = remember(schedules) { schedules.partition { it.isAllDay } }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.padding(16.dp)) {
+             Text(
+                text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE", Locale.CHINESE)),
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+        
+        if (allDaySchedules.isNotEmpty()) {
+            Column(modifier = Modifier.padding(start = 50.dp, end = 16.dp, bottom = 8.dp)) {
+                 allDaySchedules.forEach { s ->
+                      ScheduleCard(
+                          schedule = s, 
+                          modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(bottom = 2.dp)
+                              .clickable { onScheduleClick(s) }
+                      )
+                 }
+            }
+        }
+
+        DayTimeSlotsView(
+            selectedDate = selectedDate, 
+            schedules = timeSchedules,
+            onTimeSlotClick = onTimeSlotClick,
+            onScheduleClick = onScheduleClick,
+            showTimeLabels = true
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        DayTimeSlotsView(selectedDate = selectedDate, onTimeSlotClick = onTimeSlotClick, selectedDateTime = selectedDateTime)
     }
 }
 
 @Composable
-private fun WeekTimeSlotsView(selectedDate: LocalDate, onTimeSlotClick: (LocalDate, LocalTime) -> Unit, selectedDateTime: LocalDateTime? = null) {
-    val timeSlots = (8..18).map { hour -> LocalTime.of(hour, 0) }
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        timeSlots.forEach { time ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
-                    modifier = Modifier.width(60.dp),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(4.dp)
-                        .clickable { onTimeSlotClick(selectedDate, time) }
-                ) {
-                    if (time.hour == 9 && selectedDate == LocalDate.now()) {
-                        Text(
-                            text = "团队周会",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+private fun WeekTimeSlotsView(
+    weekDates: List<LocalDate>,
+    schedules: List<Schedule>,
+    onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
+    onScheduleClick: (Schedule) -> Unit
+) {
+    val scrollState = rememberScrollState()
+    val rowHeight = 60.dp
+    
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
+        val totalWidth = maxWidth
+        val timeLabelWidth = 50.dp
+        val colWidth = (totalWidth - timeLabelWidth) / 7
+        
+        // Time Labels
+        Column(modifier = Modifier.width(timeLabelWidth)) {
+             (0..23).forEach { hour ->
+                Box(modifier = Modifier.height(rowHeight), contentAlignment = Alignment.TopCenter) {
+                    Text(
+                        text = "%02d:00".format(hour),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top=4.dp)
+                    )
+                }
+             }
+        }
+        
+        // Columns
+        Row(modifier = Modifier.padding(start = timeLabelWidth)) {
+             weekDates.forEach { date ->
+                Box(modifier = Modifier.width(colWidth).height(rowHeight * 24).border(width=0.5.dp, color=Color.LightGray)) {
+                    val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val daySchedules = schedules.filter { 
+                        it.startTime < endOfDay && it.endTime > startOfDay
+                    }
+                    val (allDay, timeSpecific) = daySchedules.partition { it.isAllDay }
+                    
+                    DayScheduleColumn(
+                        date = date,
+                        schedules = timeSpecific,
+                        rowHeight = rowHeight,
+                        colWidth = colWidth,
+                        onTimeSlotClick = onTimeSlotClick,
+                        onScheduleClick = onScheduleClick
+                    )
+                    
+                    if (allDay.isNotEmpty()) {
+                        Column(modifier = Modifier.fillMaxWidth().zIndex(2f)) {
+                           allDay.forEach { s ->
+                               ScheduleCard(
+                                   schedule = s, 
+                                   modifier = Modifier.fillMaxWidth().height(24.dp).padding(1.dp).clickable { onScheduleClick(s) }
+                               )
+                           }
+                        }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
+             }
         }
     }
 }
 
 @Composable
-private fun DayTimeSlotsView(selectedDate: LocalDate, onTimeSlotClick: (LocalDate, LocalTime) -> Unit, selectedDateTime: LocalDateTime? = null) {
-    val timeSlots = (8..18).map { hour -> LocalTime.of(hour, 0) }
-
-    Column {
-        timeSlots.forEach { time ->
-            Row(
+private fun DayScheduleColumn(
+    date: LocalDate,
+    schedules: List<Schedule>,
+    rowHeight: androidx.compose.ui.unit.Dp,
+    colWidth: androidx.compose.ui.unit.Dp,
+    onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
+    onScheduleClick: (Schedule) -> Unit
+) {
+    val positioned = remember(schedules) { ScheduleLayoutHelper.arrangeDaySchedules(schedules) }
+    
+    Box(modifier = Modifier.fillMaxSize()) {
+         Column(modifier = Modifier.fillMaxSize()) {
+             (0..23).forEach { h ->
+                 Box(modifier = Modifier.weight(1f).fillMaxWidth().clickable { onTimeSlotClick(date, LocalTime.of(h, 0)) })
+             }
+         }
+         
+         positioned.forEach { pos ->
+             val schedule = pos.schedule
+             val zone = ZoneId.systemDefault()
+             val start = Instant.ofEpochMilli(schedule.startTime).atZone(zone)
+             val end = Instant.ofEpochMilli(schedule.endTime).atZone(zone)
+             
+             val dayStart = date.atStartOfDay(zone)
+             val startMinutes = java.time.Duration.between(dayStart, start).toMinutes().coerceAtLeast(0)
+             val endMinutes = java.time.Duration.between(dayStart, end).toMinutes().coerceAtMost(24*60)
+             val duration = (endMinutes - startMinutes).coerceAtLeast(15) 
+             
+             val top = (startMinutes / 60f).toFloat() * rowHeight.value
+             val height = (duration / 60f).toFloat() * rowHeight.value
+             
+             val width = colWidth / pos.totalCols
+             val left = width * pos.colIndex
+             
+             ScheduleCard(
+                schedule = schedule,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
-                    modifier = Modifier.width(60.dp),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .fillMaxHeight()
-                        .background(color = MaterialTheme.colorScheme.outline)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    if (time.hour == 9 && selectedDate == LocalDate.now()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = EventType.MEETING.color.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "📅 团队周会",
-                                    fontSize = 16.sp,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                                )
-                                Text(
-                                    text = "会议室A · 工作",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    } else if (time.hour == 14 && selectedDate == LocalDate.now()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = EventType.STUDY.color.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "📚 学习 Kotlin 协程",
-                                    fontSize = 16.sp,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                                )
-                                Text(
-                                    text = "线上课程",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                    .absoluteOffset(x = left, y = top.dp)
+                    .width(width)
+                    .height(height.dp)
+                    .zIndex(1f)
+                    .clickable { onScheduleClick(schedule) }
+             )
+         }
+    }
+}
+
+@Composable
+private fun DayTimeSlotsView(
+    selectedDate: LocalDate,
+    schedules: List<Schedule>,
+    onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
+    onScheduleClick: (Schedule) -> Unit,
+    showTimeLabels: Boolean = true
+) {
+     val scrollState = rememberScrollState()
+     val rowHeight = 60.dp
+     
+     BoxWithConstraints(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
+         val labelsWidth = if (showTimeLabels) 50.dp else 0.dp
+         val contentWidth = maxWidth - labelsWidth
+         
+         Row {
+             if (showTimeLabels) {
+                 Column(modifier = Modifier.width(labelsWidth)) {
+                     (0..23).forEach { h ->
+                         Box(modifier = Modifier.height(rowHeight), contentAlignment = Alignment.TopCenter) {
+                             Text("%02d:00".format(h), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top=4.dp))
+                         }
+                     }
+                 }
+             }
+             
+             Box(modifier = Modifier.width(contentWidth)) {
+                Column {
+                    (0..23).forEach {
+                        Box(
+                            modifier = Modifier
+                                .height(rowHeight)
+                                .fillMaxWidth()
+                                .drawBehind {
+                                    drawLine(Color.LightGray, Offset(0f, 0f), Offset(size.width, 0f))
+                                }
+                        )
                     }
-                    // 点击时间槽
-                    Box(modifier = Modifier
-                        .matchParentSize()
-                        .clickable { onTimeSlotClick(selectedDate, time) })
                 }
-            }
+                
+                DayScheduleColumn(
+                    date = selectedDate,
+                    schedules = schedules,
+                    rowHeight = rowHeight,
+                    colWidth = contentWidth, // Full width
+                    onTimeSlotClick = onTimeSlotClick,
+                    onScheduleClick = onScheduleClick
+                )
+             }
+         }
+     }
+}
+
+@Composable
+private fun ScheduleCard(
+    schedule: Schedule,
+    modifier: Modifier
+) {
+    androidx.compose.material3.Card(
+        modifier = modifier.padding(1.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.8f)),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(2.dp)) {
+            Text(
+                text = schedule.title,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
     }
 }

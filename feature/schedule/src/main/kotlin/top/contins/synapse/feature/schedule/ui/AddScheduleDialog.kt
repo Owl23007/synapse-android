@@ -66,6 +66,23 @@ fun AddScheduleDialog(
     val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    LaunchedEffect(initialDate) {
+        if (initialSchedule == null && initialDate != null) {
+            val cal = java.util.Calendar.getInstance()
+            cal.timeInMillis = initialDate
+            
+            selectedStartDateMillis = initialDate
+            selectedStartHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+            selectedStartMinute = cal.get(java.util.Calendar.MINUTE)
+            
+            // Default 1 hour duration
+            cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
+            selectedEndDateMillis = cal.timeInMillis
+            selectedEndHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+            selectedEndMinute = cal.get(java.util.Calendar.MINUTE)
+        }
+    }
+
     LaunchedEffect(initialSchedule) {
         initialSchedule?.let { schedule ->
             title = schedule.title

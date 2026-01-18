@@ -27,6 +27,7 @@ class ScheduleViewModel @Inject constructor(
     private val createScheduleUseCase: CreateScheduleUseCase,
     private val updateScheduleUseCase: UpdateScheduleUseCase,
     private val deleteScheduleUseCase: DeleteScheduleUseCase,
+    private val checkScheduleConflictUseCase: top.contins.synapse.domain.usecase.schedule.CheckScheduleConflictUseCase,
     private val getCalendarsUseCase: GetCalendarsUseCase
 ) : ViewModel() {
 
@@ -69,6 +70,28 @@ class ScheduleViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    // Filtered schedules for the selected week
+    val weekSchedules: StateFlow<List<Schedule>> = combine(
+        schedules,
+        _selectedDate
+    ) { allSchedules, date ->
+        val zoneId = java.time.ZoneId.systemDefault()
+        val startOfWeek = date.with(java.time.DayOfWeek.MONDAY).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val endOfWeek = date.with(java.time.DayOfWeek.SUNDAY).plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+
+        allSchedules.filter { schedule ->
+            schedule.startTime < endOfWeek && schedule.endTime > startOfWeek
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    suspend fun checkConflict(start: Long, end: Long): List<Schedule> {
+        return checkScheduleConflictUseCase(start, end)
+    }
 
     fun onDateSelected(date: LocalDate) {
         _selectedDate.value = date
