@@ -2,7 +2,9 @@ package top.contins.synapse.ui.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,6 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import top.contins.synapse.domain.usecase.auth.ValidateTokenOnStartupUseCase
 import top.contins.synapse.domain.model.auth.TokenValidationResult
+import top.contins.synapse.feature.schedule.utils.LunarHelper
+import top.contins.synapse.network.utils.BingImageHelper
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -30,14 +35,34 @@ sealed class SplashUiState {
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val validateTokenOnStartupUseCase: ValidateTokenOnStartupUseCase
+    private val validateTokenOnStartupUseCase: ValidateTokenOnStartupUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
     
     init {
+        preloadData()
         validateTokens()
+    }
+
+    private fun preloadData() {
+        viewModelScope.launch {
+            // Preload 2 years of Lunar Calendar
+            val currentYear = LocalDate.now().year
+            launch { LunarHelper.preloadLunarYear(currentYear) }
+            launch { LunarHelper.preloadLunarYear(currentYear + 1) }
+
+            // Preload Bing Image
+            launch {
+                try {
+                    BingImageHelper.getTodayImageUrl(context)
+                } catch (_: Exception) {
+                    // Ignore network errors
+                }
+            }
+        }
     }
     
     private fun validateTokens() {
