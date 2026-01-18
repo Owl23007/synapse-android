@@ -1,5 +1,6 @@
 package top.contins.synapse.feature.schedule.ui
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,6 +69,13 @@ private val MONTH_COUNT = ChronoUnit.MONTHS.between(MIN_MONTH, MAX_MONTH).toInt(
 private val WEEK_COUNT = ChronoUnit.WEEKS.between(MIN_DATE, MAX_DATE).toInt()
 private val lunarCache = ConcurrentHashMap<LocalDate, String>()
 
+private fun getWeeksCount(month: YearMonth, firstDayOfWeek: DayOfWeek): Int {
+    val firstDay = month.atDay(1)
+    val diff = (firstDay.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
+    val totalDays = diff + month.lengthOfMonth()
+    return (totalDays + 6) / 7
+}
+
 @Composable
 fun WeekCalendarPager(
     modifier: Modifier = Modifier,
@@ -85,14 +93,16 @@ fun WeekCalendarPager(
     )
 
     // Sync Pager change to date selection (select same day of week)
-    LaunchedEffect(pagerState, selectedDate) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+    val currentSelectedDate by rememberUpdatedState(selectedDate)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { page ->
             val firstDayOfWeek = MIN_DATE.plusWeeks(page.toLong())
             val startOfWeek = firstDayOfWeek.minusDays(firstDayOfWeek.dayOfWeek.value.toLong() - 1)
             val endOfWeek = startOfWeek.plusDays(6)
             
-            if (selectedDate.isBefore(startOfWeek) || selectedDate.isAfter(endOfWeek)) {
-                val dayOfWeekOffset = (selectedDate.dayOfWeek.value - 1)
+            val selected = currentSelectedDate
+            if (selected.isBefore(startOfWeek) || selected.isAfter(endOfWeek)) {
+                val dayOfWeekOffset = (selected.dayOfWeek.value - 1)
                 val newDate = startOfWeek.plusDays(dayOfWeekOffset.toLong())
                 onDateSelected(newDate)
             }
@@ -164,13 +174,17 @@ fun MonthView(
     LaunchedEffect(currentMonth) {
         val targetPage = ChronoUnit.MONTHS.between(MIN_MONTH, currentMonth).toInt().coerceIn(0, MONTH_COUNT - 1)
         if (pagerState.currentPage != targetPage) {
-            pagerState.animateScrollToPage(targetPage)
+            if (kotlin.math.abs(pagerState.currentPage - targetPage) > 3) {
+                pagerState.scrollToPage(targetPage)
+            } else {
+                pagerState.animateScrollToPage(targetPage)
+            }
         }
     }
 
     // Sync Pager change to external onMonthChanged
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+        snapshotFlow { pagerState.settledPage }.collect { page ->
             val newMonth = MIN_MONTH.plusMonths(page.toLong())
             if (newMonth != currentMonthState) {
                 onMonthChangedState(newMonth)
@@ -183,10 +197,18 @@ fun MonthView(
         }
     }
 
+    val currentWeeksCount = remember(pagerState.currentPage) {
+        val m = MIN_MONTH.plusMonths(pagerState.currentPage.toLong())
+        getWeeksCount(m, daysOfWeek.first())
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .aspectRatio(7f / currentWeeksCount),
             beyondViewportPageCount = 1, // Preload 1 page left and right
             verticalAlignment = Alignment.Top
         ) { page ->
@@ -200,6 +222,7 @@ fun MonthView(
                 current = current.minusDays(diff.toLong())
 
                 val allWeeks = mutableListOf<List<LocalDate>>()
+                val endOfMonth = monthForPage.atEndOfMonth()
                 
                 while (true) {
                     val week = (0 until 7).map {
@@ -208,11 +231,9 @@ fun MonthView(
                         d
                     }
                     allWeeks.add(week)
-                    
-                    // Generate at least 5 weeks.
-                    val lastDay = week.last()
-                    if (lastDay.yearMonth.isAfter(monthForPage) || (lastDay.monthValue == monthForPage.monthValue && lastDay.dayOfMonth == monthForPage.lengthOfMonth())) {
-                        if (allWeeks.size >= 5) break
+
+                    if (!week.last().isBefore(endOfMonth)) {
+                        break
                     }
                 }
                 allWeeks
