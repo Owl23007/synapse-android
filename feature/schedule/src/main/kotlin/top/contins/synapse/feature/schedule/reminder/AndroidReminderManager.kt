@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.repository.ReminderManager
+import top.contins.synapse.feature.schedule.service.ReminderGuardService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,29 +30,41 @@ class AndroidReminderManager @Inject constructor(
 
         reminders.forEach { minutes ->
             val triggerTime = scheduleTime - TimeUnit.MINUTES.toMillis(minutes.toLong())
-            if (triggerTime > System.currentTimeMillis()) {
+            val timeUntilTrigger = triggerTime - System.currentTimeMillis()
+
+            if (timeUntilTrigger > 0) {
+                // Layer 3: 临近提醒时（<= 10分钟），启动前台服务保活
+                if (timeUntilTrigger <= 10 * 60 * 1000) {
+                    startGuardService()
+                }
+
                 val pendingIntent = createPendingIntent(schedule, minutes)
 
                 Log.d("ScheduleReminder", "Scheduling reminder for schedule: ${schedule.title} at $triggerTime (minutes: $minutes)")
 
+                // Layer 1: 使用 setAlarmClock (强力) 或 setExactAndAllowWhileIdle (普通)
                 try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        if (alarmManager.canScheduleExactAlarms()) {
-                            alarmManager.setExactAndAllowWhileIdle(
-                                AlarmManager.RTC_WAKEUP,
-                                triggerTime,
-                                pendingIntent
-                            )
+                    val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        alarmManager.canScheduleExactAlarms()
+                    } else {
+                        true
+                    }
+
+                    if (canScheduleExact) {
+                        if (schedule.isAlarm) {
+                            // AlarmClock 具有最高优先级，能唤醒设备并显示闹钟图标
+                            val alarmInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
+                            alarmManager.setAlarmClock(alarmInfo, pendingIntent)
                         } else {
-                             Log.w("ScheduleReminder", "Cannot schedule exact alarm, falling back to inexact")
-                             alarmManager.setAndAllowWhileIdle(
+                            alarmManager.setExactAndAllowWhileIdle(
                                 AlarmManager.RTC_WAKEUP,
                                 triggerTime,
                                 pendingIntent
                             )
                         }
                     } else {
-                         alarmManager.setExactAndAllowWhileIdle(
+                         Log.w("ScheduleReminder", "Cannot schedule exact alarm, falling back to inexact")
+                         alarmManager.setAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             triggerTime,
                             pendingIntent
@@ -65,6 +78,19 @@ class AndroidReminderManager @Inject constructor(
             } else {
                 Log.d("ScheduleReminder", "Skipping past reminder for schedule: ${schedule.title} (triggerTime: $triggerTime, now: ${System.currentTimeMillis()})")
             }
+        }
+    }
+
+    private fun startGuardService() {
+        try {
+            val intent = Intent(context, ReminderGuardService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        } catch (e: Exception) {
+            Log.e("ScheduleReminder", "Failed to start ReminderGuardService", e)
         }
     }
 

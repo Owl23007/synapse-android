@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
+import top.contins.synapse.feature.schedule.service.ReminderGuardService
 import javax.inject.Inject
 
 import android.app.PendingIntent
@@ -17,6 +18,14 @@ class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.d("ScheduleReminder", "AlarmReceiver.onReceive called with intent: $intent")
+
+        // 停止保活服务（如果正在运行）
+        try {
+            val serviceIntent = Intent(context, ReminderGuardService::class.java)
+            context.stopService(serviceIntent)
+        } catch (e: Exception) {
+            Log.e("ScheduleReminder", "Failed to stop ReminderGuardService", e)
+        }
         
         val scheduleId = intent.getStringExtra("schedule_id")
         if (scheduleId == null) {
