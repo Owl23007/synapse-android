@@ -26,7 +26,6 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
 fun AddScheduleDialog(
     initialDate: Long? = null,
     initialSchedule: Schedule? = null,

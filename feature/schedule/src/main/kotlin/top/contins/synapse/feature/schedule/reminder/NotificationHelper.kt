@@ -19,34 +19,55 @@ class NotificationHelper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
-        const val CHANNEL_ID = "schedule_reminders"
-        const val CHANNEL_NAME = "日程提醒"
+        const val CHANNEL_ID_NORMAL = "schedule_normal"
+        const val CHANNEL_NAME_NORMAL = "日程提醒 (普通)"
+        const val CHANNEL_ID_ALARM = "schedule_alarm"
+        const val CHANNEL_NAME_ALARM = "日程提醒 (强力)"
     }
 
     init {
-        createNotificationChannel()
+        createNotificationChannels()
     }
 
-    private fun createNotificationChannel() {
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-            description = "显示日程到期提醒"
-            enableVibration(true)
-            enableLights(true)
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            setSound(
-                android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,
-                android.media.AudioAttributes.Builder()
-                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // 1. Normal Channel (Heads-up)
+            val normalChannel = NotificationChannel(
+                CHANNEL_ID_NORMAL, 
+                CHANNEL_NAME_NORMAL, 
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "普通日程提醒"
+                enableLights(true)
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(normalChannel)
+
+            // 2. Alarm Channel (Strong)
+            val alarmChannel = NotificationChannel(
+                CHANNEL_ID_ALARM, 
+                CHANNEL_NAME_ALARM, 
+                NotificationManager.IMPORTANCE_HIGH // MAX is not a valid channel importance constant, HIGH is max for channel creation
+            ).apply {
+                description = "强力闹钟提醒"
+                enableVibration(true)
+                enableLights(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setSound(
+                    android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            }
+            notificationManager.createNotificationChannel(alarmChannel)
         }
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
     }
 
-    fun showNotification(id: Int, title: String, content: String, fullScreenIntent: PendingIntent? = null) {
+    fun showNotification(id: Int, title: String, content: String, isAlarm: Boolean, fullScreenIntent: PendingIntent? = null) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
              if (androidx.core.content.ContextCompat.checkSelfPermission(
                 context,
@@ -58,27 +79,47 @@ class NotificationHelper @Inject constructor(
             }
         }
 
-        Log.d("ScheduleReminder", "Building and showing notification: $title")
+        Log.d("ScheduleReminder", "Building and showing notification: $title, isAlarm: $isAlarm")
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val channelId = if (isAlarm) CHANNEL_ID_ALARM else CHANNEL_ID_NORMAL
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(content)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
             
-        if (fullScreenIntent != null) {
-            builder.setFullScreenIntent(fullScreenIntent, true)
-            builder.setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for alarm
+        if (isAlarm) {
+            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+            builder.setPriority(NotificationCompat.PRIORITY_MAX)
             builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            // Ensure sound/vibrate plays even if channel settings are slightly off (compat)
-            builder.setVibrate(longArrayOf(0, 1000, 500, 1000))
+            // Insistent: Repeat sound until dismissed (Requires Notification.FLAG_INSISTENT directly or via set ongoing maybe?)
+            // setInsistent is not directly in NotificationCompat.Builder for older libraries or specific versions, 
+            // but we can set the flag manually on the notification object later, OR use the extension property if available.
+            // Actually, NotificationCompat.Builder does NOT have setInsistent. We must use setDefaults or add flag.
+            // Let's remove setInsistent call and use the built object modification.
+            
+            builder.setVibrate(longArrayOf(0, 1000, 500, 1000, 500, 1000))
             builder.setSound(android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+            
+            if (fullScreenIntent != null) {
+                // For Alarm, we want both FSI (if possible) and ContentIntent (click to open)
+                builder.setFullScreenIntent(fullScreenIntent, true)
+                builder.setContentIntent(fullScreenIntent)
+            }
         } else {
+            builder.setCategory(NotificationCompat.CATEGORY_EVENT)
             builder.setPriority(NotificationCompat.PRIORITY_HIGH)
             builder.setDefaults(NotificationCompat.DEFAULT_ALL)
+            // Add content intent if needed to open App on click
+            if (fullScreenIntent != null) {
+                 builder.setContentIntent(fullScreenIntent)
+            }
         }
 
-        NotificationManagerCompat.from(context).notify(id, builder.build())
+        val notification = builder.build()
+        if (isAlarm) {
+            notification.flags = notification.flags or Notification.FLAG_INSISTENT
+        }
+        NotificationManagerCompat.from(context).notify(id, notification)
     }
 }
