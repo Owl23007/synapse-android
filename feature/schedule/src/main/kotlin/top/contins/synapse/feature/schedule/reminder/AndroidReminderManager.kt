@@ -83,6 +83,7 @@ class AndroidReminderManager @Inject constructor(
             putExtra("schedule_id", schedule.id)
             putExtra("title", schedule.title)
             putExtra("message", schedule.location ?: "即将开始")
+            putExtra("is_alarm", schedule.isAlarm)
             // Distinct action just in case
             action = "top.contins.synapse.REMINDER_${schedule.id}_$minutes"
         }

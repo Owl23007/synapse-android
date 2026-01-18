@@ -11,6 +11,7 @@ data class Schedule(
     val type: ScheduleType,
     val color: Long? = null,
     val reminderMinutes: List<Int>? = null,
+    val isAlarm: Boolean = false,
     val repeatRule: RepeatRule? = null,
     val calendarId: String,
     val isAllDay: Boolean = false,

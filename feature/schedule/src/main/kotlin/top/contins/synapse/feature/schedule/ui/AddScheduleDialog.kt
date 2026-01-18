@@ -31,7 +31,7 @@ fun AddScheduleDialog(
     initialDate: Long? = null,
     initialSchedule: Schedule? = null,
     onDismiss: () -> Unit, 
-    onConfirm: (String, Long, Long, String, Boolean, List<Int>?, RepeatRule?) -> Unit
+    onConfirm: (String, Long, Long, String, Boolean, List<Int>?, Boolean, RepeatRule?) -> Unit
 ) {
     val isEditing = initialSchedule != null
 
@@ -61,6 +61,7 @@ fun AddScheduleDialog(
     
     // 提醒设置
     var reminderMinutes by remember { mutableStateOf(listOf<Int>()) }
+    var isAlarm by remember { mutableStateOf(false) }
     var showReminderSettings by remember { mutableStateOf(false) }
     
     val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
@@ -89,6 +90,7 @@ fun AddScheduleDialog(
             location = schedule.location ?: ""
             isAllDay = schedule.isAllDay
             reminderMinutes = schedule.reminderMinutes ?: emptyList()
+            isAlarm = schedule.isAlarm
 
             val startCal = java.util.Calendar.getInstance().apply { timeInMillis = schedule.startTime }
             val endCal = java.util.Calendar.getInstance().apply { timeInMillis = schedule.endTime }
@@ -689,6 +691,36 @@ fun AddScheduleDialog(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 闹钟提醒开关
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "强力提醒 (闹钟)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "像闹钟一样响铃，即使静音",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = isAlarm,
+                            onCheckedChange = { isAlarm = it }
+                        )
+                    }
                 }
             }
             
@@ -758,6 +790,7 @@ fun AddScheduleDialog(
                                 location,
                                 isAllDay,
                                 if (reminderMinutes.isEmpty()) null else reminderMinutes,
+                                isAlarm,
                                 repeatRule
                             )
                         }

@@ -28,7 +28,7 @@ import top.contins.synapse.data.local.dao.ChatDao
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +38,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun goalDao(): GoalDao
     abstract fun chatDao(): ChatDao
+}
+
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE schedules ADD COLUMN is_alarm INTEGER NOT NULL DEFAULT 0")
+    }
 }
 
 val MIGRATION_3_4 = object : Migration(3, 4) {

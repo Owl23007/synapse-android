@@ -33,6 +33,7 @@ object DatabaseModule {
             "synapse_db"
         )
         .addMigrations(top.contins.synapse.data.local.MIGRATION_3_4)
+        .addMigrations(top.contins.synapse.data.local.MIGRATION_5_6)
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)

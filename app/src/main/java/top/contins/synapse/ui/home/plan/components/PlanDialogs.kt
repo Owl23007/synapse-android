@@ -35,6 +35,7 @@ fun PlanDialogs(
         location: String,
         isAllDay: Boolean,
         reminderMinutes: List<Int>?,
+        isAlarm: Boolean,
         repeatRule: RepeatRule?
     ) -> Unit
 ) {
@@ -63,9 +64,9 @@ fun PlanDialogs(
     if (showAddScheduleDialog) {
         AddScheduleDialog(
             onDismiss = onDismissAddSchedule,
-            onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
+            onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, isAlarm, repeatRule ->
                 onConfirmAddSchedule(
-                    title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule
+                    title, startTime, endTime, location, isAllDay, reminderMinutes, isAlarm, repeatRule
                 )
             }
         )

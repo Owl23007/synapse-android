@@ -24,15 +24,27 @@ class AlarmReceiver : BroadcastReceiver() {
         
         val title = intent.getStringExtra("title") ?: "日程提醒"
         val message = intent.getStringExtra("message") ?: ""
+        val isAlarm = intent.getBooleanExtra("is_alarm", false)
+        
         // Use a consistent ID generation strategy for notification updates
         val notificationId = scheduleId.hashCode()
 
-        Log.d("ScheduleReminder", "Alarm Received! Showing notification for: $title (ID: $scheduleId)")
-        
+        Log.d("ScheduleReminder", "Alarm Received! Title: $title, IsAlarm: $isAlarm")
+
         try {
-            notificationHelper.showNotification(notificationId, title, message)
+            if (isAlarm) {
+                val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                    putExtra("title", title)
+                    putExtra("message", message)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                context.startActivity(alarmIntent)
+                // Also show a notification as a fallback or history? Maybe not needed for full screen alarm.
+            } else {
+                notificationHelper.showNotification(notificationId, title, message)
+            }
         } catch (e: Exception) {
-            Log.e("ScheduleReminder", "Error showing notification", e)
+            Log.e("ScheduleReminder", "Error handling alarm", e)
         }
     }
 }

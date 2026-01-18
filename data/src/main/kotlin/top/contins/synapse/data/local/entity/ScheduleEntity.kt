@@ -38,6 +38,8 @@ data class ScheduleEntity(
     val color: Long?,
     @ColumnInfo(name = "reminder_minutes")
     val reminderMinutes: String?, // JSON List<Int>
+    @ColumnInfo(name = "is_alarm", defaultValue = "0")
+    val isAlarm: Boolean = false,
     @ColumnInfo(name = "repeat_rule")
     val repeatRule: String?, // JSON Object
     @ColumnInfo(name = "calendar_id")

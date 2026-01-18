@@ -254,7 +254,7 @@ fun PlanScreen(
 
         showAddScheduleDialog = showAddScheduleDialog,
         onDismissAddSchedule = { showAddScheduleDialog = false },
-        onConfirmAddSchedule = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
+        onConfirmAddSchedule = { title, startTime, endTime, location, isAllDay, reminderMinutes, isAlarm, repeatRule ->
             val currentTime = System.currentTimeMillis()
             val schedule = Schedule(
                 id = UUID.randomUUID().toString(),
@@ -267,6 +267,7 @@ fun PlanScreen(
                 calendarId = "default",
                 isAllDay = isAllDay,
                 reminderMinutes = reminderMinutes,
+                isAlarm = isAlarm,
                 repeatRule = repeatRule,
                 createdAt = currentTime,
                 updatedAt = currentTime

@@ -190,7 +190,7 @@ fun ScheduleTab(
                 editingSchedule = null
                 initialAddDate = null
             },
-            onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, repeatRule ->
+            onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, isAlarm, repeatRule ->
                 scope.launch {
                     val conflicts = viewModel.checkConflict(startTime, endTime)
                     val count = conflicts.filter { it.id != editingSchedule?.id }.size
@@ -207,6 +207,7 @@ fun ScheduleTab(
                         location = location.ifBlank { null },
                         isAllDay = isAllDay,
                         reminderMinutes = reminderMinutes,
+                        isAlarm = isAlarm,
                         repeatRule = repeatRule,
                         updatedAt = currentTime
                     ) ?: Schedule(
@@ -220,6 +221,7 @@ fun ScheduleTab(
                         calendarId = "default",
                         isAllDay = isAllDay,
                         reminderMinutes = reminderMinutes,
+                        isAlarm = isAlarm,
                         repeatRule = repeatRule,
                         createdAt = currentTime,
                         updatedAt = currentTime
