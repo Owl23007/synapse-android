@@ -60,8 +60,77 @@ import java.time.temporal.ChronoUnit
 
 private val MIN_MONTH = YearMonth.of(1900, 1)
 private val MAX_MONTH = YearMonth.of(2200, 12)
+private val MIN_DATE = LocalDate.of(1900, 1, 1)
+private val MAX_DATE = LocalDate.of(2200, 12, 31)
 private val MONTH_COUNT = ChronoUnit.MONTHS.between(MIN_MONTH, MAX_MONTH).toInt()
+private val WEEK_COUNT = ChronoUnit.WEEKS.between(MIN_DATE, MAX_DATE).toInt()
 private val lunarCache = ConcurrentHashMap<LocalDate, String>()
+
+@Composable
+fun WeekCalendarPager(
+    modifier: Modifier = Modifier,
+    selectedDate: LocalDate,
+    schedulesMap: Map<LocalDate, List<Schedule>>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val initialPage = remember(Unit) {
+        ChronoUnit.WEEKS.between(MIN_DATE, selectedDate).toInt().coerceIn(0, WEEK_COUNT - 1)
+    }
+    
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { WEEK_COUNT }
+    )
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            val firstDayOfWeek = MIN_DATE.plusWeeks(page.toLong())
+            val startOfWeek = firstDayOfWeek.minusDays(firstDayOfWeek.dayOfWeek.value.toLong() - 1)
+            val endOfWeek = startOfWeek.plusDays(6)
+            
+            if (selectedDate.isBefore(startOfWeek) || selectedDate.isAfter(endOfWeek)) {
+                val dayOfWeekOffset = (selectedDate.dayOfWeek.value - 1)
+                val newDate = startOfWeek.plusDays(dayOfWeekOffset.toLong())
+                onDateSelected(newDate)
+            }
+        }
+    }
+    
+    LaunchedEffect(selectedDate) {
+        val targetPage = ChronoUnit.WEEKS.between(MIN_DATE, selectedDate).toInt().coerceIn(0, WEEK_COUNT - 1)
+        if (pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxWidth(),
+        beyondViewportPageCount = 1,
+        verticalAlignment = Alignment.Top
+    ) { page ->
+         val firstDayOfWeek = MIN_DATE.plusWeeks(page.toLong())
+         val startOfWeek = firstDayOfWeek.minusDays(firstDayOfWeek.dayOfWeek.value.toLong() - 1)
+         
+         val weekDays = (0..6).map { startOfWeek.plusDays(it.toLong()) }
+
+         Row(modifier = Modifier.fillMaxWidth()) {
+             weekDays.forEach { date ->
+                 Box(modifier = Modifier.weight(1f)) {
+                     Day(
+                         date = date,
+                         isCurrentMonth = true,
+                         isSelected = selectedDate == date,
+                         schedules = schedulesMap[date] ?: emptyList(),
+                         onClick = { clickedDate ->
+                             onDateSelected(clickedDate)
+                         }
+                     )
+                 }
+             }
+         }
+    }
+}
 
 @Composable
 fun MonthView(
@@ -102,20 +171,6 @@ fun MonthView(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        CalendarHeader(
-            currentMonth = currentMonth,
-            onPreviousMonth = { onMonthChanged(currentMonth.minusMonths(1)) },
-            onNextMonth = { onMonthChanged(currentMonth.plusMonths(1)) },
-            onPreviousYear = { onMonthChanged(currentMonth.minusYears(1)) },
-            onNextYear = { onMonthChanged(currentMonth.plusYears(1)) },
-            onTodayClick = {
-                onDateSelected(LocalDate.now())
-                onMonthChanged(YearMonth.now())
-            }
-        )
-        
-        DaysOfWeekTitle(daysOfWeek = daysOfWeek)
-        
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
@@ -342,7 +397,7 @@ fun Day(
     }
 }
 
-private fun daysOfWeek(): List<DayOfWeek> {
+fun daysOfWeek(): List<DayOfWeek> {
     val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     return (0..6L).map { firstDayOfWeek.plus(it) }
 }

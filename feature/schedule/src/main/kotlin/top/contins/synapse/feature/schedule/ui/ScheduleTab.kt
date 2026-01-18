@@ -72,9 +72,17 @@ import java.time.temporal.ChronoUnit
 import java.util.TimeZone
 import java.util.UUID
 
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 
+import java.time.temporal.WeekFields
+import java.util.Locale
+import top.contins.synapse.feature.schedule.ui.WeekTimeSlotsView
 
 /**
  * 日程 Tab - 用于在 PlanScreen 中显示日程内容
@@ -141,7 +149,8 @@ fun ScheduleTab(
     val schedulesMap by viewModel.schedulesMap.collectAsState()
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
     val weekSchedules by viewModel.weekSchedules.collectAsState()
-    var viewType by remember { mutableStateOf(CalendarViewType.MONTH) }
+    
+    var isMonthView by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
     var initialAddDate by remember { mutableStateOf<Long?>(null) }
@@ -158,26 +167,112 @@ fun ScheduleTab(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // View Switcher
-        CalendarViewTabs(
-            selectedViewType = viewType,
-            onViewTypeSelected = { viewType = it }
-        )
-
-        when (viewType) {
-            CalendarViewType.MONTH -> {
-                MonthView(
-                    modifier = Modifier.fillMaxWidth(),
+        // Calendar Area with Drag Gesture
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    var accumulatedDrag = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { accumulatedDrag = 0f },
+                        onDragEnd = { accumulatedDrag = 0f }
+                    ) { _, dragAmount ->
+                        accumulatedDrag += dragAmount
+                        
+                        // Drag Up: Switch to Week View (False)
+                        if (accumulatedDrag < -50 && isMonthView) { 
+                            isMonthView = false
+                            accumulatedDrag = 0f
+                        } 
+                        // Drag Down: Switch to Month View (True)
+                        else if (accumulatedDrag > 50 && !isMonthView) { 
+                            isMonthView = true
+                            accumulatedDrag = 0f
+                        }
+                    }
+                },
+            shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                CalendarHeader(
                     currentMonth = currentMonth,
-                    selectedDate = selectedDate,
-                    schedulesMap = schedulesMap,
-                    onDateSelected = viewModel::onDateSelected,
-                    onMonthChanged = viewModel::onMonthChanged
+                    onPreviousMonth = { viewModel.onMonthChanged(currentMonth.minusMonths(1)) },
+                    onNextMonth = { viewModel.onMonthChanged(currentMonth.plusMonths(1)) },
+                    onPreviousYear = { viewModel.onMonthChanged(currentMonth.minusYears(1)) },
+                    onNextYear = { viewModel.onMonthChanged(currentMonth.plusYears(1)) },
+                    onTodayClick = {
+                        viewModel.onDateSelected(java.time.LocalDate.now())
+                        viewModel.onMonthChanged(java.time.YearMonth.now())
+                    }
                 )
 
-                // 月视图下面显示日程（选中日期）
+                DaysOfWeekTitle(daysOfWeek = remember { daysOfWeek() })
+                
+                // Switch between Month and Week View
+                AnimatedContent(
+                    targetState = isMonthView,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                    },
+                    label = "CalendarViewTransition"
+                ) { isMonth ->
+                   Column {
+                       if (isMonth) {
+                           MonthView(
+                               modifier = Modifier.fillMaxWidth(),
+                               currentMonth = currentMonth,
+                               selectedDate = selectedDate,
+                               schedulesMap = schedulesMap,
+                               onDateSelected = viewModel::onDateSelected,
+                               onMonthChanged = viewModel::onMonthChanged
+                           )
+                       } else {
+                           WeekCalendarPager(
+                               modifier = Modifier.fillMaxWidth(),
+                               selectedDate = selectedDate,
+                               schedulesMap = schedulesMap,
+                               onDateSelected = viewModel::onDateSelected
+                           )
+                       }
+                   }
+                }
+
+                // Drag Handle
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .height(4.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                    )
+                }
+            }
+        }
+
+        // Content Switch: Month(List) / Week(Grid)
+        AnimatedContent(
+            targetState = isMonthView,
+            transitionSpec = {
+                 fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+            },
+            label = "ContentTransition",
+            modifier = Modifier.weight(1f)
+        ) { isMonth ->
+            if (isMonth) {
+                // Month View -> Show Daily Schedule List
                 ScheduleList(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     schedules = selectedDateSchedules,
                     onDelete = viewModel::deleteSchedule,
                     onEdit = { schedule ->
@@ -185,37 +280,30 @@ fun ScheduleTab(
                         showAddDialog = true
                     }
                 )
-            }
+            } else {
+                 // Week View -> Show Week Time Grid (Timeline)
+                 // Need to calculate current week dates relative to selectedDate
+                 val weekStart = remember(selectedDate) {
+                      val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+                      val diff = (selectedDate.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
+                      selectedDate.minusDays(diff.toLong())
+                 }
+                 val weekDates = remember(weekStart) {
+                     (0..6).map { weekStart.plusDays(it.toLong()) }
+                 }
 
-            CalendarViewType.WEEK -> {
-                WeekCalendarView(
-                    selectedDate = selectedDate,
-                    schedules = weekSchedules,
-                    onDateSelected = viewModel::onDateSelected,
-                    onTimeSlotClick = { date, time -> 
+                 WeekTimeSlotsView(
+                     weekDates = weekDates,
+                     schedules = weekSchedules,
+                     onTimeSlotClick = { date, time -> 
                         initialAddDate = date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                         showAddDialog = true
-                    },
-                    onScheduleClick = { schedule ->
+                     },
+                     onScheduleClick = { schedule ->
                         editingSchedule = schedule
                         showAddDialog = true
-                    }
-                )
-            }
-            CalendarViewType.DAY -> {
-                DayCalendarView(
-                    selectedDate = selectedDate,
-                    schedules = selectedDateSchedules,
-                    onDateSelected = viewModel::onDateSelected,
-                    onTimeSlotClick = { date, time -> 
-                         initialAddDate = date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                         showAddDialog = true
-                    },
-                    onScheduleClick = { schedule ->
-                        editingSchedule = schedule
-                        showAddDialog = true
-                    }
-                )
+                     }
+                 )
             }
         }
     }

@@ -250,7 +250,7 @@ fun DayCalendarView(
 }
 
 @Composable
-private fun WeekTimeSlotsView(
+fun WeekTimeSlotsView(
     weekDates: List<LocalDate>,
     schedules: List<Schedule>,
     onTimeSlotClick: (LocalDate, LocalTime) -> Unit,
