@@ -40,7 +40,8 @@ fun TodayTab(
     schedules: List<Schedule>,
     bingImageUrl: String?,
     onTaskStatusChange: (Task, Boolean) -> Unit,
-    onTaskDelete: (Task) -> Unit
+    onTaskDelete: (Task) -> Unit,
+    onTaskEdit: (Task) -> Unit
 ) {
     val todayText = SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date())
     val dayOfWeekText = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
@@ -164,7 +165,8 @@ fun TodayTab(
                         task = task,
                         callbacks = TaskCardCallbacks(
                             onStatusChange = { onTaskStatusChange(task, it) },
-                            onDelete = { onTaskDelete(task) }
+                            onDelete = { onTaskDelete(task) },
+                            onEdit = { onTaskEdit(task) }
                         )
                     )
                 }

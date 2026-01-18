@@ -195,6 +195,10 @@ fun PlanScreen(
                     },
                     onTaskDelete = { task ->
                         taskViewModel.deleteTask(task.id)
+                    },
+                    onTaskEdit = { task ->
+                        editingTask = task
+                        showAddTaskDialog = true
                     }
                 )
                 1 -> ScheduleTab(viewModel = scheduleViewModel, addTick = scheduleAddTick)
