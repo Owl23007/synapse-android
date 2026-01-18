@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
 import com.nlf.calendar.Lunar
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.contins.synapse.domain.model.schedule.Schedule
 import java.time.DayOfWeek
@@ -58,6 +59,7 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import java.time.temporal.ChronoUnit
 
@@ -68,6 +70,45 @@ private val MAX_DATE = LocalDate.of(2200, 12, 31)
 private val MONTH_COUNT = ChronoUnit.MONTHS.between(MIN_MONTH, MAX_MONTH).toInt()
 private val WEEK_COUNT = ChronoUnit.WEEKS.between(MIN_DATE, MAX_DATE).toInt()
 private val lunarCache = ConcurrentHashMap<LocalDate, String>()
+private val loadedLunarYears = ConcurrentHashMap.newKeySet<Int>()
+
+private suspend fun preloadLunarYear(year: Int) {
+    if (loadedLunarYears.contains(year)) return
+
+    // Cache Recycle Mechanism: Limit to ~20 years to save memory
+    if (loadedLunarYears.size > 20) {
+        val yearsToRemove = loadedLunarYears.filter { kotlin.math.abs(it - year) > 15 }.toSet()
+        if (yearsToRemove.isNotEmpty()) {
+            loadedLunarYears.removeAll(yearsToRemove)
+            val iterator = lunarCache.keys.iterator()
+            while (iterator.hasNext()) {
+                if (iterator.next().year in yearsToRemove) {
+                    iterator.remove()
+                }
+            }
+        }
+    }
+    
+    loadedLunarYears.add(year)
+
+    withContext(Dispatchers.Default) {
+        val start = LocalDate.of(year, 1, 1)
+        val end = LocalDate.of(year, 12, 31)
+        var current = start
+        while (!current.isAfter(end)) {
+            if (!lunarCache.containsKey(current)) {
+                try {
+                    val d = Date.from(current.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                    val lunar = Lunar.fromDate(d)
+                    lunarCache[current] = lunar.dayInChinese
+                } catch (_: Exception) {
+                    lunarCache[current] = ""
+                }
+            }
+            current = current.plusDays(1)
+        }
+    }
+}
 
 private fun getWeeksCount(month: YearMonth, firstDayOfWeek: DayOfWeek): Int {
     val firstDay = month.atDay(1)
@@ -135,6 +176,7 @@ fun WeekCalendarPager(
                          isCurrentMonth = true,
                          isSelected = selectedDate == date,
                          schedules = schedulesMap[date] ?: emptyList(),
+                         usePlaceholder = false,
                          onClick = { clickedDate ->
                              onDateSelected(clickedDate)
                          }
@@ -170,15 +212,18 @@ fun MonthView(
     val onMonthChangedState by rememberUpdatedState(onMonthChanged)
     val onDateSelectedState by rememberUpdatedState(onDateSelected)
 
+    // Preload Lunar data logic
+    LaunchedEffect(currentMonth.year) {
+        launch { preloadLunarYear(currentMonth.year) }
+        launch { preloadLunarYear(currentMonth.year + 1) }
+        launch { preloadLunarYear(currentMonth.year - 1) }
+    }
+
     // Sync external currentMonth change to Pager
     LaunchedEffect(currentMonth) {
         val targetPage = ChronoUnit.MONTHS.between(MIN_MONTH, currentMonth).toInt().coerceIn(0, MONTH_COUNT - 1)
         if (pagerState.currentPage != targetPage) {
-            if (kotlin.math.abs(pagerState.currentPage - targetPage) > 3) {
-                pagerState.scrollToPage(targetPage)
-            } else {
-                pagerState.animateScrollToPage(targetPage)
-            }
+            pagerState.animateScrollToPage(targetPage)
         }
     }
 
@@ -202,6 +247,13 @@ fun MonthView(
         getWeeksCount(m, daysOfWeek.first())
     }
 
+    val isJumpScrolling = remember(pagerState.isScrollInProgress) {
+        derivedStateOf {
+            pagerState.isScrollInProgress &&
+                    kotlin.math.abs(pagerState.targetPage - pagerState.currentPage) > 1
+        }
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
@@ -212,6 +264,11 @@ fun MonthView(
             beyondViewportPageCount = 1, // Preload 1 page left and right
             verticalAlignment = Alignment.Top
         ) { page ->
+            // Use placeholder only if we are jumping fast AND this page is not the source or target
+            val usePlaceholder = isJumpScrolling.value &&
+                    page != pagerState.currentPage &&
+                    page != pagerState.targetPage
+
             val monthForPage = MIN_MONTH.plusMonths(page.toLong())
             val weeks = remember(monthForPage) {
                 val firstDayOfWeek = daysOfWeek.first()
@@ -250,6 +307,7 @@ fun MonthView(
                                     isCurrentMonth = isCurrentMonth,
                                     isSelected = selectedDate == date,
                                     schedules = schedulesMap[date] ?: emptyList(),
+                                    usePlaceholder = usePlaceholder,
                                     onClick = { clickedDate ->
                                         onDateSelected(clickedDate)
                                         if (!isCurrentMonth) {
@@ -329,6 +387,7 @@ fun Day(
     isCurrentMonth: Boolean,
     isSelected: Boolean,
     schedules: List<Schedule>,
+    usePlaceholder: Boolean = false,
     onClick: (LocalDate) -> Unit
 ) {
     val isToday = date == LocalDate.now()
@@ -396,7 +455,7 @@ fun Day(
                 fontSize = 16.sp,
                 fontWeight = fontWeight
             )
-            if (lunarText.isNotEmpty() && isCurrentMonth) {
+            if (!usePlaceholder && lunarText.isNotEmpty() && isCurrentMonth) {
                 Text(
                     text = lunarText,
                     color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.Gray,
@@ -405,7 +464,7 @@ fun Day(
                 )
             }
             
-            if (schedules.isNotEmpty() && isCurrentMonth) {
+            if (!usePlaceholder && schedules.isNotEmpty() && isCurrentMonth) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.padding(top = 1.dp)
