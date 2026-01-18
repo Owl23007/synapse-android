@@ -14,7 +14,7 @@ import top.contins.synapse.feature.schedule.R
 /**
  * 提醒守护服务
  * 用于在提醒即将触发时（<=10分钟）启动前台服务，防止应用进程被系统杀除。
- * 这是一个短时运行的服务，触发提醒后应立即停止。
+ * 这是一个短时运行的服务，触发提醒后立即停止
  */
 class ReminderGuardService : Service() {
 

@@ -6,6 +6,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -89,11 +93,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import java.time.temporal.WeekFields
 import java.util.Locale
 import top.contins.synapse.feature.schedule.ui.WeekTimeSlotsView
+import top.contins.synapse.feature.schedule.ui.CalendarViewMode
+
+import androidx.compose.animation.animateContentSize
 
 /**
  * 日程 Tab - 用于在 PlanScreen 中显示日程内容
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScheduleTab(
     viewModel: ScheduleViewModel = hiltViewModel(),
@@ -157,7 +164,8 @@ fun ScheduleTab(
     val selectedDateSchedules by viewModel.selectedDateSchedules.collectAsState()
     val weekSchedules by viewModel.weekSchedules.collectAsState()
     
-    var isMonthView by remember { mutableStateOf(true) }
+    var viewMode by remember { mutableStateOf(CalendarViewMode.Month) }
+    var isDayDetailVisible by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
@@ -171,10 +179,34 @@ fun ScheduleTab(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    SharedTransitionLayout {
+        AnimatedContent(
+            targetState = isDayDetailVisible,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+            },
+            label = "DayDetailTransition"
+        ) { isDetail ->
+            if (isDetail) {
+                DayScheduleView(
+                    animatedVisibilityScope = this@AnimatedContent,
+                    date = selectedDate,
+                    schedules = selectedDateSchedules,
+                    onBack = { isDayDetailVisible = false },
+                    onAddSchedule = { timestamp ->
+                        initialAddDate = timestamp
+                        showAddDialog = true
+                    },
+                    onEditSchedule = { schedule ->
+                        editingSchedule = schedule
+                        showAddDialog = true
+                    }
+                )
+            } else {
+                val mainScope = this@AnimatedContent
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
         // Calendar Area with Drag Gesture
         Surface(
             modifier = Modifier
@@ -188,13 +220,13 @@ fun ScheduleTab(
                         accumulatedDrag += dragAmount
                         
                         // Drag Up: Switch to Week View (False)
-                        if (accumulatedDrag < -50 && isMonthView) { 
-                            isMonthView = false
+                        if (accumulatedDrag < -50 && viewMode == CalendarViewMode.Month) { 
+                            viewMode = CalendarViewMode.Week
                             accumulatedDrag = 0f
                         } 
                         // Drag Down: Switch to Month View (True)
-                        else if (accumulatedDrag > 50 && !isMonthView) { 
-                            isMonthView = true
+                        else if (accumulatedDrag > 50 && viewMode == CalendarViewMode.Week) { 
+                            viewMode = CalendarViewMode.Month
                             accumulatedDrag = 0f
                         }
                     }
@@ -211,6 +243,10 @@ fun ScheduleTab(
                     onTodayClick = {
                         viewModel.onDateSelected(java.time.LocalDate.now())
                         viewModel.onMonthChanged(java.time.YearMonth.now())
+                    },
+                    onAddClick = {
+                        initialAddDate = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        showAddDialog = true
                     }
                 )
 
@@ -218,7 +254,7 @@ fun ScheduleTab(
                 
                 // Switch between Month and Week View
                 AnimatedContent(
-                    targetState = isMonthView,
+                    targetState = viewMode == CalendarViewMode.Month,
                     transitionSpec = {
                         fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                     },
@@ -227,21 +263,31 @@ fun ScheduleTab(
                    Column {
                        if (isMonth) {
                            MonthView(
+                               sharedTransitionScope = this@SharedTransitionLayout,
+                               animatedVisibilityScope = mainScope,
                                modifier = Modifier.fillMaxWidth(),
                                currentMonth = currentMonth,
                                selectedDate = selectedDate,
                                schedulesMap = schedulesMap,
-                               onDateSelected = viewModel::onDateSelected,
+                               onDateSelected = { date ->
+                                   val prev = selectedDate
+                                   viewModel.onDateSelected(date)
+                                   if (date == prev) isDayDetailVisible = true
+                               },
                                onMonthChanged = viewModel::onMonthChanged
                            )
                        } else {
                            WeekCalendarPager(
+                               sharedTransitionScope = this@SharedTransitionLayout,
+                               animatedVisibilityScope = mainScope,
                                modifier = Modifier.fillMaxWidth(),
                                selectedDate = selectedDate,
                                schedulesMap = schedulesMap,
                                onDateSelected = { date ->
+                                   val prev = selectedDate
                                    viewModel.onDateSelected(date)
                                    viewModel.onMonthChanged(YearMonth.from(date))
+                                   if (date == prev) isDayDetailVisible = true
                                }
                            )
                        }
@@ -270,7 +316,7 @@ fun ScheduleTab(
 
         // Content Switch: Month(List) / Week(Grid)
         AnimatedContent(
-            targetState = isMonthView,
+            targetState = viewMode == CalendarViewMode.Month,
             transitionSpec = {
                  fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
             },
@@ -315,6 +361,9 @@ fun ScheduleTab(
             }
         }
     }
+                }
+            }
+        }
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = currentMonth.atDay(1)

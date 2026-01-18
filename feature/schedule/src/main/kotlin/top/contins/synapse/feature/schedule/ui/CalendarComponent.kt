@@ -257,12 +257,13 @@ fun WeekTimeSlotsView(
     onScheduleClick: (Schedule) -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val rowHeight = 60.dp
+    val rowHeight = 32.dp
     
     BoxWithConstraints(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
         val totalWidth = maxWidth
         val timeLabelWidth = 50.dp
-        val colWidth = (totalWidth - timeLabelWidth) / 7
+        val daysCount = weekDates.size.coerceAtLeast(1)
+        val colWidth = (totalWidth - timeLabelWidth) / daysCount
         
         // Time Labels
         Column(modifier = Modifier.width(timeLabelWidth)) {
@@ -327,7 +328,17 @@ private fun DayScheduleColumn(
     Box(modifier = Modifier.fillMaxSize()) {
          Column(modifier = Modifier.fillMaxSize()) {
              (0..23).forEach { h ->
-                 Box(modifier = Modifier.weight(1f).fillMaxWidth().clickable { onTimeSlotClick(date, LocalTime.of(h, 0)) })
+                 Box(
+                     modifier = Modifier
+                         .weight(1f)
+                         .fillMaxWidth()
+                         .clickable { onTimeSlotClick(date, LocalTime.of(h, 0)) }
+                 ) {
+                     HorizontalDivider(
+                         modifier = Modifier.align(Alignment.BottomCenter),
+                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                     )
+                 }
              }
          }
          
@@ -345,16 +356,37 @@ private fun DayScheduleColumn(
              val top = (startMinutes / 60f).toFloat() * rowHeight.value
              val height = (duration / 60f).toFloat() * rowHeight.value
              
-             val width = colWidth / pos.totalCols
-             val left = width * pos.colIndex
+             // Adaptive Layout: Side-by-side for DayView, Cascading for WeekView
+             val width: androidx.compose.ui.unit.Dp
+             val left: Float
+             val zIndex: Float
+
+             if (colWidth > 70.dp) {
+                 // Wide column (Day View) -> Side by side
+                 width = colWidth / pos.totalCols
+                 left = (width * pos.colIndex).value
+                 zIndex = 1f
+             } else {
+                 // Narrow column (Week View) -> Cascading/Stacking
+                 // Each overlapping column indents slightly
+                 val indentPerCol = 4f // dp value
+                 val maxIndent = colWidth.value * 0.4f
+                 // If too many columns, squeeze indent
+                 val actualIndent = (indentPerCol * pos.colIndex).coerceAtMost(maxIndent)
+                 
+                 width = colWidth - actualIndent.dp
+                 left = actualIndent
+                 // Later columns on top
+                 zIndex = 1f + pos.colIndex
+             }
              
              ScheduleCard(
                 schedule = schedule,
                 modifier = Modifier
-                    .absoluteOffset(x = left, y = top.dp)
+                    .absoluteOffset(x = left.dp, y = top.dp)
                     .width(width)
                     .height(height.dp)
-                    .zIndex(1f)
+                    .zIndex(zIndex)
                     .clickable { onScheduleClick(schedule) }
              )
          }
@@ -419,10 +451,15 @@ private fun ScheduleCard(
     schedule: Schedule,
     modifier: Modifier
 ) {
+    val baseColor = if (schedule.color != null) Color(schedule.color!!) else MaterialTheme.colorScheme.primaryContainer
+    
     androidx.compose.material3.Card(
         modifier = modifier.padding(1.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.8f)),
-        shape = RoundedCornerShape(4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = baseColor.copy(alpha = 0.75f)
+        ),
+        shape = RoundedCornerShape(4.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(2.dp)) {
             Text(

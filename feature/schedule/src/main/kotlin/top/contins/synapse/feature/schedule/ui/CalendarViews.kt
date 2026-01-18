@@ -21,6 +21,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +64,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import java.time.temporal.ChronoUnit
+import top.contins.synapse.feature.schedule.utils.LunarHelper
+
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
 
 private val MIN_MONTH = YearMonth.of(1900, 1)
 private val MAX_MONTH = YearMonth.of(2200, 12)
@@ -69,46 +80,6 @@ private val MIN_DATE = LocalDate.of(1900, 1, 1)
 private val MAX_DATE = LocalDate.of(2200, 12, 31)
 private val MONTH_COUNT = ChronoUnit.MONTHS.between(MIN_MONTH, MAX_MONTH).toInt()
 private val WEEK_COUNT = ChronoUnit.WEEKS.between(MIN_DATE, MAX_DATE).toInt()
-private val lunarCache = ConcurrentHashMap<LocalDate, String>()
-private val loadedLunarYears = ConcurrentHashMap.newKeySet<Int>()
-
-private suspend fun preloadLunarYear(year: Int) {
-    if (loadedLunarYears.contains(year)) return
-
-    // Cache Recycle Mechanism: Limit to ~20 years to save memory
-    if (loadedLunarYears.size > 20) {
-        val yearsToRemove = loadedLunarYears.filter { kotlin.math.abs(it - year) > 15 }.toSet()
-        if (yearsToRemove.isNotEmpty()) {
-            loadedLunarYears.removeAll(yearsToRemove)
-            val iterator = lunarCache.keys.iterator()
-            while (iterator.hasNext()) {
-                if (iterator.next().year in yearsToRemove) {
-                    iterator.remove()
-                }
-            }
-        }
-    }
-    
-    loadedLunarYears.add(year)
-
-    withContext(Dispatchers.Default) {
-        val start = LocalDate.of(year, 1, 1)
-        val end = LocalDate.of(year, 12, 31)
-        var current = start
-        while (!current.isAfter(end)) {
-            if (!lunarCache.containsKey(current)) {
-                try {
-                    val d = Date.from(current.atStartOfDay(ZoneId.systemDefault()).toInstant())
-                    val lunar = Lunar.fromDate(d)
-                    lunarCache[current] = lunar.dayInChinese
-                } catch (_: Exception) {
-                    lunarCache[current] = ""
-                }
-            }
-            current = current.plusDays(1)
-        }
-    }
-}
 
 private fun getWeeksCount(month: YearMonth, firstDayOfWeek: DayOfWeek): Int {
     val firstDay = month.atDay(1)
@@ -117,11 +88,14 @@ private fun getWeeksCount(month: YearMonth, firstDayOfWeek: DayOfWeek): Int {
     return (totalDays + 6) / 7
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun WeekCalendarPager(
     modifier: Modifier = Modifier,
     selectedDate: LocalDate,
     schedulesMap: Map<LocalDate, List<Schedule>>,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onDateSelected: (LocalDate) -> Unit
 ) {
     val initialPage = remember(Unit) {
@@ -174,6 +148,8 @@ fun WeekCalendarPager(
                      Day(
                          date = date,
                          isCurrentMonth = true,
+                         sharedTransitionScope = sharedTransitionScope,
+                         animatedVisibilityScope = animatedVisibilityScope,
                          isSelected = selectedDate == date,
                          schedules = schedulesMap[date] ?: emptyList(),
                          usePlaceholder = false,
@@ -186,15 +162,17 @@ fun WeekCalendarPager(
          }
     }
 }
-
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MonthView(
     modifier: Modifier = Modifier,
     currentMonth: YearMonth,
     selectedDate: LocalDate,
     schedulesMap: Map<LocalDate, List<Schedule>>,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onDateSelected: (LocalDate) -> Unit,
-    onMonthChanged: (YearMonth) -> Unit,
+    onMonthChanged: (YearMonth) -> Unit
 ) {
     val daysOfWeek = remember { daysOfWeek() }
 
@@ -214,9 +192,9 @@ fun MonthView(
 
     // Preload Lunar data logic
     LaunchedEffect(currentMonth.year) {
-        launch { preloadLunarYear(currentMonth.year) }
-        launch { preloadLunarYear(currentMonth.year + 1) }
-        launch { preloadLunarYear(currentMonth.year - 1) }
+        launch { LunarHelper.preloadLunarYear(currentMonth.year) }
+        launch { LunarHelper.preloadLunarYear(currentMonth.year + 1) }
+        launch { LunarHelper.preloadLunarYear(currentMonth.year - 1) }
     }
 
     // Sync external currentMonth change to Pager
@@ -303,6 +281,8 @@ fun MonthView(
                             val isCurrentMonth = date.month == monthForPage.month
                             Box(modifier = Modifier.weight(1f)) {
                                 Day(
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
                                     date = date,
                                     isCurrentMonth = isCurrentMonth,
                                     isSelected = selectedDate == date,
@@ -328,7 +308,8 @@ fun MonthView(
 fun CalendarHeader(
     currentMonth: YearMonth,
     onMonthClick: () -> Unit,
-    onTodayClick: () -> Unit
+    onTodayClick: () -> Unit,
+    onAddClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -356,12 +337,22 @@ fun CalendarHeader(
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
-        
-        OutlinedButton(
-            onClick = onTodayClick,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            Text("今天")
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onAddClick) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Schedule",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onTodayClick) {
+                Icon(
+                    imageVector = Icons.Default.MyLocation,
+                    contentDescription = "Today",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -381,6 +372,7 @@ fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun Day(
     date: LocalDate,
@@ -388,6 +380,8 @@ fun Day(
     isSelected: Boolean,
     schedules: List<Schedule>,
     usePlaceholder: Boolean = false,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onClick: (LocalDate) -> Unit
 ) {
     val isToday = date == LocalDate.now()
@@ -409,11 +403,11 @@ fun Day(
     
     val fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
 
-    var lunarText by remember(date) { mutableStateOf(lunarCache[date] ?: "") }
+    var lunarText by remember(date) { mutableStateOf(LunarHelper.lunarCache[date] ?: "") }
 
     LaunchedEffect(date) {
         if (isCurrentMonth && lunarText.isEmpty()) {
-            val cached = lunarCache[date]
+            val cached = LunarHelper.lunarCache[date]
             if (cached != null) {
                 lunarText = cached
             } else {
@@ -426,20 +420,30 @@ fun Day(
                         ""
                     }
                 }
-                lunarCache[date] = text
+                LunarHelper.lunarCache[date] = text
                 lunarText = text
             }
         }
     }
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, label = "scale")
+
     Box(
         modifier = Modifier
             .aspectRatio(1f)
             .padding(2.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(8.dp))
             .background(color = backgroundColor)
             .then(borderModifier)
             .clickable(
+                interactionSource = interactionSource,
+                indication = null,
                 enabled = isCurrentMonth, 
                 onClick = { onClick(date) }
             ),
@@ -453,7 +457,17 @@ fun Day(
                 text = date.dayOfMonth.toString(),
                 color = textColor,
                 fontSize = 16.sp,
-                fontWeight = fontWeight
+                fontWeight = fontWeight,
+                modifier = Modifier.then(
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null && isCurrentMonth) {
+                        with(sharedTransitionScope) {
+                            Modifier.sharedElement(
+                                sharedContentState = rememberSharedContentState(key = "day-${date}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    } else Modifier
+                )
             )
             if (!usePlaceholder && lunarText.isNotEmpty() && isCurrentMonth) {
                 Text(

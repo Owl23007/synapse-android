@@ -123,28 +123,30 @@ fun PlanScreen(
 
     Scaffold(
         floatingActionButton = {
-            ExpandableFab(
-                expanded = isFabExpanded,
-                onExpandToggle = { isFabExpanded = !isFabExpanded },
-                selectedTab = selectedTab,
-                onTaskAdd = {
-                    isFabExpanded = false
-                    editingTask = null
-                    showAddTaskDialog = true
-                },
-                onScheduleAdd = {
-                    isFabExpanded = false
-                    if (selectedTab == 0) {
-                        showAddScheduleDialog = true
-                    } else {
-                        scheduleAddTick += 1
+            if (selectedTab != 1) {
+                ExpandableFab(
+                    expanded = isFabExpanded,
+                    onExpandToggle = { isFabExpanded = !isFabExpanded },
+                    selectedTab = selectedTab,
+                    onTaskAdd = {
+                        isFabExpanded = false
+                        editingTask = null
+                        showAddTaskDialog = true
+                    },
+                    onScheduleAdd = {
+                        isFabExpanded = false
+                        if (selectedTab == 0) {
+                            showAddScheduleDialog = true
+                        } else {
+                            scheduleAddTick += 1
+                        }
+                    },
+                    onGoalAdd = {
+                        isFabExpanded = false
+                        showAddGoalDialog = true
                     }
-                },
-                onGoalAdd = {
-                    isFabExpanded = false
-                    showAddGoalDialog = true
-                }
-            )
+                )
+            }
         }
     ) { _ ->
         Column(
