@@ -19,9 +19,9 @@ class NotificationHelper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
-        const val CHANNEL_ID_NORMAL = "schedule_normal"
+        const val CHANNEL_ID_NORMAL = "schedule_normal_v2"
         const val CHANNEL_NAME_NORMAL = "日程提醒 (普通)"
-        const val CHANNEL_ID_ALARM = "schedule_alarm"
+        const val CHANNEL_ID_ALARM = "schedule_alarm_v2"
         const val CHANNEL_NAME_ALARM = "日程提醒 (强力)"
     }
 
@@ -97,6 +97,7 @@ class NotificationHelper @Inject constructor(
             
             builder.setVibrate(longArrayOf(0, 1000, 500, 1000, 500, 1000))
             builder.setSound(android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+            builder.setTimeoutAfter(10 * 60 * 1000) // 10分钟后自动取消
             
             if (fullScreenIntent != null) {
                 // 对于闹钟，如果可能，我们希望同时拥有全屏 Intent 和点击打开的内容 Intent

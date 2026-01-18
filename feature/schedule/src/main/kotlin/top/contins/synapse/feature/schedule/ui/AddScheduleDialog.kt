@@ -17,6 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.provider.Settings
+import android.net.Uri
+import android.os.Build
 import top.contins.synapse.domain.model.schedule.RepeatRule
 import top.contins.synapse.domain.model.schedule.Frequency
 import top.contins.synapse.domain.model.schedule.Schedule
@@ -62,7 +67,9 @@ fun AddScheduleDialog(
     var reminderMinutes by remember { mutableStateOf(listOf<Int>()) }
     var isAlarm by remember { mutableStateOf(false) }
     var showReminderSettings by remember { mutableStateOf(false) }
-    
+    var showMiuiGuide by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -717,7 +724,12 @@ fun AddScheduleDialog(
                         }
                         Switch(
                             checked = isAlarm,
-                            onCheckedChange = { isAlarm = it }
+                            onCheckedChange = { checked ->
+                                isAlarm = checked
+                                if (checked && isMiui()) {
+                                    showMiuiGuide = true
+                                }
+                            }
                         )
                     }
                 }
@@ -975,5 +987,39 @@ fun AddScheduleDialog(
                 }
             }
         )
+    }
+
+    if (showMiuiGuide) {
+        AlertDialog(
+            onDismissRequest = { showMiuiGuide = false },
+            title = { Text("让 Syna 准时叫你") },
+            text = { Text("为了确保闹钟正常响铃，请在设置中开启：\n1. 自启动权限\n2. 省电策略设为无限制\n3. 允许后台弹出界面") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showMiuiGuide = false
+                    try {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }) { Text("去设置") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMiuiGuide = false }) { Text("我知道了") }
+            }
+        )
+    }
+}
+
+private fun isMiui(): Boolean {
+    return try {
+        Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
+                Build.BRAND.equals("Xiaomi", ignoreCase = true) ||
+                Build.BRAND.equals("Redmi", ignoreCase = true)
+    } catch (e: Exception) {
+        false
     }
 }
