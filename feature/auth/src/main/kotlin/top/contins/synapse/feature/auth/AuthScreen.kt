@@ -227,6 +227,17 @@ fun AuthScreen(
                                 .clip(RoundedCornerShape(12.dp))
                         )
                     }
+                },
+                actions = {
+                    TextButton(
+                        onClick = onLoginSuccess,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text(
+                            text = "跳过",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             )
         },

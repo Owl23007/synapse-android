@@ -35,7 +35,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
  * 展示底部导航项目，支持路由切换
  */
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(
+    navController: NavHostController,
+    onNavigate: (String) -> Unit
+) {
     val items = BottomNavigation.items
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -71,13 +74,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                             selected = selected,
                             onClick = {
                                 if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    onNavigate(item.route)
                                 }
                             }
                         )
