@@ -28,7 +28,7 @@ class BootReceiver : BroadcastReceiver() {
             
             scope.launch {
                 try {
-                    // Reschedule active reminders
+                    // 重新调度活跃的提醒
                     val schedules = scheduleRepository.getAllSchedules().first()
                     schedules.forEach { schedule ->
                         reminderManager.scheduleReminder(schedule)

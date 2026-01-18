@@ -28,7 +28,8 @@ class ScheduleViewModel @Inject constructor(
     private val updateScheduleUseCase: UpdateScheduleUseCase,
     private val deleteScheduleUseCase: DeleteScheduleUseCase,
     private val checkScheduleConflictUseCase: top.contins.synapse.domain.usecase.schedule.CheckScheduleConflictUseCase,
-    private val getCalendarsUseCase: GetCalendarsUseCase
+    private val getCalendarsUseCase: GetCalendarsUseCase,
+    private val batteryOptimizationHelper: top.contins.synapse.feature.schedule.util.BatteryOptimizationHelper
 ) : ViewModel() {
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -44,7 +45,7 @@ class ScheduleViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // Fetch all schedules for now, optimization needed for large datasets (fetch by range)
+    // 目前获取所有日程，对于大数据集需要优化（按范围获取）
     val schedules: StateFlow<List<Schedule>> = getSchedulesUseCase()
         .stateIn(
             scope = viewModelScope,
@@ -52,7 +53,7 @@ class ScheduleViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // Filtered schedules for the selected date
+    // 选中日期的日程过滤
     val selectedDateSchedules: StateFlow<List<Schedule>> = combine(
         schedules,
         _selectedDate
@@ -62,7 +63,7 @@ class ScheduleViewModel @Inject constructor(
         val endOfDay = date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
 
         allSchedules.filter { schedule ->
-            // Check for overlap
+            // 检查重叠
             schedule.startTime < endOfDay && schedule.endTime > startOfDay
         }
     }.stateIn(
@@ -71,7 +72,7 @@ class ScheduleViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
-    // Filtered schedules for the selected week
+    // 选中周的日程过滤
     val weekSchedules: StateFlow<List<Schedule>> = combine(
         schedules,
         _selectedDate
@@ -117,5 +118,15 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             deleteScheduleUseCase(schedule)
         }
+    }
+
+    // 检查电池优化状态
+    fun isBatteryOptimizationIgnored(): Boolean {
+        return batteryOptimizationHelper.isIgnoringBatteryOptimizations()
+    }
+
+    // 请求忽略电池优化
+    fun requestIgnoreBatteryOptimizations(onStartActivity: (android.content.Intent) -> Unit) {
+        batteryOptimizationHelper.requestIgnoreBatteryOptimizations(onStartActivity)
     }
 }

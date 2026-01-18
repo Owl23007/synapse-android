@@ -40,7 +40,7 @@ class AndroidReminderManager @Inject constructor(
 
                 val pendingIntent = createPendingIntent(schedule, minutes)
 
-                Log.d("ScheduleReminder", "Scheduling reminder for schedule: ${schedule.title} at $triggerTime (minutes: $minutes)")
+                Log.d("ScheduleReminder", "正在调度日程提醒: ${schedule.title} 时间: $triggerTime (提前: $minutes 分钟)")
 
                 // Layer 1: 使用 setAlarmClock (强力) 或 setExactAndAllowWhileIdle (普通)
                 try {
@@ -63,7 +63,7 @@ class AndroidReminderManager @Inject constructor(
                             )
                         }
                     } else {
-                         Log.w("ScheduleReminder", "Cannot schedule exact alarm, falling back to inexact")
+                         Log.w("ScheduleReminder", "无法调度精确闹钟，降级为非精确闹钟")
                          alarmManager.setAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             triggerTime,
@@ -71,12 +71,12 @@ class AndroidReminderManager @Inject constructor(
                         )
                     }
                 } catch (e: SecurityException) {
-                    Log.e("ScheduleReminder", "SecurityException when scheduling alarm! Missing permission?", e)
+                    Log.e("ScheduleReminder", "调度闹钟时发生 SecurityException！可能缺少权限？", e)
                 } catch (e: Exception) {
-                    Log.e("ScheduleReminder", "Error scheduling alarm", e)
+                    Log.e("ScheduleReminder", "调度闹钟错误", e)
                 }
             } else {
-                Log.d("ScheduleReminder", "Skipping past reminder for schedule: ${schedule.title} (triggerTime: $triggerTime, now: ${System.currentTimeMillis()})")
+                Log.d("ScheduleReminder", "跳过过期提醒: ${schedule.title} (触发时间: $triggerTime, 当前: ${System.currentTimeMillis()})")
             }
         }
     }
@@ -84,13 +84,9 @@ class AndroidReminderManager @Inject constructor(
     private fun startGuardService() {
         try {
             val intent = Intent(context, ReminderGuardService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startForegroundService(intent)
         } catch (e: Exception) {
-            Log.e("ScheduleReminder", "Failed to start ReminderGuardService", e)
+            Log.e("ScheduleReminder", "无法启动 ReminderGuardService", e)
         }
     }
 
@@ -100,7 +96,7 @@ class AndroidReminderManager @Inject constructor(
             val pendingIntent = createPendingIntent(schedule, minutes)
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
-            Log.d("ScheduleReminder", "Cancelled reminder for schedule: ${schedule.title} (minutes: $minutes)")
+            Log.d("ScheduleReminder", "已取消日程提醒: ${schedule.title} (分钟: $minutes)")
         }
     }
 
@@ -110,11 +106,11 @@ class AndroidReminderManager @Inject constructor(
             putExtra("title", schedule.title)
             putExtra("message", schedule.location ?: "即将开始")
             putExtra("is_alarm", schedule.isAlarm)
-            // Distinct action just in case
+            // 区分不同的 Action 防止 Intent 冲突
             action = "top.contins.synapse.REMINDER_${schedule.id}_$minutes"
         }
         
-        // Unique Request Code: scheduleId.hashCode() + minutes to avoid collision
+        // 唯一请求码: scheduleId.hashCode() + minutes 避免冲突
         val requestCode = (schedule.id + "_$minutes").hashCode()
 
         return PendingIntent.getBroadcast(

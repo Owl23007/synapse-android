@@ -30,41 +30,39 @@ class NotificationHelper @Inject constructor(
     }
 
     private fun createNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            
-            // 1. Normal Channel (Heads-up)
-            val normalChannel = NotificationChannel(
-                CHANNEL_ID_NORMAL, 
-                CHANNEL_NAME_NORMAL, 
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "普通日程提醒"
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(normalChannel)
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // 2. Alarm Channel (Strong)
-            val alarmChannel = NotificationChannel(
-                CHANNEL_ID_ALARM, 
-                CHANNEL_NAME_ALARM, 
-                NotificationManager.IMPORTANCE_HIGH // MAX is not a valid channel importance constant, HIGH is max for channel creation
-            ).apply {
-                description = "强力闹钟提醒"
-                enableVibration(true)
-                enableLights(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setSound(
-                    android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,
-                    android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-            }
-            notificationManager.createNotificationChannel(alarmChannel)
+        // 1. 普通通道 (顶部悬浮)
+        val normalChannel = NotificationChannel(
+            CHANNEL_ID_NORMAL,
+            CHANNEL_NAME_NORMAL,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "普通日程提醒"
+            enableLights(true)
+            enableVibration(true)
         }
+        notificationManager.createNotificationChannel(normalChannel)
+
+        // 2. 强力通道 (闹钟)
+        val alarmChannel = NotificationChannel(
+            CHANNEL_ID_ALARM,
+            CHANNEL_NAME_ALARM,
+            NotificationManager.IMPORTANCE_HIGH // MAX 不是有效的通道重要性常量，创建时 HIGH 为最大值
+        ).apply {
+            description = "强力闹钟提醒"
+            enableVibration(true)
+            enableLights(true)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setSound(
+                android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+        }
+        notificationManager.createNotificationChannel(alarmChannel)
     }
 
     fun showNotification(id: Int, title: String, content: String, isAlarm: Boolean, fullScreenIntent: PendingIntent? = null) {
@@ -74,12 +72,12 @@ class NotificationHelper @Inject constructor(
                 android.Manifest.permission.POST_NOTIFICATIONS
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
-                Log.e("ScheduleReminder", "POST_NOTIFICATIONS permission denied! Cannot show notification.")
+                Log.e("ScheduleReminder", "POST_NOTIFICATIONS 权限被拒绝！无法显示通知。")
                 return
             }
         }
 
-        Log.d("ScheduleReminder", "Building and showing notification: $title, isAlarm: $isAlarm")
+        Log.d("ScheduleReminder", "正在构建并显示通知: $title, 是否强提醒: $isAlarm")
 
         val channelId = if (isAlarm) CHANNEL_ID_ALARM else CHANNEL_ID_NORMAL
         val builder = NotificationCompat.Builder(context, channelId)
@@ -92,17 +90,16 @@ class NotificationHelper @Inject constructor(
             builder.setCategory(NotificationCompat.CATEGORY_ALARM)
             builder.setPriority(NotificationCompat.PRIORITY_MAX)
             builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            // Insistent: Repeat sound until dismissed (Requires Notification.FLAG_INSISTENT directly or via set ongoing maybe?)
-            // setInsistent is not directly in NotificationCompat.Builder for older libraries or specific versions, 
-            // but we can set the flag manually on the notification object later, OR use the extension property if available.
-            // Actually, NotificationCompat.Builder does NOT have setInsistent. We must use setDefaults or add flag.
-            // Let's remove setInsistent call and use the built object modification.
+            // Insistent: 持续响铃直到被处理 (需要 Notification.FLAG_INSISTENT 直接设置或通过 setOngoing 可能?)
+            // setInsistent 在 NotificationCompat.Builder 中不直接提供，或者在特定版本。
+            // 实际上 NotificationCompat.Builder 没有 setInsistent。必须使用 setDefaults 或手动添加 flag。
+            // 这里我们稍后手动修改 notification 对象。
             
             builder.setVibrate(longArrayOf(0, 1000, 500, 1000, 500, 1000))
             builder.setSound(android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
             
             if (fullScreenIntent != null) {
-                // For Alarm, we want both FSI (if possible) and ContentIntent (click to open)
+                // 对于闹钟，如果可能，我们希望同时拥有全屏 Intent 和点击打开的内容 Intent
                 builder.setFullScreenIntent(fullScreenIntent, true)
                 builder.setContentIntent(fullScreenIntent)
             }
@@ -110,7 +107,7 @@ class NotificationHelper @Inject constructor(
             builder.setCategory(NotificationCompat.CATEGORY_EVENT)
             builder.setPriority(NotificationCompat.PRIORITY_HIGH)
             builder.setDefaults(NotificationCompat.DEFAULT_ALL)
-            // Add content intent if needed to open App on click
+            // 如果需要点击打开应用，添加 ContentIntent
             if (fullScreenIntent != null) {
                  builder.setContentIntent(fullScreenIntent)
             }

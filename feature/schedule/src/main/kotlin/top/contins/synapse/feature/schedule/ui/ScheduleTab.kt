@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +39,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.Manifest
 import android.os.Build
@@ -83,17 +87,52 @@ fun ScheduleTab(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var showBatteryOptimizationDialog by remember { mutableStateOf(false) }
 
     // 权限请求 Launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* 处理权限结果，可选 */ }
+        onResult = { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(context, "请开启通知权限以接收日程提醒", Toast.LENGTH_LONG).show()
+            }
+        }
     )
 
     LaunchedEffect(Unit) {
+        // 1. 请求通知权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        
+        // 2. 检查电池优化 (简单引导)
+        if (!viewModel.isBatteryOptimizationIgnored()) {
+            showBatteryOptimizationDialog = true
+        }
+    }
+
+    if (showBatteryOptimizationDialog) {
+        AlertDialog(
+            onDismissRequest = { showBatteryOptimizationDialog = false },
+            icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+            title = { Text("后台运行权限") },
+            text = { Text("为了确保闹钟和提醒准时触发，Synapse 需要在后台运行。请允许应用忽略电池优化。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.requestIgnoreBatteryOptimizations { intent ->
+                        context.startActivity(intent)
+                    }
+                    showBatteryOptimizationDialog = false
+                }) {
+                    Text("去设置")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatteryOptimizationDialog = false }) {
+                    Text("稍后")
+                }
+            }
+        )
     }
 
     val selectedDate by viewModel.selectedDate.collectAsState()

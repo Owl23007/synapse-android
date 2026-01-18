@@ -85,7 +85,7 @@ class AlarmActivity : ComponentActivity() {
     }
 
     private fun startAlarm() {
-        // Vibrate
+        // 振动
         vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
@@ -95,22 +95,16 @@ class AlarmActivity : ComponentActivity() {
         }
 
         val pattern = longArrayOf(0, 1000, 1000)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(pattern, 0)
-        }
 
-        // Ringtone
+        vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+
+        // 铃声
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) 
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             
             ringtone = RingtoneManager.getRingtone(applicationContext, uri).apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    isLooping = true
-                }
+                isLooping = true
                 audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)

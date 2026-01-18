@@ -16,20 +16,22 @@ class AlarmReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
 
-    override fun onReceive(context: Context, intent: Intent) {
-        Log.d("ScheduleReminder", "AlarmReceiver.onReceive called with intent: $intent")
+    private val tag = "ScheduleReminder";
 
-        // 停止保活服务（如果正在运行）
+    override fun onReceive(context: Context, intent: Intent) {
+        Log.d(tag, "收到广播: $intent")
+
+        // 停止保活服务
         try {
             val serviceIntent = Intent(context, ReminderGuardService::class.java)
             context.stopService(serviceIntent)
         } catch (e: Exception) {
-            Log.e("ScheduleReminder", "Failed to stop ReminderGuardService", e)
+            Log.e(tag, "停止保活服务失败", e)
         }
         
         val scheduleId = intent.getStringExtra("schedule_id")
         if (scheduleId == null) {
-            Log.e("ScheduleReminder", "AlarmReceiver: schedule_id is NULL! Aborting.")
+            Log.e(tag, "日程ID为空")
             return
         }
         
@@ -37,15 +39,15 @@ class AlarmReceiver : BroadcastReceiver() {
         val message = intent.getStringExtra("message") ?: ""
         val isAlarm = intent.getBooleanExtra("is_alarm", false)
         
-        // Use a consistent ID generation strategy for notification updates
+        // 使用一致的 ID 生成策略进行通知更新
         val notificationId = scheduleId.hashCode()
 
-        Log.d("ScheduleReminder", "Alarm Received! Title: $title, IsAlarm: $isAlarm")
+        Log.d("ScheduleReminder", "接收到闹钟广播！标题: $title, 是否强提醒: $isAlarm")
 
         try {
-            // Build Intent to open details (MainActivity -> Schedule Detail handled by Nav logic or just launch app)
-            // For now, let's just launch the app main activity or the AlarmActivity depending on type
-            // In a real app, you would use DeepLink.
+            // 构建打开详情页的 Intent (MainActivity -> 通过导航逻辑处理日程详情 或 直接启动应用)
+            // 目前根据类型直接启动应用主 Activity 或 闹钟全屏 Activity
+            // 在实际应用中，可以使用 DeepLink。
             
             var pendingIntent: PendingIntent? = null
             
@@ -62,8 +64,8 @@ class AlarmReceiver : BroadcastReceiver() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             } else {
-                 // For normal notification, we can just launch the app
-                 // Ideally this should point to the specific schedule detail
+                 // 对于普通通知，直接启动应用
+                 // 理想情况下应该跳转到具体的日程详情
                  val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                  }
@@ -80,7 +82,7 @@ class AlarmReceiver : BroadcastReceiver() {
             notificationHelper.showNotification(notificationId, title, message, isAlarm, pendingIntent)
 
             if (isAlarm) {
-                 // Try to start activity directly as well (for Foreground case or older Android versions)
+                 // 尝试直接启动 Activity (针对前台场景或旧版 Android)
                 try {
                     val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
                         putExtra("title", title)
@@ -89,11 +91,11 @@ class AlarmReceiver : BroadcastReceiver() {
                     }
                     context.startActivity(alarmIntent)
                 } catch (e: Exception) {
-                    Log.w("ScheduleReminder", "Failed to start Activity directly (likely background restriction): ${e.message}")
+                    Log.w("ScheduleReminder", "无法直接启动 Activity: ${e.message}")
                 }
             }
         } catch (e: Exception) {
-            Log.e("ScheduleReminder", "Error handling alarm", e)
+            Log.e("ScheduleReminder", "处理闹钟时发生错误", e)
         }
     }
 }
