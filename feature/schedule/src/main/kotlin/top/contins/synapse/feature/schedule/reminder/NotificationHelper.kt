@@ -1,7 +1,9 @@
 package top.contins.synapse.feature.schedule.reminder
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -26,17 +28,25 @@ class NotificationHelper @Inject constructor(
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-                description = "显示日程到期提醒"
-            }
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
+            description = "显示日程到期提醒"
+            enableVibration(true)
+            enableLights(true)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setSound(
+                android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI,
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
         }
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
-    fun showNotification(id: Int, title: String, content: String) {
+    fun showNotification(id: Int, title: String, content: String, fullScreenIntent: PendingIntent? = null) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
              if (androidx.core.content.ContextCompat.checkSelfPermission(
                 context,
@@ -54,9 +64,20 @@ class NotificationHelper @Inject constructor(
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            
+        if (fullScreenIntent != null) {
+            builder.setFullScreenIntent(fullScreenIntent, true)
+            builder.setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for alarm
+            builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            // Ensure sound/vibrate plays even if channel settings are slightly off (compat)
+            builder.setVibrate(longArrayOf(0, 1000, 500, 1000))
+            builder.setSound(android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+        } else {
+            builder.setPriority(NotificationCompat.PRIORITY_HIGH)
+            builder.setDefaults(NotificationCompat.DEFAULT_ALL)
+        }
 
         NotificationManagerCompat.from(context).notify(id, builder.build())
     }

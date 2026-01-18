@@ -1,4 +1,4 @@
-package top.contins.synapse.feature.schedule.ui.util
+package top.contins.synapse.feature.schedule.util
 
 import top.contins.synapse.domain.model.schedule.Schedule
 

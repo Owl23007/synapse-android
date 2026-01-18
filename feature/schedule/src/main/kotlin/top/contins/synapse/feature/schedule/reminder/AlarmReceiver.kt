@@ -7,6 +7,8 @@ import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+import android.app.PendingIntent
+
 @AndroidEntryPoint
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -38,8 +40,23 @@ class AlarmReceiver : BroadcastReceiver() {
                     putExtra("message", message)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
-                context.startActivity(alarmIntent)
-                // Also show a notification as a fallback or history? Maybe not needed for full screen alarm.
+                
+                // Use FullScreenIntent to launch activity from background
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    notificationId, // Use notificationId as request code to be unique
+                    alarmIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                
+                notificationHelper.showNotification(notificationId, title, message, pendingIntent)
+
+                // Try to start activity directly as well (for Foreground case or older Android versions)
+                try {
+                    context.startActivity(alarmIntent)
+                } catch (e: Exception) {
+                    Log.w("ScheduleReminder", "Failed to start Activity directly (likely background restriction): ${e.message}")
+                }
             } else {
                 notificationHelper.showNotification(notificationId, title, message)
             }

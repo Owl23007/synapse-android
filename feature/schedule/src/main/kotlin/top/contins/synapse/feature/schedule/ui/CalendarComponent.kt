@@ -25,7 +25,7 @@ import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
 import top.contins.synapse.domain.model.schedule.Schedule
-import top.contins.synapse.feature.schedule.ui.util.ScheduleLayoutHelper
+import top.contins.synapse.feature.schedule.util.ScheduleLayoutHelper
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.zIndex

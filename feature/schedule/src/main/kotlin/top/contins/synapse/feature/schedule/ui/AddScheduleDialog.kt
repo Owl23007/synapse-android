@@ -706,12 +706,12 @@ fun AddScheduleDialog(
                     ) {
                         Column {
                             Text(
-                                text = "强力提醒 (闹钟)",
+                                text = "强力提醒 (闹",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "像闹钟一样响铃，即使静音",
+                                text = "在事件开始时提醒",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
