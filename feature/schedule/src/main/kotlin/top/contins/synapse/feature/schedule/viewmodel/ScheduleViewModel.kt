@@ -24,6 +24,7 @@ import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import top.contins.synapse.feature.schedule.utils.LunarHelper
 import javax.inject.Inject
 
 @HiltViewModel
@@ -131,6 +132,11 @@ class ScheduleViewModel @Inject constructor(
 
     fun onMonthChanged(month: YearMonth) {
         _currentMonth.value = month
+        viewModelScope.launch {
+            LunarHelper.preloadLunarYear(month.year)
+            LunarHelper.preloadLunarYear(month.year + 1)
+            LunarHelper.preloadLunarYear(month.year - 1)
+        }
     }
 
     fun createSchedule(schedule: Schedule) {

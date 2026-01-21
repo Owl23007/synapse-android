@@ -72,6 +72,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.graphicsLayer
 
 private val MIN_MONTH = YearMonth.of(1900, 1)
@@ -218,12 +219,10 @@ fun MonthView(
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth().animateContentSize()) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(7f / 6f), // Fixed 6 rows for stability
+            modifier = Modifier.fillMaxWidth(),
             beyondViewportPageCount = 1,
             verticalAlignment = Alignment.Top
         ) { page ->
@@ -259,7 +258,11 @@ fun MonthView(
                 allWeeks
             }
 
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(7f / weeks.size) // Dynamic height based on row count
+            ) {
                 weeks.forEach { week ->
                     Row(modifier = Modifier.fillMaxWidth()) {
                         week.forEach { date ->
@@ -388,7 +391,8 @@ fun Day(
     
     val fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
 
-    val lunarText = remember(date) { LunarHelper.lunarCache[date] ?: "" }
+    val lunarVersion by LunarHelper.dataVersion.collectAsState()
+    val lunarText = remember(date, lunarVersion) { LunarHelper.lunarCache[date] ?: "" }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -421,17 +425,7 @@ fun Day(
                 text = date.dayOfMonth.toString(),
                 color = textColor,
                 fontSize = 16.sp,
-                fontWeight = fontWeight,
-                modifier = Modifier.then(
-                    if (sharedTransitionScope != null && animatedVisibilityScope != null && isCurrentMonth) {
-                        with(sharedTransitionScope) {
-                            Modifier.sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "day-${date}"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                        }
-                    } else Modifier
-                )
+                fontWeight = fontWeight
             )
             if (!usePlaceholder && lunarText.isNotEmpty() && isCurrentMonth) {
                 Text(

@@ -2,6 +2,8 @@ package top.contins.synapse.feature.schedule.utils
 
 import com.nlf.calendar.Lunar
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
@@ -11,6 +13,9 @@ import java.util.concurrent.ConcurrentHashMap
 object LunarHelper {
     val lunarCache = ConcurrentHashMap<LocalDate, String>()
     private val loadedLunarYears = ConcurrentHashMap.newKeySet<Int>()
+
+    private val _dataVersion = MutableStateFlow(0)
+    val dataVersion = _dataVersion.asStateFlow()
 
     suspend fun preloadLunarYear(year: Int) {
         if (loadedLunarYears.contains(year)) return
@@ -40,13 +45,25 @@ object LunarHelper {
                     try {
                         val d = Date.from(current.atStartOfDay(ZoneId.systemDefault()).toInstant())
                         val lunar = Lunar.fromDate(d)
-                        lunarCache[current] = lunar.dayInChinese
+                        val jieQi = lunar.jieQi
+                        val day = lunar.dayInChinese
+                        val month = lunar.monthInChinese
+                        
+                        val text = if (jieQi.isNotEmpty()) {
+                            jieQi
+                        } else if (day == "初一") {
+                            month
+                        } else {
+                            day
+                        }
+                        lunarCache[current] = text
                     } catch (_: Exception) {
                         lunarCache[current] = ""
                     }
                 }
                 current = current.plusDays(1)
             }
+            _dataVersion.value += 1
         }
     }
 }

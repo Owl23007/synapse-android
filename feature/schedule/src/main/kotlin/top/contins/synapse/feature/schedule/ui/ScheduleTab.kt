@@ -11,7 +11,9 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -238,7 +240,10 @@ fun ScheduleTab(
             shadowElevation = 4.dp,
             color = MaterialTheme.colorScheme.surface
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+            ) {
                 CalendarHeader(
                     currentMonth = currentMonth,
                     onMonthClick = { showDatePicker = true },
@@ -258,8 +263,11 @@ fun ScheduleTab(
                 AnimatedContent(
                     targetState = viewMode == CalendarViewMode.Month,
                     transitionSpec = {
-                        (expandVertically(expandFrom = Alignment.Top) + fadeIn())
-                            .togetherWith(shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut())
+                        if (targetState) {
+                             expandVertically(expandFrom = Alignment.Top) + fadeIn() togetherWith fadeOut(animationSpec = tween(100))
+                        } else {
+                             fadeIn(animationSpec = tween(100)) togetherWith shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+                        }
                     },
                     label = "CalendarViewMode"
                 ) { isMonth ->
@@ -404,6 +412,15 @@ fun ScheduleTab(
         }
     }
     if (showAddDialog) {
+        val deleteHandler: (() -> Unit)? = if (editingSchedule != null) {
+            {
+                viewModel.deleteSchedule(editingSchedule!!)
+                showAddDialog = false
+                editingSchedule = null
+                initialAddDate = null
+            }
+        } else null
+
         AddScheduleDialog(
             initialDate = initialAddDate ?: editingSchedule?.startTime
                 ?: selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
@@ -413,6 +430,7 @@ fun ScheduleTab(
                 editingSchedule = null
                 initialAddDate = null
             },
+            onDelete = deleteHandler,
             onConfirm = { title, startTime, endTime, location, isAllDay, reminderMinutes, isAlarm, repeatRule ->
                 scope.launch {
                     val conflicts = viewModel.checkConflict(startTime, endTime)

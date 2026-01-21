@@ -34,7 +34,8 @@ import java.util.Locale
 fun AddScheduleDialog(
     initialDate: Long? = null,
     initialSchedule: Schedule? = null,
-    onDismiss: () -> Unit, 
+    onDismiss: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     onConfirm: (String, Long, Long, String, Boolean, List<Int>?, Boolean, RepeatRule?) -> Unit
 ) {
     val isEditing = initialSchedule != null
@@ -155,20 +156,33 @@ fun AddScheduleDialog(
             // 标题区
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 12.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Event,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    if (isEditing) "编辑日程" else "新建日程",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Event,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        if (isEditing) "编辑日程" else "新建日程",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                if (isEditing && onDelete != null) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
             
             // 分隔线
