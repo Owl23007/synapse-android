@@ -27,18 +27,30 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # 获取上一个 tag（按时间排序）
-          PREV_TAG=$(git describe --tags --abbrev=0 --exclude="${{ github.ref_name }}" "$(git rev-list --tags --max-count=1)")
+          # 获取当前 tag
+          CURRENT_TAG="${{ github.ref_name }}"
+          
+          # 尝试获取上一个 tag
+          PREV_TAG=""
+          if git rev-list --tags --max-count=1 > /dev/null 2>&1; then
+            PREV_TAG=$(git describe --tags --abbrev=0 --exclude="$CURRENT_TAG" "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "")
+          fi
+
           if [ -z "$PREV_TAG" ]; then
             echo "first_release=true" >> $GITHUB_OUTPUT
+            # 首次发布：从初始提交到当前 tag
             git log --pretty=format:"- %s" $(git rev-list --max-parents=0 HEAD)..HEAD > /tmp/changelog.md
           else
             echo "first_release=false" >> $GITHUB_OUTPUT
-            git log --pretty=format:"- %s" $PREV_TAG..${{ github.ref_name }} > /tmp/changelog.md
+            # 常规发布：从上一个 tag 到当前 tag
+            git log --pretty=format:"- %s" $PREV_TAG..$CURRENT_TAG > /tmp/changelog.md
           fi
+
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/changelog.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+      # === 构建 APK ===
 
       - name: Decode keystore
         run: |
