@@ -1,0 +1,79 @@
+name: Release APK with Changelog
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，用于生成 changelog
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # === 自动生成 changelog（基于 tag 之间的 commit）===
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 获取上一个 tag（按时间排序）
+          PREV_TAG=$(git describe --tags --abbrev=0 --exclude="${{ github.ref_name }}" "$(git rev-list --tags --max-count=1)")
+          if [ -z "$PREV_TAG" ]; then
+            echo "first_release=true" >> $GITHUB_OUTPUT
+            git log --pretty=format:"- %s" $(git rev-list --max-parents=0 HEAD)..HEAD > /tmp/changelog.md
+          else
+            echo "first_release=false" >> $GITHUB_OUTPUT
+            git log --pretty=format:"- %s" $PREV_TAG..${{ github.ref_name }} > /tmp/changelog.md
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/changelog.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ runner.temp }}/release-key.jks
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release-key.jks
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n1)
+          echo "apk_path=$APK" >> $GITHUB_OUTPUT
+
+      # === 创建 Draft Release（你可以手动编辑后再发布）===
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          draft: true  # 关键：设为 draft，让你先编辑
+          prerelease: false
+          files: ${{ steps.find_apk.outputs.apk_path }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+            This release was built automatically.  
+            **Please review and edit the changelog above before publishing.**
