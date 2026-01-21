@@ -190,13 +190,6 @@ fun MonthView(
     val onMonthChangedState by rememberUpdatedState(onMonthChanged)
     val onDateSelectedState by rememberUpdatedState(onDateSelected)
 
-    // Preload Lunar data logic
-    LaunchedEffect(currentMonth.year) {
-        launch { LunarHelper.preloadLunarYear(currentMonth.year) }
-        launch { LunarHelper.preloadLunarYear(currentMonth.year + 1) }
-        launch { LunarHelper.preloadLunarYear(currentMonth.year - 1) }
-    }
-
     // Sync external currentMonth change to Pager
     LaunchedEffect(currentMonth) {
         val targetPage = ChronoUnit.MONTHS.between(MIN_MONTH, currentMonth).toInt().coerceIn(0, MONTH_COUNT - 1)
@@ -211,18 +204,11 @@ fun MonthView(
             val newMonth = MIN_MONTH.plusMonths(page.toLong())
             if (newMonth != currentMonthState) {
                 onMonthChangedState(newMonth)
-                // When paging, also update selected date to the same day in new month
-                // Clamping to the length of the new month (e.g. Jan 31 -> Feb 28)
                 val newDayOfMonth = selectedDateState.dayOfMonth.coerceAtMost(newMonth.lengthOfMonth())
                 val newDate = newMonth.atDay(newDayOfMonth)
                 onDateSelectedState(newDate)
             }
         }
-    }
-
-    val currentWeeksCount = remember(pagerState.currentPage) {
-        val m = MIN_MONTH.plusMonths(pagerState.currentPage.toLong())
-        getWeeksCount(m, daysOfWeek.first())
     }
 
     val isJumpScrolling = remember(pagerState.isScrollInProgress) {
@@ -237,9 +223,8 @@ fun MonthView(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize()
-                .aspectRatio(7f / currentWeeksCount),
-            beyondViewportPageCount = 1, // Preload 1 page left and right
+                .aspectRatio(7f / 6f), // Fixed 6 rows for stability
+            beyondViewportPageCount = 1,
             verticalAlignment = Alignment.Top
         ) { page ->
             // Use placeholder only if we are jumping fast AND this page is not the source or target
@@ -403,28 +388,7 @@ fun Day(
     
     val fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
 
-    var lunarText by remember(date) { mutableStateOf(LunarHelper.lunarCache[date] ?: "") }
-
-    LaunchedEffect(date) {
-        if (isCurrentMonth && lunarText.isEmpty()) {
-            val cached = LunarHelper.lunarCache[date]
-            if (cached != null) {
-                lunarText = cached
-            } else {
-                val text = withContext(Dispatchers.Default) {
-                    try {
-                        val d = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant())
-                        val lunar = Lunar.fromDate(d)
-                        lunar.dayInChinese
-                    } catch (_: Exception) {
-                        ""
-                    }
-                }
-                LunarHelper.lunarCache[date] = text
-                lunarText = text
-            }
-        }
-    }
+    val lunarText = remember(date) { LunarHelper.lunarCache[date] ?: "" }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()

@@ -96,6 +96,8 @@ import top.contins.synapse.feature.schedule.ui.WeekTimeSlotsView
 import top.contins.synapse.feature.schedule.ui.CalendarViewMode
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 
 /**
  * 日程 Tab - 用于在 PlanScreen 中显示日程内容
@@ -256,41 +258,40 @@ fun ScheduleTab(
                 AnimatedContent(
                     targetState = viewMode == CalendarViewMode.Month,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                        (expandVertically(expandFrom = Alignment.Top) + fadeIn())
+                            .togetherWith(shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut())
                     },
-                    label = "CalendarViewTransition"
+                    label = "CalendarViewMode"
                 ) { isMonth ->
-                   Column {
-                       if (isMonth) {
-                           MonthView(
-                               sharedTransitionScope = this@SharedTransitionLayout,
-                               animatedVisibilityScope = mainScope,
-                               modifier = Modifier.fillMaxWidth(),
-                               currentMonth = currentMonth,
-                               selectedDate = selectedDate,
-                               schedulesMap = schedulesMap,
-                               onDateSelected = { date ->
-                                   val prev = selectedDate
-                                   viewModel.onDateSelected(date)
-                                   if (date == prev) isDayDetailVisible = true
-                               },
-                               onMonthChanged = viewModel::onMonthChanged
-                           )
-                       } else {
-                           WeekCalendarPager(
-                               sharedTransitionScope = this@SharedTransitionLayout,
-                               animatedVisibilityScope = mainScope,
-                               modifier = Modifier.fillMaxWidth(),
-                               selectedDate = selectedDate,
-                               schedulesMap = schedulesMap,
-                               onDateSelected = { date ->
-                                   val prev = selectedDate
-                                   viewModel.onDateSelected(date)
-                                   viewModel.onMonthChanged(YearMonth.from(date))
-                                   if (date == prev) isDayDetailVisible = true
-                               }
-                           )
-                       }
+                   if (isMonth) {
+                       MonthView(
+                           sharedTransitionScope = this@SharedTransitionLayout,
+                           animatedVisibilityScope = mainScope,
+                           modifier = Modifier.fillMaxWidth(),
+                           currentMonth = currentMonth,
+                           selectedDate = selectedDate,
+                           schedulesMap = schedulesMap,
+                           onDateSelected = { date ->
+                               val prev = selectedDate
+                               viewModel.onDateSelected(date)
+                               if (date == prev) isDayDetailVisible = true
+                           },
+                           onMonthChanged = viewModel::onMonthChanged
+                       )
+                   } else {
+                       WeekCalendarPager(
+                           sharedTransitionScope = this@SharedTransitionLayout,
+                           animatedVisibilityScope = mainScope,
+                           modifier = Modifier.fillMaxWidth(),
+                           selectedDate = selectedDate,
+                           schedulesMap = schedulesMap,
+                           onDateSelected = { date ->
+                               val prev = selectedDate
+                               viewModel.onDateSelected(date)
+                               viewModel.onMonthChanged(YearMonth.from(date))
+                               if (date == prev) isDayDetailVisible = true
+                           }
+                       )
                    }
                 }
 
