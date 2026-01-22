@@ -85,7 +85,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             getAllSubscriptionsUseCase()
                 .catch { e ->
-                    // Handle error silently, just use empty list
+                    // Log error - subscriptions will be empty list
+                    android.util.Log.e("ProfileViewModel", "Failed to load subscriptions", e)
                 }
                 .collect { subscriptions ->
                     val currentState = _uiState.value
@@ -157,7 +158,7 @@ class ProfileViewModel @Inject constructor(
                     syncInterval = syncInterval
                 )
             } catch (e: Exception) {
-                _scheduleAction.value = ScheduleManagementAction.SyncError(
+                _scheduleAction.value = ScheduleManagementAction.ImportError(
                     e.message ?: "创建订阅失败"
                 )
             }
@@ -172,7 +173,7 @@ class ProfileViewModel @Inject constructor(
             try {
                 deleteSubscriptionUseCase(subscriptionId)
             } catch (e: Exception) {
-                _scheduleAction.value = ScheduleManagementAction.SyncError(
+                _scheduleAction.value = ScheduleManagementAction.ImportError(
                     e.message ?: "删除订阅失败"
                 )
             }

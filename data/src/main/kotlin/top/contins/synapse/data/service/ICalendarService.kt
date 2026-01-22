@@ -60,7 +60,7 @@ class ICalendarService @Inject constructor() {
                     schedules.add(schedule)
                 } catch (e: Exception) {
                     // Log error but continue processing other events
-                    // In production, use proper logging framework
+                    android.util.Log.e("ICalendarService", "Failed to parse event: ${event.uid?.value}", e)
                 }
             }
         }
@@ -119,13 +119,10 @@ class ICalendarService @Inject constructor() {
         val startTime = event.dateStart?.value?.time ?: System.currentTimeMillis()
         val endTime = event.dateEnd?.value?.time ?: (startTime + 3600000) // +1 hour default
         
+        // Use biweekly's hasTime() method to detect all-day events properly
         val isAllDay = event.dateStart?.value?.let {
-            // Check if time component is present
-            val cal = Calendar.getInstance()
-            cal.time = it
-            cal.get(Calendar.HOUR_OF_DAY) == 0 && 
-            cal.get(Calendar.MINUTE) == 0 &&
-            cal.get(Calendar.SECOND) == 0
+            // Check if the DateStart has time component
+            event.dateStart?.hasTime() == false
         } ?: false
         
         val location = event.location?.value

@@ -357,7 +357,10 @@ fun SubscriptionCard(
                 )
                 subscription.lastSyncAt?.let {
                     Text(
-                        text = "最后同步: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(java.util.Date(it))}",
+                        text = "最后同步: ${remember(it) { 
+                            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(it))
+                        }}",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
