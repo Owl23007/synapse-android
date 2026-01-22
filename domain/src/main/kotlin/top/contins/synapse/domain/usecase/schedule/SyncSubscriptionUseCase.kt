@@ -1,6 +1,5 @@
 package top.contins.synapse.domain.usecase.schedule
 
-import top.contins.synapse.domain.model.schedule.Subscription
 import top.contins.synapse.domain.repository.ScheduleRepository
 import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
@@ -18,6 +17,10 @@ data class SyncResult(
 
 /**
  * Sync calendar subscription from network
+ * 
+ * Note: This use case will be implemented with actual sync service
+ * integration in the data layer. The sync logic will be handled by
+ * SubscriptionSyncService and ICalendarService.
  */
 class SyncSubscriptionUseCase @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
@@ -49,24 +52,13 @@ class SyncSubscriptionUseCase @Inject constructor(
                 )
             }
             
-            // Fetch iCalendar content from URL (will be done by network layer)
-            val icsContent = fetchSubscriptionContent(subscription.url)
-            
-            // Delete old schedules from this subscription
-            scheduleRepository.deleteSchedulesByCalendarId(subscription.id)
-            
-            // Parse and import new schedules
-            val parsedSchedules = parseICalendarForSubscription(icsContent, subscription)
-            
-            var addedCount = 0
-            parsedSchedules.forEach { schedule ->
-                try {
-                    scheduleRepository.insertSchedule(schedule)
-                    addedCount++
-                } catch (e: Exception) {
-                    // Log error but continue
-                }
-            }
+            // TODO: Integrate with SubscriptionSyncService
+            // For now, return a placeholder result
+            // The actual implementation will:
+            // 1. Use SubscriptionSyncService.fetchSubscriptionContent(url)
+            // 2. Parse with ICalendarService.importFromICalendar()
+            // 3. Delete old schedules and insert new ones
+            // 4. Update lastSyncAt timestamp
             
             // Update last sync time
             val updatedSubscription = subscription.copy(
@@ -76,9 +68,9 @@ class SyncSubscriptionUseCase @Inject constructor(
             
             SyncResult(
                 success = true,
-                addedCount = addedCount,
+                addedCount = 0,
                 updatedCount = 0,
-                removedCount = parsedSchedules.size,
+                removedCount = 0,
                 error = null
             )
         } catch (e: Exception) {
@@ -97,20 +89,7 @@ class SyncSubscriptionUseCase @Inject constructor(
      */
     suspend fun syncAll(): Map<String, SyncResult> {
         val results = mutableMapOf<String, SyncResult>()
-        // This will be implemented with Flow collection
+        // TODO: Implement with Flow collection of all enabled subscriptions
         return results
-    }
-    
-    private suspend fun fetchSubscriptionContent(url: String): String {
-        // Will be implemented with actual HTTP client
-        return ""
-    }
-    
-    private fun parseICalendarForSubscription(
-        icsContent: String,
-        subscription: Subscription
-    ): List<top.contins.synapse.domain.model.schedule.Schedule> {
-        // Will be implemented with biweekly library
-        return emptyList()
     }
 }

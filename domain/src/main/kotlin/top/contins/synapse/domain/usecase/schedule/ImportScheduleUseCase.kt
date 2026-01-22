@@ -15,7 +15,19 @@ data class ImportResult(
 )
 
 /**
+ * Strategy for handling conflicting schedules during import
+ */
+enum class ConflictStrategy {
+    SKIP,       // Skip conflicting schedules
+    REPLACE,    // Replace existing schedules
+    KEEP_BOTH   // Keep both schedules
+}
+
+/**
  * Import schedules from iCalendar format
+ * 
+ * Note: The actual iCalendar parsing will be done by ICalendarService
+ * in the data layer. This use case coordinates the import operation.
  */
 class ImportScheduleUseCase @Inject constructor(
     private val repository: ScheduleRepository
@@ -32,8 +44,15 @@ class ImportScheduleUseCase @Inject constructor(
         calendarId: String,
         handleConflicts: ConflictStrategy = ConflictStrategy.SKIP
     ): ImportResult {
-        // Parse iCalendar content (will be done by ICalendarService)
-        val parsedSchedules = parseICalendar(icsContent, calendarId)
+        // TODO: Integrate with ICalendarService.importFromICalendar()
+        // For now, return a placeholder result
+        // The actual implementation will:
+        // 1. Use ICalendarService.importFromICalendar(icsContent, calendarId)
+        // 2. Check for conflicts using repository.getConflictingSchedules()
+        // 3. Handle conflicts based on strategy
+        // 4. Insert schedules into repository
+        
+        val parsedSchedules = emptyList<Schedule>() // Placeholder
         
         val imported = mutableListOf<Schedule>()
         val conflicts = mutableListOf<Schedule>()
@@ -81,16 +100,4 @@ class ImportScheduleUseCase @Inject constructor(
             imported = imported
         )
     }
-    
-    private fun parseICalendar(icsContent: String, calendarId: String): List<Schedule> {
-        // This will be implemented with actual biweekly library parsing
-        // For now, return empty list as placeholder
-        return emptyList()
-    }
-}
-
-enum class ConflictStrategy {
-    SKIP,       // Skip conflicting schedules
-    REPLACE,    // Replace existing schedules
-    KEEP_BOTH   // Keep both schedules
 }
