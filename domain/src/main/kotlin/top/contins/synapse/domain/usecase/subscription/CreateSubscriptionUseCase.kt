@@ -6,18 +6,18 @@ import javax.inject.Inject
 import java.util.UUID
 
 /**
- * Create a new calendar subscription
+ * 创建新的日历订阅
  */
 class CreateSubscriptionUseCase @Inject constructor(
     private val repository: SubscriptionRepository
 ) {
     /**
-     * Create a new subscription
-     * @param name Display name for the subscription
-     * @param url URL to the iCalendar feed
-     * @param color Optional color for events from this subscription
-     * @param syncInterval Sync interval in hours (default 24)
-     * @return Created subscription ID
+     * 创建新订阅
+     * @param name 订阅显示名称
+     * @param url iCalendar 订阅源 URL
+     * @param color 此订阅事件的可选颜色
+     * @param syncInterval 同步间隔（小时），默认 24 小时
+     * @return 创建的订阅 ID
      */
     suspend operator fun invoke(
         name: String,
@@ -25,12 +25,12 @@ class CreateSubscriptionUseCase @Inject constructor(
         color: Long? = null,
         syncInterval: Int = 24
     ): String {
-        require(name.isNotBlank()) { "Subscription name cannot be empty" }
-        require(url.isNotBlank()) { "Subscription URL cannot be empty" }
-        require(syncInterval > 0) { "Sync interval must be positive" }
+        require(name.isNotBlank()) { "订阅名称不能为空" }
+        require(url.isNotBlank()) { "订阅 URL 不能为空" }
+        require(syncInterval > 0) { "同步间隔必须大于 0" }
         
-        // Validate URL format
-        require(isValidUrl(url)) { "Invalid URL format" }
+        // 验证 URL 格式
+        require(isValidUrl(url)) { "URL 格式无效" }
         
         val subscription = Subscription(
             id = UUID.randomUUID().toString(),
@@ -48,6 +48,9 @@ class CreateSubscriptionUseCase @Inject constructor(
         return subscription.id
     }
     
+    /**
+     * 验证 URL 是否有效
+     */
     private fun isValidUrl(url: String): Boolean {
         return try {
             val uri = java.net.URI(url)

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /**
- * Service for syncing calendar subscriptions from network
+ * 从网络同步日历订阅的服务
  */
 class SubscriptionSyncService @Inject constructor(
     private val iCalendarService: ICalendarService
@@ -22,13 +22,13 @@ class SubscriptionSyncService @Inject constructor(
         .build()
     
     /**
-     * Fetch iCalendar content from subscription URL
-     * @param url URL to fetch from (supports http, https, webcal protocols)
-     * @return iCalendar content as string
-     * @throws IOException if network request fails
+     * 从订阅 URL 获取 iCalendar 内容
+     * @param url 要获取的 URL（支持 http、https、webcal 协议）
+     * @return iCalendar 内容字符串
+     * @throws IOException 网络请求失败时抛出
      */
     suspend fun fetchSubscriptionContent(url: String): String = withContext(Dispatchers.IO) {
-        // Convert webcal:// to http:// for OkHttp
+        // 将 webcal:// 转换为 http:// 以便 OkHttp 处理
         val httpUrl = url.replace("webcal://", "http://")
         
         val request = Request.Builder()
@@ -40,17 +40,17 @@ class SubscriptionSyncService @Inject constructor(
         val response = httpClient.newCall(request).execute()
         
         if (!response.isSuccessful) {
-            throw IOException("Failed to fetch subscription: ${response.code} ${response.message}")
+            throw IOException("获取订阅失败: ${response.code} ${response.message}")
         }
         
-        response.body?.string() ?: throw IOException("Empty response body")
+        response.body?.string() ?: throw IOException("响应体为空")
     }
     
     /**
-     * Parse subscription content to schedules
-     * @param icsContent iCalendar content
-     * @param subscription Subscription info
-     * @return List of parsed schedules
+     * 将订阅内容解析为日程
+     * @param icsContent iCalendar 内容
+     * @param subscription 订阅信息
+     * @return 解析后的日程列表
      */
     fun parseSubscriptionContent(
         icsContent: String,
@@ -64,16 +64,16 @@ class SubscriptionSyncService @Inject constructor(
     }
     
     /**
-     * Validate subscription URL
-     * @param url URL to validate
-     * @return true if URL is valid and accessible
+     * 验证订阅 URL
+     * @param url 要验证的 URL
+     * @return 如果 URL 有效且可访问则返回 true
      */
     suspend fun validateSubscriptionUrl(url: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val httpUrl = url.replace("webcal://", "http://")
             val request = Request.Builder()
                 .url(httpUrl)
-                .head() // Use HEAD request for validation
+                .head() // 使用 HEAD 请求进行验证
                 .addHeader("User-Agent", "Synapse-Android/1.0")
                 .build()
             

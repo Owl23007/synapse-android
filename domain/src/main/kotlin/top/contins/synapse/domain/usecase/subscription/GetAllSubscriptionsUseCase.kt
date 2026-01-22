@@ -6,15 +6,21 @@ import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 
 /**
- * Get all subscriptions
+ * 获取所有订阅
  */
 class GetAllSubscriptionsUseCase @Inject constructor(
     private val repository: SubscriptionRepository
 ) {
+    /**
+     * 获取所有订阅列表
+     */
     operator fun invoke(): Flow<List<Subscription>> {
         return repository.getAllSubscriptions()
     }
     
+    /**
+     * 根据 ID 获取订阅
+     */
     suspend fun getById(id: String): Subscription? {
         return repository.getSubscriptionById(id)
     }

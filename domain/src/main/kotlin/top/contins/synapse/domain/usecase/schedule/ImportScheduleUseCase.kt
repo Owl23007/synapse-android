@@ -5,54 +5,54 @@ import top.contins.synapse.domain.repository.ScheduleRepository
 import javax.inject.Inject
 
 /**
- * Result of import operation
+ * 导入操作结果
  */
 data class ImportResult(
-    val successCount: Int,
-    val failedCount: Int,
-    val conflicts: List<Schedule>,
-    val imported: List<Schedule>
+    val successCount: Int,      // 成功导入数量
+    val failedCount: Int,        // 导入失败数量
+    val conflicts: List<Schedule>,  // 冲突的日程列表
+    val imported: List<Schedule>    // 已导入的日程列表
 )
 
 /**
- * Strategy for handling conflicting schedules during import
+ * 导入时处理冲突日程的策略
  */
 enum class ConflictStrategy {
-    SKIP,       // Skip conflicting schedules
-    REPLACE,    // Replace existing schedules
-    KEEP_BOTH   // Keep both schedules
+    SKIP,       // 跳过冲突的日程
+    REPLACE,    // 替换已存在的日程
+    KEEP_BOTH   // 保留两个日程
 }
 
 /**
- * Import schedules from iCalendar format
+ * 从 iCalendar 格式导入日程
  * 
- * Note: The actual iCalendar parsing will be done by ICalendarService
- * in the data layer. This use case coordinates the import operation.
+ * 说明：实际的 iCalendar 解析将由数据层的 ICalendarService 完成
+ * 此用例负责协调导入操作
  */
 class ImportScheduleUseCase @Inject constructor(
     private val repository: ScheduleRepository
 ) {
     /**
-     * Import schedules from iCalendar format string
-     * @param icsContent iCalendar format string (RFC 5545)
-     * @param calendarId Target calendar ID to import into
-     * @param handleConflicts Strategy to handle conflicts (skip, replace, keep both)
-     * @return Import result with success/failure counts and conflicts
+     * 从 iCalendar 格式字符串导入日程
+     * @param icsContent iCalendar 格式字符串（RFC 5545）
+     * @param calendarId 目标日历 ID
+     * @param handleConflicts 处理冲突的策略（跳过、替换、保留两者）
+     * @return 导入结果，包含成功/失败计数和冲突信息
      */
     suspend operator fun invoke(
         icsContent: String,
         calendarId: String,
         handleConflicts: ConflictStrategy = ConflictStrategy.SKIP
     ): ImportResult {
-        // TODO: Integrate with ICalendarService.importFromICalendar()
-        // For now, return a placeholder result
-        // The actual implementation will:
-        // 1. Use ICalendarService.importFromICalendar(icsContent, calendarId)
-        // 2. Check for conflicts using repository.getConflictingSchedules()
-        // 3. Handle conflicts based on strategy
-        // 4. Insert schedules into repository
+        // TODO: 集成 ICalendarService.importFromICalendar()
+        // 当前返回占位符结果
+        // 实际实现将：
+        // 1. 使用 ICalendarService.importFromICalendar(icsContent, calendarId)
+        // 2. 使用 repository.getConflictingSchedules() 检查冲突
+        // 3. 根据策略处理冲突
+        // 4. 将日程插入仓库
         
-        val parsedSchedules = emptyList<Schedule>() // Placeholder
+        val parsedSchedules = emptyList<Schedule>() // 占位符
         
         val imported = mutableListOf<Schedule>()
         val conflicts = mutableListOf<Schedule>()
@@ -61,7 +61,7 @@ class ImportScheduleUseCase @Inject constructor(
         
         parsedSchedules.forEach { schedule ->
             try {
-                // Check for conflicts
+                // 检查时间冲突
                 val conflicting = repository.getConflictingSchedules(
                     schedule.startTime,
                     schedule.endTime

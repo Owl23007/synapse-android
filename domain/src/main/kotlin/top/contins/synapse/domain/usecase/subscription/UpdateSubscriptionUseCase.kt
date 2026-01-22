@@ -4,53 +4,53 @@ import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 
 /**
- * Update subscription settings
+ * 更新订阅设置
  */
 class UpdateSubscriptionUseCase @Inject constructor(
     private val repository: SubscriptionRepository
 ) {
     /**
-     * Update subscription name
+     * 更新订阅名称
      */
     suspend fun updateName(subscriptionId: String, name: String) {
-        require(name.isNotBlank()) { "Name cannot be empty" }
+        require(name.isNotBlank()) { "名称不能为空" }
         
         val subscription = repository.getSubscriptionById(subscriptionId)
-            ?: throw IllegalArgumentException("Subscription not found")
+            ?: throw IllegalArgumentException("订阅不存在")
         
         repository.updateSubscription(subscription.copy(name = name))
     }
     
     /**
-     * Update subscription URL
+     * 更新订阅 URL
      */
     suspend fun updateUrl(subscriptionId: String, url: String) {
-        require(url.isNotBlank()) { "URL cannot be empty" }
+        require(url.isNotBlank()) { "URL 不能为空" }
         
         val subscription = repository.getSubscriptionById(subscriptionId)
-            ?: throw IllegalArgumentException("Subscription not found")
+            ?: throw IllegalArgumentException("订阅不存在")
         
         repository.updateSubscription(subscription.copy(url = url))
     }
     
     /**
-     * Enable or disable subscription
+     * 启用或禁用订阅
      */
     suspend fun setEnabled(subscriptionId: String, enabled: Boolean) {
         val subscription = repository.getSubscriptionById(subscriptionId)
-            ?: throw IllegalArgumentException("Subscription not found")
+            ?: throw IllegalArgumentException("订阅不存在")
         
         repository.updateSubscription(subscription.copy(isEnabled = enabled))
     }
     
     /**
-     * Update sync interval
+     * 更新同步间隔
      */
     suspend fun updateSyncInterval(subscriptionId: String, intervalHours: Int) {
-        require(intervalHours > 0) { "Sync interval must be positive" }
+        require(intervalHours > 0) { "同步间隔必须大于 0" }
         
         val subscription = repository.getSubscriptionById(subscriptionId)
-            ?: throw IllegalArgumentException("Subscription not found")
+            ?: throw IllegalArgumentException("订阅不存在")
         
         repository.updateSubscription(subscription.copy(syncInterval = intervalHours))
     }

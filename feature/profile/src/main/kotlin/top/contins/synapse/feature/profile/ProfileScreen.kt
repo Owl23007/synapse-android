@@ -25,12 +25,12 @@ import coil.compose.AsyncImage
 
 
 /**
- * Profile page - Schedule Management focused
+ * Profile 页面 - 专注于日程管理
  * 
- * Main features:
- * - Schedule import/export functionality
- * - Calendar subscription management
- * - User profile information
+ * 主要功能：
+ * - 日程导入/导出功能
+ * - 日历订阅管理
+ * - 用户资料信息
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +45,7 @@ fun ProfileScreen(
     var showImportExportDialog by remember { mutableStateOf(false) }
     var showSubscriptionDialog by remember { mutableStateOf(false) }
     
-    // Monitor logout state
+    // 监听登出状态
     LaunchedEffect(uiState) {
         if (uiState is ProfileUiState.LoggedOut) {
             onLogout()
@@ -53,9 +53,9 @@ fun ProfileScreen(
         }
     }
     
-    // Handle schedule action results
+    // 处理日程操作结果
     LaunchedEffect(scheduleAction) {
-        // Handle different action states if needed
+        // 如需要可处理不同的操作状态
     }
 
     val user = (uiState as? ProfileUiState.Success)?.user
@@ -82,12 +82,12 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // User info card
+                // 用户信息卡片
                 UserProfileCard(user = user)
             }
             
             item {
-                // Schedule management section
+                // 日程管理区域
                 Text(
                     text = "日程管理",
                     fontSize = 18.sp,
@@ -103,7 +103,7 @@ fun ProfileScreen(
             }
             
             item {
-                // Subscription list
+                // 订阅列表
                 Text(
                     text = "日历订阅 (${subscriptions.size})",
                     fontSize = 18.sp,
@@ -125,7 +125,7 @@ fun ProfileScreen(
             
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                // Settings section
+                // 设置区域
                 Text(
                     text = "设置",
                     fontSize = 18.sp,
@@ -146,7 +146,7 @@ fun ProfileScreen(
         }
     }
     
-    // Logout confirmation dialog
+    // 登出确认对话框
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -172,7 +172,7 @@ fun ProfileScreen(
         )
     }
     
-    // Import/Export dialog
+    // 导入/导出对话框
     if (showImportExportDialog) {
         ImportExportDialog(
             onDismiss = { showImportExportDialog = false },
@@ -180,7 +180,7 @@ fun ProfileScreen(
         )
     }
     
-    // Subscription management dialog
+    // 订阅管理对话框
     if (showSubscriptionDialog) {
         SubscriptionManagementDialog(
             onDismiss = { showSubscriptionDialog = false },
@@ -188,7 +188,7 @@ fun ProfileScreen(
         )
     }
     
-    // Logout loading state
+    // 登出加载状态
     if (uiState is ProfileUiState.LoggingOut) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -205,7 +205,9 @@ fun ProfileScreen(
     }
 }
 
-
+/**
+ * 用户资料卡片
+ */
 @Composable
 fun UserProfileCard(user: User? = null) {
     Card(
@@ -220,7 +222,7 @@ fun UserProfileCard(user: User? = null) {
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // 头像
             if (user?.avatar.isNullOrEmpty()) {
                 Box(
                     modifier = Modifier
@@ -239,7 +241,7 @@ fun UserProfileCard(user: User? = null) {
             } else {
                 AsyncImage(
                     model = user!!.avatar,
-                    contentDescription = "Avatar",
+                    contentDescription = "头像",
                     modifier = Modifier
                         .size(60.dp)
                         .clip(CircleShape)
@@ -265,6 +267,9 @@ fun UserProfileCard(user: User? = null) {
     }
 }
 
+/**
+ * 日程管理卡片
+ */
 @Composable
 fun ScheduleManagementCard(
     onImportExport: () -> Unit,
@@ -303,6 +308,9 @@ fun ScheduleManagementCard(
     }
 }
 
+/**
+ * 日程操作按钮
+ */
 @Composable
 fun ScheduleActionButton(
     icon: ImageVector,
@@ -323,6 +331,9 @@ fun ScheduleActionButton(
     }
 }
 
+/**
+ * 订阅卡片
+ */
 @Composable
 fun SubscriptionCard(
     subscription: top.contins.synapse.domain.model.schedule.Subscription,
@@ -378,6 +389,9 @@ fun SubscriptionCard(
     }
 }
 
+/**
+ * Profile 菜单项数据类
+ */
 data class ProfileMenuItem(
     val title: String,
     val subtitle: String = "",
@@ -385,6 +399,9 @@ data class ProfileMenuItem(
     val showChevron: Boolean = true
 )
 
+/**
+ * 获取设置菜单项列表
+ */
 fun getSettingsMenuItems() = listOf(
     ProfileMenuItem(
         title = "通知设置",
@@ -414,6 +431,9 @@ fun getSettingsMenuItems() = listOf(
     )
 )
 
+/**
+ * Profile 菜单项组件
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMenuItem(
@@ -431,7 +451,7 @@ fun ProfileMenuItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon
+            // 图标
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -449,7 +469,7 @@ fun ProfileMenuItem(
             
             Spacer(modifier = Modifier.width(16.dp))
             
-            // Content
+            // 内容
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -467,7 +487,7 @@ fun ProfileMenuItem(
                 }
             }
             
-            // Right arrow
+            // 右箭头
             if (menuItem.showChevron) {
                 Icon(
                     Icons.Default.ChevronRight,
@@ -479,6 +499,9 @@ fun ProfileMenuItem(
     }
 }
 
+/**
+ * 导入/导出对话框
+ */
 @Composable
 fun ImportExportDialog(
     onDismiss: () -> Unit,
@@ -504,6 +527,9 @@ fun ImportExportDialog(
     )
 }
 
+/**
+ * 订阅管理对话框
+ */
 @Composable
 fun SubscriptionManagementDialog(
     onDismiss: () -> Unit,

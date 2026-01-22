@@ -5,31 +5,30 @@ import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 
 /**
- * Result of subscription sync operation
+ * 订阅同步操作结果
  */
 data class SyncResult(
-    val success: Boolean,
-    val addedCount: Int,
-    val updatedCount: Int,
-    val removedCount: Int,
-    val error: String? = null
+    val success: Boolean,       // 是否成功
+    val addedCount: Int,        // 新增日程数量
+    val updatedCount: Int,      // 更新日程数量
+    val removedCount: Int,      // 删除日程数量
+    val error: String? = null   // 错误信息
 )
 
 /**
- * Sync calendar subscription from network
+ * 从网络同步日历订阅
  * 
- * Note: This use case will be implemented with actual sync service
- * integration in the data layer. The sync logic will be handled by
- * SubscriptionSyncService and ICalendarService.
+ * 说明：此用例将与数据层的同步服务集成实现
+ * 同步逻辑由 SubscriptionSyncService 和 ICalendarService 处理
  */
 class SyncSubscriptionUseCase @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
     private val scheduleRepository: ScheduleRepository
 ) {
     /**
-     * Sync a single subscription
-     * @param subscriptionId Subscription ID to sync
-     * @return Sync result with counts
+     * 同步单个订阅
+     * @param subscriptionId 要同步的订阅 ID
+     * @return 同步结果，包含统计信息
      */
     suspend operator fun invoke(subscriptionId: String): SyncResult {
         return try {
@@ -39,7 +38,7 @@ class SyncSubscriptionUseCase @Inject constructor(
                     addedCount = 0,
                     updatedCount = 0,
                     removedCount = 0,
-                    error = "Subscription not found"
+                    error = "订阅不存在"
                 )
             
             if (!subscription.isEnabled) {
@@ -48,19 +47,19 @@ class SyncSubscriptionUseCase @Inject constructor(
                     addedCount = 0,
                     updatedCount = 0,
                     removedCount = 0,
-                    error = "Subscription is disabled"
+                    error = "订阅已禁用"
                 )
             }
             
-            // TODO: Integrate with SubscriptionSyncService
-            // For now, return a placeholder result
-            // The actual implementation will:
-            // 1. Use SubscriptionSyncService.fetchSubscriptionContent(url)
-            // 2. Parse with ICalendarService.importFromICalendar()
-            // 3. Delete old schedules and insert new ones
-            // 4. Update lastSyncAt timestamp
+            // TODO: 集成 SubscriptionSyncService
+            // 当前返回占位符结果
+            // 实际实现将：
+            // 1. 使用 SubscriptionSyncService.fetchSubscriptionContent(url)
+            // 2. 使用 ICalendarService.importFromICalendar() 解析
+            // 3. 删除旧日程并插入新日程
+            // 4. 更新 lastSyncAt 时间戳
             
-            // Update last sync time
+            // 更新最后同步时间
             val updatedSubscription = subscription.copy(
                 lastSyncAt = System.currentTimeMillis()
             )
@@ -79,17 +78,17 @@ class SyncSubscriptionUseCase @Inject constructor(
                 addedCount = 0,
                 updatedCount = 0,
                 removedCount = 0,
-                error = e.message ?: "Unknown error"
+                error = e.message ?: "未知错误"
             )
         }
     }
     
     /**
-     * Sync all enabled subscriptions
+     * 同步所有已启用的订阅
      */
     suspend fun syncAll(): Map<String, SyncResult> {
         val results = mutableMapOf<String, SyncResult>()
-        // TODO: Implement with Flow collection of all enabled subscriptions
+        // TODO: 实现所有已启用订阅的 Flow 收集
         return results
     }
 }

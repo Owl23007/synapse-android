@@ -5,21 +5,21 @@ import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 
 /**
- * Delete a calendar subscription and all its associated schedules
+ * 删除日历订阅及其所有关联的日程
  */
 class DeleteSubscriptionUseCase @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
     private val scheduleRepository: ScheduleRepository
 ) {
     /**
-     * Delete subscription and all schedules from it
-     * @param subscriptionId ID of subscription to delete
+     * 删除订阅及其所有日程
+     * @param subscriptionId 要删除的订阅 ID
      */
     suspend operator fun invoke(subscriptionId: String) {
-        // First delete all schedules from this subscription
+        // 先删除此订阅的所有日程
         scheduleRepository.deleteSchedulesByCalendarId(subscriptionId)
         
-        // Then delete the subscription itself
+        // 然后删除订阅本身
         subscriptionRepository.deleteSubscriptionById(subscriptionId)
     }
 }

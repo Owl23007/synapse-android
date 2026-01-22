@@ -11,15 +11,15 @@ import java.util.*
 import javax.inject.Inject
 
 /**
- * Service for converting between Schedule and iCalendar format
- * Uses biweekly library for iCalendar (RFC 5545) parsing and generation
+ * Schedule 与 iCalendar 格式互转服务
+ * 使用 biweekly 库处理 iCalendar（RFC 5545）的解析和生成
  */
 class ICalendarService @Inject constructor() {
     
     /**
-     * Convert schedules to iCalendar format string
-     * @param schedules List of schedules to export
-     * @return iCalendar format string (RFC 5545)
+     * 将日程列表转换为 iCalendar 格式字符串
+     * @param schedules 要导出的日程列表
+     * @return iCalendar 格式字符串（RFC 5545）
      */
     fun exportToICalendar(schedules: List<Schedule>): String {
         val calendar = ICalendar()
@@ -35,11 +35,11 @@ class ICalendarService @Inject constructor() {
     }
     
     /**
-     * Parse iCalendar content and convert to Schedule list
-     * @param icsContent iCalendar format string
-     * @param defaultCalendarId Calendar ID to assign to imported schedules
-     * @param subscriptionId Optional subscription ID if importing from subscription
-     * @return List of parsed schedules
+     * 解析 iCalendar 内容并转换为 Schedule 列表
+     * @param icsContent iCalendar 格式字符串
+     * @param defaultCalendarId 分配给导入日程的日历 ID
+     * @param subscriptionId 可选的订阅 ID（如果从订阅导入）
+     * @return 解析后的日程列表
      */
     fun importFromICalendar(
         icsContent: String,
@@ -59,8 +59,8 @@ class ICalendarService @Inject constructor() {
                     )
                     schedules.add(schedule)
                 } catch (e: Exception) {
-                    // Log error but continue processing other events
-                    android.util.Log.e("ICalendarService", "Failed to parse event: ${event.uid?.value}", e)
+                    // 记录错误但继续处理其他事件
+                    android.util.Log.e("ICalendarService", "解析事件失败: ${event.uid?.value}", e)
                 }
             }
         }
@@ -68,16 +68,19 @@ class ICalendarService @Inject constructor() {
         return schedules
     }
     
+    /**
+     * 将 Schedule 转换为 VEvent
+     */
     private fun scheduleToVEvent(schedule: Schedule): VEvent {
         val event = VEvent()
         
-        // Basic properties
+        // 基本属性
         event.summary = Summary(schedule.title)
         if (!schedule.description.isNullOrEmpty()) {
             event.description = Description(schedule.description)
         }
         
-        // Time properties
+        // 时间属性
         val startDate = Date(schedule.startTime)
         val endDate = Date(schedule.endTime)
         
@@ -89,39 +92,42 @@ class ICalendarService @Inject constructor() {
             event.dateEnd = DateEnd(endDate, true)
         }
         
-        // Location
+        // 地点
         if (!schedule.location.isNullOrEmpty()) {
             event.location = Location(schedule.location)
         }
         
-        // UID
+        // 唯一标识符
         event.uid = Uid(schedule.id)
         
-        // Created and last modified
+        // 创建和修改时间
         event.created = Created(Date(schedule.createdAt))
         event.lastModified = LastModified(Date(schedule.updatedAt))
         
-        // Categories (using schedule type)
+        // 分类（使用日程类型）
         event.addCategories(schedule.type.name)
         
         return event
     }
     
+    /**
+     * 将 VEvent 转换为 Schedule
+     */
     private fun vEventToSchedule(
         event: VEvent,
         calendarId: String,
         subscriptionId: String?
     ): Schedule {
         val uid = event.uid?.value ?: UUID.randomUUID().toString()
-        val title = event.summary?.value ?: "Untitled Event"
+        val title = event.summary?.value ?: "无标题事件"
         val description = event.description?.value
         
         val startTime = event.dateStart?.value?.time ?: System.currentTimeMillis()
-        val endTime = event.dateEnd?.value?.time ?: (startTime + 3600000) // +1 hour default
+        val endTime = event.dateEnd?.value?.time ?: (startTime + 3600000) // 默认 +1 小时
         
-        // Use biweekly's hasTime() method to detect all-day events properly
+        // 使用 biweekly 的 hasTime() 方法正确检测全天事件
         val isAllDay = event.dateStart?.value?.let {
-            // Check if the DateStart has time component
+            // 检查 DateStart 是否有时间组件
             event.dateStart?.hasTime() == false
         } ?: false
         
@@ -138,11 +144,11 @@ class ICalendarService @Inject constructor() {
             endTime = endTime,
             timezoneId = timezoneId,
             location = location,
-            type = ScheduleType.EVENT, // Default type
+            type = ScheduleType.EVENT, // 默认类型
             color = null,
             reminderMinutes = null,
             isAlarm = false,
-            repeatRule = null, // TODO: Parse recurrence rules
+            repeatRule = null, // TODO: 解析重复规则
             calendarId = calendarId,
             isAllDay = isAllDay,
             isFromSubscription = subscriptionId != null,

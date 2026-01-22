@@ -18,6 +18,9 @@ import top.contins.synapse.domain.usecase.schedule.*
 import top.contins.synapse.domain.usecase.subscription.*
 import javax.inject.Inject
 
+/**
+ * Profile 页面 UI 状态
+ */
 sealed class ProfileUiState {
     object Loading : ProfileUiState()
     data class Success(
@@ -30,6 +33,9 @@ sealed class ProfileUiState {
     object LoggedOut : ProfileUiState()
 }
 
+/**
+ * 日程管理操作状态
+ */
 sealed class ScheduleManagementAction {
     object Idle : ScheduleManagementAction()
     data class ImportInProgress(val progress: String) : ScheduleManagementAction()
@@ -67,6 +73,9 @@ class ProfileViewModel @Inject constructor(
         loadSubscriptions()
     }
 
+    /**
+     * 加载用户资料
+     */
     fun loadUserProfile() {
         viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
@@ -81,12 +90,15 @@ class ProfileViewModel @Inject constructor(
         }
     }
     
+    /**
+     * 加载订阅列表
+     */
     private fun loadSubscriptions() {
         viewModelScope.launch {
             getAllSubscriptionsUseCase()
                 .catch { e ->
-                    // Log error - subscriptions will be empty list
-                    android.util.Log.e("ProfileViewModel", "Failed to load subscriptions", e)
+                    // 记录错误 - 订阅列表将为空
+                    android.util.Log.e("ProfileViewModel", "加载订阅失败", e)
                 }
                 .collect { subscriptions ->
                     val currentState = _uiState.value
@@ -98,7 +110,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
-     * Import schedules from iCalendar content
+     * 从 iCalendar 内容导入日程
      */
     fun importSchedules(
         icsContent: String,
@@ -125,7 +137,7 @@ class ProfileViewModel @Inject constructor(
     }
     
     /**
-     * Export schedules to iCalendar format
+     * 导出日程为 iCalendar 格式
      */
     fun exportSchedules(scheduleIds: List<String>) {
         viewModelScope.launch {
@@ -141,7 +153,7 @@ class ProfileViewModel @Inject constructor(
     }
     
     /**
-     * Create a new subscription
+     * 创建新订阅
      */
     fun createSubscription(
         name: String,
@@ -166,7 +178,7 @@ class ProfileViewModel @Inject constructor(
     }
     
     /**
-     * Delete a subscription
+     * 删除订阅
      */
     fun deleteSubscription(subscriptionId: String) {
         viewModelScope.launch {
@@ -181,7 +193,7 @@ class ProfileViewModel @Inject constructor(
     }
     
     /**
-     * Sync a subscription
+     * 同步订阅
      */
     fun syncSubscription(subscriptionId: String, subscriptionName: String) {
         viewModelScope.launch {
@@ -209,34 +221,34 @@ class ProfileViewModel @Inject constructor(
     }
     
     /**
-     * Reset schedule action state
+     * 重置日程操作状态
      */
     fun resetScheduleAction() {
         _scheduleAction.value = ScheduleManagementAction.Idle
     }
 
     /**
-     * Execute logout operation
+     * 执行登出操作
      */
     fun logout() {
         viewModelScope.launch {
             try {
                 _uiState.value = ProfileUiState.LoggingOut
                 
-                // Execute logout logic
+                // 执行登出逻辑
                 logoutUseCase()
                 
-                // Notify UI to navigate to login page
+                // 通知 UI 跳转到登录页
                 _uiState.value = ProfileUiState.LoggedOut
             } catch (e: Exception) {
-                // Even if error occurs, should clear local data and navigate to login
+                // 即使出错也应清理本地数据并跳转到登录页
                 _uiState.value = ProfileUiState.LoggedOut
             }
         }
     }
 
     /**
-     * Reset state (called after logout has been handled)
+     * 重置状态（登出处理完成后调用）
      */
     fun resetState() {
         _uiState.value = ProfileUiState.Loading
