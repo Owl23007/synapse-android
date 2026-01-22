@@ -8,29 +8,38 @@ import javax.inject.Inject
  * 
  * 说明：实际的 iCalendar 转换将由数据层的 ICalendarService 完成
  * 此用例负责协调导出操作
+ * 
+ * 注意：当前实现为占位符，需要在数据层集成 ICalendarService 后完成
+ * 实际使用时需要通过依赖注入添加 ICalendarService
  */
 class ExportScheduleUseCase @Inject constructor(
     private val repository: ScheduleRepository
+    // TODO: 添加依赖注入: private val iCalendarService: ICalendarService
 ) {
+    companion object {
+        private const val EMPTY_CALENDAR = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\nEND:VCALENDAR"
+    }
+    
     /**
      * 导出日程为 iCalendar 格式字符串
      * @param scheduleIds 要导出的日程 ID 列表
      * @return iCalendar 格式字符串（RFC 5545）
+     * @throws IllegalArgumentException 如果 scheduleIds 为空
      */
     suspend operator fun invoke(scheduleIds: List<String>): String {
+        require(scheduleIds.isNotEmpty()) { "日程 ID 列表不能为空" }
+        
         val schedules = scheduleIds.mapNotNull { repository.getScheduleById(it) }
         
-        // TODO: 集成 ICalendarService.exportToICalendar()
-        // 当前返回占位符
-        // 实际实现将：
-        // 1. 从仓库获取日程
-        // 2. 使用 ICalendarService.exportToICalendar(schedules)
-        // 3. 返回 iCalendar 字符串
-        
         if (schedules.isEmpty()) {
-            return "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\nEND:VCALENDAR"
+            return EMPTY_CALENDAR
         }
         
+        // TODO: 集成 ICalendarService.exportToICalendar()
+        // 实际实现：
+        // return iCalendarService.exportToICalendar(schedules)
+        
+        // 当前返回占位符（仅用于开发阶段）
         return "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\n" +
                schedules.joinToString("\n") { "SUMMARY:${it.title}" } +
                "\nEND:VCALENDAR"
@@ -41,9 +50,16 @@ class ExportScheduleUseCase @Inject constructor(
      * @param startTime 开始时间戳
      * @param endTime 结束时间戳
      * @return iCalendar 格式字符串（RFC 5545）
+     * @throws IllegalArgumentException 如果时间范围无效
      */
     suspend fun exportTimeRange(startTime: Long, endTime: Long): String {
+        require(startTime < endTime) { "开始时间必须早于结束时间" }
+        
         // TODO: 使用仓库查询和 ICalendarService 转换实现
-        return "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\nEND:VCALENDAR"
+        // 实际实现：
+        // val schedules = repository.getSchedulesInTimeRange(startTime, endTime).first()
+        // return iCalendarService.exportToICalendar(schedules)
+        
+        return EMPTY_CALENDAR
     }
 }

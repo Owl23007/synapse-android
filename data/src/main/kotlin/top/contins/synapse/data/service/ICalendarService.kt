@@ -16,19 +16,32 @@ import javax.inject.Inject
  */
 class ICalendarService @Inject constructor() {
     
+    companion object {
+        private const val TAG = "ICalendarService"
+        private const val ONE_HOUR_MS = 3600000L // 1小时的毫秒数
+    }
+    
     /**
      * 将日程列表转换为 iCalendar 格式字符串
      * @param schedules 要导出的日程列表
      * @return iCalendar 格式字符串（RFC 5545）
+     * @throws IllegalArgumentException 如果日程列表为空
      */
     fun exportToICalendar(schedules: List<Schedule>): String {
+        require(schedules.isNotEmpty()) { "日程列表不能为空" }
+        
         val calendar = ICalendar()
         calendar.productId = ProductId("-//Synapse Android//Schedule Manager//EN")
         calendar.version = Version.v2_0()
         
         schedules.forEach { schedule ->
-            val event = scheduleToVEvent(schedule)
-            calendar.addEvent(event)
+            try {
+                val event = scheduleToVEvent(schedule)
+                calendar.addEvent(event)
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "转换日程失败: ${schedule.id}", e)
+                // 继续处理其他日程
+            }
         }
         
         return Biweekly.write(calendar).go()
@@ -40,12 +53,16 @@ class ICalendarService @Inject constructor() {
      * @param defaultCalendarId 分配给导入日程的日历 ID
      * @param subscriptionId 可选的订阅 ID（如果从订阅导入）
      * @return 解析后的日程列表
+     * @throws IllegalArgumentException 如果内容为空或 calendarId 无效
      */
     fun importFromICalendar(
         icsContent: String,
         defaultCalendarId: String,
         subscriptionId: String? = null
     ): List<Schedule> {
+        require(icsContent.isNotBlank()) { "iCalendar 内容不能为空" }
+        require(defaultCalendarId.isNotBlank()) { "日历 ID 不能为空" }
+        
         val calendars = Biweekly.parse(icsContent).all()
         val schedules = mutableListOf<Schedule>()
         
@@ -60,7 +77,7 @@ class ICalendarService @Inject constructor() {
                     schedules.add(schedule)
                 } catch (e: Exception) {
                     // 记录错误但继续处理其他事件
-                    android.util.Log.e("ICalendarService", "解析事件失败: ${event.uid?.value}", e)
+                    android.util.Log.e(TAG, "解析事件失败: ${event.uid?.value}", e)
                 }
             }
         }
@@ -123,16 +140,18 @@ class ICalendarService @Inject constructor() {
         val description = event.description?.value
         
         val startTime = event.dateStart?.value?.time ?: System.currentTimeMillis()
-        val endTime = event.dateEnd?.value?.time ?: (startTime + 3600000) // 默认 +1 小时
+        val endTime = event.dateEnd?.value?.time ?: (startTime + ONE_HOUR_MS)
         
         // 使用 biweekly 的 hasTime() 方法正确检测全天事件
-        val isAllDay = event.dateStart?.value?.let {
-            // 检查 DateStart 是否有时间组件
-            event.dateStart?.hasTime() == false
+        val isAllDay = event.dateStart?.let {
+            it.hasTime() == false
         } ?: false
         
         val location = event.location?.value
-        val timezoneId = TimeZone.getDefault().id
+        
+        // 尝试从事件中获取时区信息，否则使用系统默认时区
+        val timezoneId = event.dateStart?.parameters?.timezoneId?.value 
+            ?: TimeZone.getDefault().id
         
         val now = System.currentTimeMillis()
         

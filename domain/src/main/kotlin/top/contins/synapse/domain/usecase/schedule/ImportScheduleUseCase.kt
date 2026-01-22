@@ -28,9 +28,13 @@ enum class ConflictStrategy {
  * 
  * 说明：实际的 iCalendar 解析将由数据层的 ICalendarService 完成
  * 此用例负责协调导入操作
+ * 
+ * 注意：当前实现为占位符，需要在数据层集成 ICalendarService 后完成
+ * 实际使用时需要通过依赖注入添加 ICalendarService
  */
 class ImportScheduleUseCase @Inject constructor(
     private val repository: ScheduleRepository
+    // TODO: 添加依赖注入: private val iCalendarService: ICalendarService
 ) {
     /**
      * 从 iCalendar 格式字符串导入日程
@@ -38,21 +42,21 @@ class ImportScheduleUseCase @Inject constructor(
      * @param calendarId 目标日历 ID
      * @param handleConflicts 处理冲突的策略（跳过、替换、保留两者）
      * @return 导入结果，包含成功/失败计数和冲突信息
+     * @throws IllegalArgumentException 如果 icsContent 为空或 calendarId 无效
      */
     suspend operator fun invoke(
         icsContent: String,
         calendarId: String,
         handleConflicts: ConflictStrategy = ConflictStrategy.SKIP
     ): ImportResult {
-        // TODO: 集成 ICalendarService.importFromICalendar()
-        // 当前返回占位符结果
-        // 实际实现将：
-        // 1. 使用 ICalendarService.importFromICalendar(icsContent, calendarId)
-        // 2. 使用 repository.getConflictingSchedules() 检查冲突
-        // 3. 根据策略处理冲突
-        // 4. 将日程插入仓库
+        require(icsContent.isNotBlank()) { "iCalendar 内容不能为空" }
+        require(calendarId.isNotBlank()) { "日历 ID 不能为空" }
         
-        val parsedSchedules = emptyList<Schedule>() // 占位符
+        // TODO: 集成 ICalendarService.importFromICalendar()
+        // 实际实现：
+        // val parsedSchedules = iCalendarService.importFromICalendar(icsContent, calendarId)
+        
+        val parsedSchedules = emptyList<Schedule>() // 占位符 - 需要集成服务后替换
         
         val imported = mutableListOf<Schedule>()
         val conflicts = mutableListOf<Schedule>()
@@ -89,6 +93,7 @@ class ImportScheduleUseCase @Inject constructor(
                     successCount++
                 }
             } catch (e: Exception) {
+                android.util.Log.e("ImportScheduleUseCase", "导入日程失败: ${schedule.id}", e)
                 failedCount++
             }
         }
