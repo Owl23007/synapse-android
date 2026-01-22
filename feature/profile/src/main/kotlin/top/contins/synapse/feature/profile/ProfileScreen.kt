@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,12 +26,7 @@ import coil.compose.AsyncImage
 
 
 /**
- * Profile 页面 - 专注于日程管理
- * 
- * 主要功能：
- * - 日程导入/导出功能
- * - 日历订阅管理
- * - 用户资料信息
+ * 我的页面 - 个人资料、作品、设置、会员
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,11 +35,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scheduleAction by viewModel.scheduleAction.collectAsStateWithLifecycle()
-    
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var showImportExportDialog by remember { mutableStateOf(false) }
-    var showSubscriptionDialog by remember { mutableStateOf(false) }
     
     // 监听登出状态
     LaunchedEffect(uiState) {
@@ -52,14 +44,8 @@ fun ProfileScreen(
             viewModel.resetState()
         }
     }
-    
-    // 处理日程操作结果
-    LaunchedEffect(scheduleAction) {
-        // 如需要可处理不同的操作状态
-    }
 
     val user = (uiState as? ProfileUiState.Success)?.user
-    val subscriptions = (uiState as? ProfileUiState.Success)?.subscriptions ?: emptyList()
 
     if (uiState is ProfileUiState.Loading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -87,45 +73,26 @@ fun ProfileScreen(
             }
             
             item {
-                // 日程管理区域
+                // 数据统计
+                UserStatsCard()
+            }
+            
+            item {
+                // 功能菜单
                 Text(
-                    text = "日程管理",
+                    text = "功能",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
             
-            item {
-                ScheduleManagementCard(
-                    onImportExport = { showImportExportDialog = true },
-                    onManageSubscriptions = { showSubscriptionDialog = true }
-                )
-            }
-            
-            item {
-                // 订阅列表
-                Text(
-                    text = "日历订阅 (${subscriptions.size})",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            items(subscriptions) { subscription ->
-                SubscriptionCard(
-                    subscription = subscription,
-                    onSync = { 
-                        viewModel.syncSubscription(subscription.id, subscription.name) 
-                    },
-                    onDelete = { 
-                        viewModel.deleteSubscription(subscription.id) 
-                    }
-                )
+            items(getProfileMenuItems()) { menuItem ->
+                ProfileMenuItem(menuItem = menuItem)
             }
             
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                // 设置区域
+                // 设置菜单
                 Text(
                     text = "设置",
                     fontSize = 18.sp,
@@ -172,22 +139,6 @@ fun ProfileScreen(
         )
     }
     
-    // 导入/导出对话框
-    if (showImportExportDialog) {
-        ImportExportDialog(
-            onDismiss = { showImportExportDialog = false },
-            viewModel = viewModel
-        )
-    }
-    
-    // 订阅管理对话框
-    if (showSubscriptionDialog) {
-        SubscriptionManagementDialog(
-            onDismiss = { showSubscriptionDialog = false },
-            viewModel = viewModel
-        )
-    }
-    
     // 登出加载状态
     if (uiState is ProfileUiState.LoggingOut) {
         Box(
@@ -205,9 +156,7 @@ fun ProfileScreen(
     }
 }
 
-/**
- * 用户资料卡片
- */
+
 @Composable
 fun UserProfileCard(user: User? = null) {
     Card(
@@ -241,7 +190,7 @@ fun UserProfileCard(user: User? = null) {
             } else {
                 AsyncImage(
                     model = user!!.avatar,
-                    contentDescription = "头像",
+                    contentDescription = "Avatar",
                     modifier = Modifier
                         .size(60.dp)
                         .clip(CircleShape)
@@ -258,23 +207,39 @@ fun UserProfileCard(user: User? = null) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = user?.signature?.ifEmpty { "日程管理助手" } ?: "日程管理助手",
+                    text = user?.signature?.ifEmpty { "AI写作助手的忠实用户" } ?: "AI写作助手的忠实用户",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        text = "🎯 高级会员",
+                        fontSize = 12.sp,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            
+            IconButton(onClick = { }) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "编辑资料",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
     }
 }
 
-/**
- * 日程管理卡片
- */
 @Composable
-fun ScheduleManagementCard(
-    onImportExport: () -> Unit,
-    onManageSubscriptions: () -> Unit
-) {
+fun UserStatsCard() {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -282,7 +247,7 @@ fun ScheduleManagementCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = "日程工具",
+                text = "数据统计",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -293,120 +258,93 @@ fun ScheduleManagementCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                ScheduleActionButton(
-                    icon = Icons.Default.ImportExport,
-                    label = "导入导出",
-                    onClick = onImportExport
-                )
-                ScheduleActionButton(
-                    icon = Icons.Default.Subscriptions,
-                    label = "订阅管理",
-                    onClick = onManageSubscriptions
-                )
+                StatItem("创作", "15", "篇文章")
+                StatItem("点赞", "128", "次获赞")
+                StatItem("关注", "56", "位朋友")
+                StatItem("等级", "LV.8", "创作者")
             }
         }
     }
 }
 
-/**
- * 日程操作按钮
- */
 @Composable
-fun ScheduleActionButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.width(140.dp)
+fun StatItem(title: String, value: String, suffix: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(icon, contentDescription = label)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(label, fontSize = 12.sp)
-        }
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = suffix,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
-/**
- * 订阅卡片
- */
-@Composable
-fun SubscriptionCard(
-    subscription: top.contins.synapse.domain.model.schedule.Subscription,
-    onSync: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Subscriptions,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subscription.name,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = subscription.url,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-                subscription.lastSyncAt?.let {
-                    Text(
-                        text = "最后同步: ${remember(it) { 
-                            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                                .format(java.util.Date(it))
-                        }}",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            IconButton(onClick = onSync) {
-                Icon(Icons.Default.Sync, contentDescription = "同步")
-            }
-            
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "删除")
-            }
-        }
-    }
-}
-
-/**
- * Profile 菜单项数据类
- */
 data class ProfileMenuItem(
     val title: String,
     val subtitle: String = "",
     val icon: ImageVector,
+    val showBadge: Boolean = false,
+    val badgeText: String = "",
     val showChevron: Boolean = true
 )
 
-/**
- * 获取设置菜单项列表
- */
+fun getProfileMenuItems() = listOf(
+    ProfileMenuItem(
+        title = "我的作品",
+        subtitle = "查看已发布的文章和草稿",
+        icon = Icons.Default.Article
+    ),
+    ProfileMenuItem(
+        title = "收藏夹",
+        subtitle = "收藏的优质内容",
+        icon = Icons.Default.Bookmark
+    ),
+    ProfileMenuItem(
+        title = "学习记录",
+        subtitle = "AI学习进度和成就",
+        icon = Icons.Default.School
+    ),
+    ProfileMenuItem(
+        title = "会员中心",
+        subtitle = "查看会员权益和续费",
+        icon = Icons.Default.Diamond,
+        showBadge = true,
+        badgeText = "VIP"
+    ),
+    ProfileMenuItem(
+        title = "创作工具",
+        subtitle = "AI写作助手和模板",
+        icon = Icons.Default.Build
+    )
+)
+
 fun getSettingsMenuItems() = listOf(
     ProfileMenuItem(
         title = "通知设置",
         subtitle = "管理推送和提醒",
         icon = Icons.Default.Notifications
+    ),
+    ProfileMenuItem(
+        title = "隐私设置",
+        subtitle = "账号安全和隐私保护",
+        icon = Icons.Default.Security
+    ),
+    ProfileMenuItem(
+        title = "主题设置",
+        subtitle = "个性化界面风格",
+        icon = Icons.Default.Palette
     ),
     ProfileMenuItem(
         title = "数据备份",
@@ -417,6 +355,11 @@ fun getSettingsMenuItems() = listOf(
         title = "帮助中心",
         subtitle = "使用指南和常见问题",
         icon = Icons.Default.Help
+    ),
+    ProfileMenuItem(
+        title = "意见反馈",
+        subtitle = "帮助我们改进产品",
+        icon = Icons.Default.Feedback
     ),
     ProfileMenuItem(
         title = "关于我们",
@@ -431,9 +374,6 @@ fun getSettingsMenuItems() = listOf(
     )
 )
 
-/**
- * Profile 菜单项组件
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMenuItem(
@@ -473,10 +413,29 @@ fun ProfileMenuItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = menuItem.title,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = menuItem.title,
+                        fontWeight = FontWeight.Medium
+                    )
+                    
+                    if (menuItem.showBadge) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Red
+                        ) {
+                            Text(
+                                text = menuItem.badgeText,
+                                fontSize = 8.sp,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
                 
                 if (menuItem.subtitle.isNotEmpty()) {
                     Text(
@@ -497,87 +456,4 @@ fun ProfileMenuItem(
             }
         }
     }
-}
-
-/**
- * 导入/导出对话框
- */
-@Composable
-fun ImportExportDialog(
-    onDismiss: () -> Unit,
-    viewModel: ProfileViewModel
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("导入导出") },
-        text = {
-            Column {
-                Text("日程导入导出功能")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("• 支持iCalendar (.ics)格式", fontSize = 12.sp)
-                Text("• 可从文件导入日程", fontSize = 12.sp)
-                Text("• 可导出日程到文件", fontSize = 12.sp)
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭")
-            }
-        }
-    )
-}
-
-/**
- * 订阅管理对话框
- */
-@Composable
-fun SubscriptionManagementDialog(
-    onDismiss: () -> Unit,
-    viewModel: ProfileViewModel
-) {
-    var subscriptionName by remember { mutableStateOf("") }
-    var subscriptionUrl by remember { mutableStateOf("") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("添加订阅") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = subscriptionName,
-                    onValueChange = { subscriptionName = it },
-                    label = { Text("订阅名称") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = subscriptionUrl,
-                    onValueChange = { subscriptionUrl = it },
-                    label = { Text("订阅URL") },
-                    placeholder = { Text("https://example.com/calendar.ics") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (subscriptionName.isNotBlank() && subscriptionUrl.isNotBlank()) {
-                        viewModel.createSubscription(
-                            name = subscriptionName,
-                            url = subscriptionUrl
-                        )
-                        onDismiss()
-                    }
-                }
-            ) {
-                Text("添加")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
 }
