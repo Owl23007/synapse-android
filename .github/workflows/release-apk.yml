@@ -23,29 +23,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # === 自动生成 changelog（基于 tag 之间的 commit）===
-      - name: Generate changelog
-        id: changelog
-        run: |
-          CURRENT_TAG="${{ github.ref_name }}"
-          PREV_TAG=""
-          if git rev-list --tags --max-count=1 >/dev/null 2>&1; then
-            PREV_TAG=$(git describe --tags --abbrev=0 --exclude="$CURRENT_TAG" "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "")
-          fi
-
-          if [ -z "$PREV_TAG" ]; then
-            git log --pretty=format:"- %s" $(git rev-list --max-parents=0 HEAD)..HEAD > /tmp/changelog.md
-          else
-            git log --pretty=format:"- %s" $PREV_TAG..$CURRENT_TAG > /tmp/changelog.md
-          fi
-
-          # 使用更安全的方式设置多行输出
-          {
-            echo "changelog<<CHANGELOG_EOF"
-            cat /tmp/changelog.md
-            echo "CHANGELOG_EOF"
-          } >> $GITHUB_OUTPUT
-
       # === 构建 APK ===
 
       - name: Decode keystore
@@ -68,7 +45,7 @@ jobs:
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n1)
           echo "apk_path=$APK" >> $GITHUB_OUTPUT
 
-      # === 创建 Draft Release（你可以手动编辑后再发布）===
+      # === 创建 Draft Release===
       - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
@@ -79,8 +56,6 @@ jobs:
           files: ${{ steps.find_apk.outputs.apk_path }}
           body: |
             ## What's Changed
-
-            ${{ steps.changelog.outputs.changelog }}
 
             ---
             This release was built automatically.  
