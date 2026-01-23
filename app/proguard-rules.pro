@@ -19,3 +19,16 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --------------------------------------------------------------------------
+# Synapse Model Rules
+# --------------------------------------------------------------------------
+
+# Keep Domain Models (Business Logic)
+-keep class top.contins.synapse.domain.model.** { *; }
+
+# Keep Database Entities (Room)
+-keep class top.contins.synapse.data.local.entity.** { *; }
+
+# Keep Network Models (Retrofit DTOs)
+-keep class top.contins.synapse.network.model.** { *; }

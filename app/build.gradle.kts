@@ -1,3 +1,6 @@
+import com.android.build.gradle.internal.tasks.AarMetadataReader.Companion.load
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -15,17 +18,36 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.0.1alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    val props = Properties().apply {
+        val propertiesFile = file("${project.rootDir}/local.properties")
+        if (propertiesFile.exists()) {
+            load(propertiesFile.inputStream())
+        } else {
+            throw GradleException("local.properties not found! Please create it in the project root.")
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("${project.rootDir}/../my-release-key.jks")
+            storePassword = props.getProperty("RELEASE_STORE_PASSWORD")
+            keyAlias = props.getProperty("RELEASE_KEY_ALIAS")
+            keyPassword = props.getProperty("RELEASE_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -38,6 +60,17 @@ android {
         getByName("main") {
             java.srcDirs("src/main/java")
             kotlin.srcDirs("src/main/kotlin")
+        }
+    }
+
+    applicationVariants.all {
+        if (buildType.name == "release") {
+            outputs.all {
+                val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+                output?.let {
+                    it.outputFileName = "synapse-${buildType.name}-${versionName}.apk"
+                }
+            }
         }
     }
 }
