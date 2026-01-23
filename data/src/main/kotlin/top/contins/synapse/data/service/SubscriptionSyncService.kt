@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import top.contins.synapse.domain.model.schedule.Subscription
+import top.contins.synapse.domain.service.SubscriptionSyncService as DomainSubscriptionSyncService
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -18,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class SubscriptionSyncService @Inject constructor(
     private val iCalendarService: ICalendarService
-) {
+) : DomainSubscriptionSyncService {
     
     companion object {
         private const val TAG = "SubscriptionSyncService"
@@ -42,7 +43,7 @@ class SubscriptionSyncService @Inject constructor(
      * @throws IOException 网络请求失败时抛出
      * @throws IllegalArgumentException 如果 URL 为空或格式无效
      */
-    suspend fun fetchSubscriptionContent(url: String): String = withContext(Dispatchers.IO) {
+    override suspend fun fetchSubscriptionContent(url: String): String = withContext(Dispatchers.IO) {
         require(url.isNotBlank()) { "订阅 URL 不能为空" }
         
         // 将 webcal:// 转换为 http:// 以便 OkHttp 处理
@@ -78,7 +79,7 @@ class SubscriptionSyncService @Inject constructor(
      * @return 解析后的日程列表
      * @throws IllegalArgumentException 如果内容为空
      */
-    fun parseSubscriptionContent(
+    override fun parseSubscriptionContent(
         icsContent: String,
         subscription: Subscription
     ): List<top.contins.synapse.domain.model.schedule.Schedule> {
@@ -96,7 +97,7 @@ class SubscriptionSyncService @Inject constructor(
      * @param url 要验证的 URL
      * @return 如果 URL 有效且可访问则返回 true
      */
-    suspend fun validateSubscriptionUrl(url: String): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun validateSubscriptionUrl(url: String): Boolean = withContext(Dispatchers.IO) {
         if (url.isBlank()) return@withContext false
         
         try {

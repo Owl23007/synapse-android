@@ -1,7 +1,10 @@
 package top.contins.synapse.domain.usecase.schedule
 
+import top.contins.synapse.domain.model.schedule.CalendarAccount
+import top.contins.synapse.domain.repository.CalendarRepository
 import top.contins.synapse.domain.repository.ScheduleRepository
 import top.contins.synapse.domain.repository.SubscriptionRepository
+import top.contins.synapse.domain.service.SubscriptionSyncService
 import javax.inject.Inject
 
 /**
@@ -26,8 +29,9 @@ data class SyncResult(
  */
 class SyncSubscriptionUseCase @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
-    private val scheduleRepository: ScheduleRepository
-    // TODO: 添加依赖注入: private val subscriptionSyncService: SubscriptionSyncService
+    private val scheduleRepository: ScheduleRepository,
+    private val calendarRepository: CalendarRepository,
+    private val subscriptionSyncService: SubscriptionSyncService
 ) {
     /**
      * 同步单个订阅
@@ -58,13 +62,28 @@ class SyncSubscriptionUseCase @Inject constructor(
                 )
             }
             
-            // TODO: 集成 SubscriptionSyncService
-            // 实际实现：
-            // 1. val icsContent = subscriptionSyncService.fetchSubscriptionContent(subscription.url)
-            // 2. val schedules = subscriptionSyncService.parseSubscriptionContent(icsContent, subscription)
-            // 3. scheduleRepository.deleteSchedulesByCalendarId(subscription.id)
-            // 4. schedules.forEach { scheduleRepository.insertSchedule(it) }
-            // 5. 更新 lastSyncAt 时间戳
+            // 确保订阅对应的日历存在（兼容历史数据）
+            val existingCalendar = calendarRepository.getCalendarById(subscription.id)
+            if (existingCalendar == null) {
+                calendarRepository.insertCalendar(
+                    CalendarAccount(
+                        id = subscription.id,
+                        name = subscription.name,
+                        color = subscription.color ?: DEFAULT_SUBSCRIPTION_COLOR,
+                        isVisible = true,
+                        isDefault = false,
+                        defaultReminderMinutes = null,
+                        createdAt = subscription.createdAt,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+            }
+
+            val icsContent = subscriptionSyncService.fetchSubscriptionContent(subscription.url)
+            val schedules = subscriptionSyncService.parseSubscriptionContent(icsContent, subscription)
+
+            scheduleRepository.deleteSchedulesByCalendarId(subscription.id)
+            schedules.forEach { scheduleRepository.insertSchedule(it) }
             
             // 更新最后同步时间
             val updatedSubscription = subscription.copy(
@@ -74,7 +93,7 @@ class SyncSubscriptionUseCase @Inject constructor(
             
             SyncResult(
                 success = true,
-                addedCount = 0,
+                addedCount = schedules.size,
                 updatedCount = 0,
                 removedCount = 0,
                 error = null
@@ -105,5 +124,9 @@ class SyncSubscriptionUseCase @Inject constructor(
         //         results[subscription.id] = invoke(subscription.id)
         //     }
         return results
+    }
+
+    companion object {
+        private const val DEFAULT_SUBSCRIPTION_COLOR: Long = 4280391411
     }
 }

@@ -1,6 +1,8 @@
 package top.contins.synapse.domain.usecase.schedule
 
+import kotlinx.coroutines.flow.first
 import top.contins.synapse.domain.repository.ScheduleRepository
+import top.contins.synapse.domain.service.ICalendarService
 import javax.inject.Inject
 
 /**
@@ -13,8 +15,8 @@ import javax.inject.Inject
  * 实际使用时需要通过依赖注入添加 ICalendarService
  */
 class ExportScheduleUseCase @Inject constructor(
-    private val repository: ScheduleRepository
-    // TODO: 添加依赖注入: private val iCalendarService: ICalendarService
+    private val repository: ScheduleRepository,
+    private val iCalendarService: ICalendarService
 ) {
     companion object {
         private const val EMPTY_CALENDAR = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\nEND:VCALENDAR"
@@ -35,14 +37,7 @@ class ExportScheduleUseCase @Inject constructor(
             return EMPTY_CALENDAR
         }
         
-        // TODO: 集成 ICalendarService.exportToICalendar()
-        // 实际实现：
-        // return iCalendarService.exportToICalendar(schedules)
-        
-        // 当前返回占位符（仅用于开发阶段）
-        return "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Synapse Android//Schedule Manager//EN\n" +
-               schedules.joinToString("\n") { "SUMMARY:${it.title}" } +
-               "\nEND:VCALENDAR"
+        return iCalendarService.exportToICalendar(schedules)
     }
     
     /**
@@ -55,11 +50,10 @@ class ExportScheduleUseCase @Inject constructor(
     suspend fun exportTimeRange(startTime: Long, endTime: Long): String {
         require(startTime < endTime) { "开始时间必须早于结束时间" }
         
-        // TODO: 使用仓库查询和 ICalendarService 转换实现
-        // 实际实现：
-        // val schedules = repository.getSchedulesInTimeRange(startTime, endTime).first()
-        // return iCalendarService.exportToICalendar(schedules)
-        
-        return EMPTY_CALENDAR
+        val schedules = repository.getSchedulesInTimeRange(startTime, endTime).first()
+        if (schedules.isEmpty()) {
+            return EMPTY_CALENDAR
+        }
+        return iCalendarService.exportToICalendar(schedules)
     }
 }

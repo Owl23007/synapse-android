@@ -2,6 +2,7 @@ package top.contins.synapse.domain.usecase.schedule
 
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.repository.ScheduleRepository
+import top.contins.synapse.domain.service.ICalendarService
 import javax.inject.Inject
 
 /**
@@ -33,8 +34,8 @@ enum class ConflictStrategy {
  * 实际使用时需要通过依赖注入添加 ICalendarService
  */
 class ImportScheduleUseCase @Inject constructor(
-    private val repository: ScheduleRepository
-    // TODO: 添加依赖注入: private val iCalendarService: ICalendarService
+    private val repository: ScheduleRepository,
+    private val iCalendarService: ICalendarService
 ) {
     /**
      * 从 iCalendar 格式字符串导入日程
@@ -52,11 +53,7 @@ class ImportScheduleUseCase @Inject constructor(
         require(icsContent.isNotBlank()) { "iCalendar 内容不能为空" }
         require(calendarId.isNotBlank()) { "日历 ID 不能为空" }
         
-        // TODO: 集成 ICalendarService.importFromICalendar()
-        // 实际实现：
-        // val parsedSchedules = iCalendarService.importFromICalendar(icsContent, calendarId)
-        
-        val parsedSchedules = emptyList<Schedule>() // 占位符 - 需要集成服务后替换
+        val parsedSchedules = iCalendarService.importFromICalendar(icsContent, calendarId)
         
         val imported = mutableListOf<Schedule>()
         val conflicts = mutableListOf<Schedule>()

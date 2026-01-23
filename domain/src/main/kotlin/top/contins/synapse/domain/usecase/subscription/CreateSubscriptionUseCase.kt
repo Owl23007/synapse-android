@@ -1,6 +1,8 @@
 package top.contins.synapse.domain.usecase.subscription
 
+import top.contins.synapse.domain.model.schedule.CalendarAccount
 import top.contins.synapse.domain.model.schedule.Subscription
+import top.contins.synapse.domain.repository.CalendarRepository
 import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 import java.util.UUID
@@ -9,7 +11,8 @@ import java.util.UUID
  * 创建新的日历订阅
  */
 class CreateSubscriptionUseCase @Inject constructor(
-    private val repository: SubscriptionRepository
+    private val repository: SubscriptionRepository,
+    private val calendarRepository: CalendarRepository
 ) {
     /**
      * 创建新订阅
@@ -44,6 +47,18 @@ class CreateSubscriptionUseCase @Inject constructor(
         )
         
         repository.insertSubscription(subscription)
+        calendarRepository.insertCalendar(
+            CalendarAccount(
+                id = subscription.id,
+                name = subscription.name,
+                color = subscription.color ?: DEFAULT_SUBSCRIPTION_COLOR,
+                isVisible = true,
+                isDefault = false,
+                defaultReminderMinutes = null,
+                createdAt = subscription.createdAt,
+                updatedAt = subscription.createdAt
+            )
+        )
         
         return subscription.id
     }
@@ -58,5 +73,9 @@ class CreateSubscriptionUseCase @Inject constructor(
         } catch (e: Exception) {
             false
         }
+    }
+
+    companion object {
+        private const val DEFAULT_SUBSCRIPTION_COLOR: Long = 4280391411
     }
 }

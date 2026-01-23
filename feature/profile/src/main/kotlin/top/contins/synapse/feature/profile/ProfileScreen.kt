@@ -15,13 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import top.contins.synapse.domain.model.auth.User
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
+import top.contins.synapse.domain.usecase.schedule.ConflictStrategy
 
 
 /**
@@ -38,8 +43,13 @@ fun ProfileScreen(
     onLogout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scheduleAction by viewModel.scheduleAction.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
+    var pendingExportContent by remember { mutableStateOf<String?>(null) }
+    var pendingImportConflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
     
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showImportExportDialog by remember { mutableStateOf(false) }
@@ -53,97 +63,193 @@ fun ProfileScreen(
         }
     }
     
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) {
+            return@rememberLauncherForActivityResult
+        }
+        val icsContent = runCatching {
+            context.contentResolver.openInputStream(uri)
+                ?.bufferedReader()
+                ?.use { it.readText() }
+                .orEmpty()
+        }.getOrDefault("")
+
+        if (icsContent.isBlank()) {
+            snackbarScope.launch {
+                snackbarHostState.showSnackbar("导入失败：文件内容为空")
+            }
+        } else {
+            viewModel.importSchedules(
+                icsContent = icsContent,
+                calendarId = "default",
+                conflictStrategy = pendingImportConflictStrategy
+            )
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/calendar")
+    ) { uri ->
+        val content = pendingExportContent
+        if (uri == null || content.isNullOrBlank()) {
+            pendingExportContent = null
+            return@rememberLauncherForActivityResult
+        }
+
+        val result = runCatching {
+            context.contentResolver.openOutputStream(uri)
+                ?.bufferedWriter()
+                ?.use { it.write(content) }
+        }
+
+        pendingExportContent = null
+        snackbarScope.launch {
+            if (result.isSuccess) {
+                snackbarHostState.showSnackbar("导出成功")
+            } else {
+                snackbarHostState.showSnackbar("导出失败：写入文件出错")
+            }
+        }
+    }
+
     // 处理日程操作结果
     LaunchedEffect(scheduleAction) {
-        // 如需要可处理不同的操作状态
+        when (scheduleAction) {
+            is ScheduleManagementAction.ImportInProgress -> {
+                snackbarHostState.showSnackbar("正在导入日程...")
+            }
+            is ScheduleManagementAction.ImportSuccess -> {
+                val result = (scheduleAction as ScheduleManagementAction.ImportSuccess).result
+                snackbarHostState.showSnackbar("导入完成：成功${result.successCount}，失败${result.failedCount}")
+                viewModel.resetScheduleAction()
+            }
+            is ScheduleManagementAction.ImportError -> {
+                snackbarHostState.showSnackbar(
+                    "导入失败：${(scheduleAction as ScheduleManagementAction.ImportError).message}"
+                )
+                viewModel.resetScheduleAction()
+            }
+            is ScheduleManagementAction.ExportSuccess -> {
+                pendingExportContent = (scheduleAction as ScheduleManagementAction.ExportSuccess).icsContent
+                exportLauncher.launch("synapse-schedules.ics")
+                viewModel.resetScheduleAction()
+            }
+            is ScheduleManagementAction.ExportError -> {
+                snackbarHostState.showSnackbar(
+                    "导出失败：${(scheduleAction as ScheduleManagementAction.ExportError).message}"
+                )
+                viewModel.resetScheduleAction()
+            }
+            is ScheduleManagementAction.SyncSuccess -> {
+                val action = scheduleAction as ScheduleManagementAction.SyncSuccess
+                snackbarHostState.showSnackbar("同步成功：${action.subscriptionName}")
+                viewModel.resetScheduleAction()
+            }
+            is ScheduleManagementAction.SyncError -> {
+                snackbarHostState.showSnackbar(
+                    "同步失败：${(scheduleAction as ScheduleManagementAction.SyncError).message}"
+                )
+                viewModel.resetScheduleAction()
+            }
+            else -> Unit
+        }
     }
 
     val user = (uiState as? ProfileUiState.Success)?.user
     val subscriptions = (uiState as? ProfileUiState.Success)?.subscriptions ?: emptyList()
 
-    if (uiState is ProfileUiState.Loading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else if (uiState is ProfileUiState.Error) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("加载失败: ${(uiState as ProfileUiState.Error).message}")
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { viewModel.loadUserProfile() }) {
-                    Text("重试")
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (uiState is ProfileUiState.Loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState is ProfileUiState.Error) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("加载失败: ${(uiState as ProfileUiState.Error).message}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { viewModel.loadUserProfile() }) {
+                        Text("重试")
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    // 用户信息卡片
+                    UserProfileCard(user = user)
+                }
+                
+                item {
+                    // 日程管理区域
+                    Text(
+                        text = "日程管理",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                item {
+                    ScheduleManagementCard(
+                        onImportExport = { showImportExportDialog = true },
+                        onManageSubscriptions = { showSubscriptionDialog = true }
+                    )
+                }
+                
+                item {
+                    // 订阅列表
+                    Text(
+                        text = "日历订阅 (${subscriptions.size})",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                items(subscriptions) { subscription ->
+                    SubscriptionCard(
+                        subscription = subscription,
+                        onSync = { 
+                            viewModel.syncSubscription(subscription.id, subscription.name) 
+                        },
+                        onDelete = { 
+                            viewModel.deleteSubscription(subscription.id) 
+                        }
+                    )
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // 设置区域
+                    Text(
+                        text = "设置",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                items(getSettingsMenuItems()) { menuItem ->
+                    ProfileMenuItem(
+                        menuItem = menuItem,
+                        onClick = {
+                            if (menuItem.title == "退出登录") {
+                                showLogoutDialog = true
+                            }
+                        }
+                    )
                 }
             }
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                // 用户信息卡片
-                UserProfileCard(user = user)
-            }
-            
-            item {
-                // 日程管理区域
-                Text(
-                    text = "日程管理",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            item {
-                ScheduleManagementCard(
-                    onImportExport = { showImportExportDialog = true },
-                    onManageSubscriptions = { showSubscriptionDialog = true }
-                )
-            }
-            
-            item {
-                // 订阅列表
-                Text(
-                    text = "日历订阅 (${subscriptions.size})",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            items(subscriptions) { subscription ->
-                SubscriptionCard(
-                    subscription = subscription,
-                    onSync = { 
-                        viewModel.syncSubscription(subscription.id, subscription.name) 
-                    },
-                    onDelete = { 
-                        viewModel.deleteSubscription(subscription.id) 
-                    }
-                )
-            }
-            
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                // 设置区域
-                Text(
-                    text = "设置",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            items(getSettingsMenuItems()) { menuItem ->
-                ProfileMenuItem(
-                    menuItem = menuItem,
-                    onClick = {
-                        if (menuItem.title == "退出登录") {
-                            showLogoutDialog = true
-                        }
-                    }
-                )
-            }
-        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
     
     // 登出确认对话框
@@ -176,7 +282,13 @@ fun ProfileScreen(
     if (showImportExportDialog) {
         ImportExportDialog(
             onDismiss = { showImportExportDialog = false },
-            viewModel = viewModel
+            onImportFromFile = { strategy ->
+                pendingImportConflictStrategy = strategy
+                importLauncher.launch(arrayOf("text/calendar", "text/plain", "application/octet-stream"))
+            },
+            onExportAll = {
+                viewModel.exportAllSchedules()
+            }
         )
     }
     
@@ -505,8 +617,11 @@ fun ProfileMenuItem(
 @Composable
 fun ImportExportDialog(
     onDismiss: () -> Unit,
-    viewModel: ProfileViewModel
+    onImportFromFile: (ConflictStrategy) -> Unit,
+    onExportAll: () -> Unit
 ) {
+    var conflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("导入导出") },
@@ -517,6 +632,54 @@ fun ImportExportDialog(
                 Text("• 支持iCalendar (.ics)格式", fontSize = 12.sp)
                 Text("• 可从文件导入日程", fontSize = 12.sp)
                 Text("• 可导出日程到文件", fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text("冲突处理策略", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = conflictStrategy == ConflictStrategy.SKIP,
+                            onClick = { conflictStrategy = ConflictStrategy.SKIP }
+                        )
+                        Text("跳过冲突日程", fontSize = 12.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = conflictStrategy == ConflictStrategy.REPLACE,
+                            onClick = { conflictStrategy = ConflictStrategy.REPLACE }
+                        )
+                        Text("替换已有日程", fontSize = 12.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = conflictStrategy == ConflictStrategy.KEEP_BOTH,
+                            onClick = { conflictStrategy = ConflictStrategy.KEEP_BOTH }
+                        )
+                        Text("保留两个日程", fontSize = 12.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = {
+                        onImportFromFile(conflictStrategy)
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("选择文件导入")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        onExportAll()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("导出全部日程")
+                }
             }
         },
         confirmButton = {

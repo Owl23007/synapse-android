@@ -1,5 +1,6 @@
 package top.contins.synapse.domain.usecase.subscription
 
+import top.contins.synapse.domain.repository.CalendarRepository
 import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
 
@@ -7,7 +8,8 @@ import javax.inject.Inject
  * 更新订阅设置
  */
 class UpdateSubscriptionUseCase @Inject constructor(
-    private val repository: SubscriptionRepository
+    private val repository: SubscriptionRepository,
+    private val calendarRepository: CalendarRepository
 ) {
     /**
      * 更新订阅名称
@@ -19,6 +21,14 @@ class UpdateSubscriptionUseCase @Inject constructor(
             ?: throw IllegalArgumentException("订阅不存在")
         
         repository.updateSubscription(subscription.copy(name = name))
+        calendarRepository.getCalendarById(subscriptionId)?.let { calendar ->
+            calendarRepository.updateCalendar(
+                calendar.copy(
+                    name = name,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
     }
     
     /**

@@ -9,11 +9,15 @@ import top.contins.synapse.data.repository.GoalRepositoryImpl
 import top.contins.synapse.data.repository.ScheduleRepositoryImpl
 import top.contins.synapse.data.repository.TaskRepositoryImpl
 import top.contins.synapse.data.repository.TokenRepositoryImpl
+import top.contins.synapse.data.service.ICalendarService
+import top.contins.synapse.data.service.SubscriptionSyncService
 import top.contins.synapse.domain.repository.AuthRepository
 import top.contins.synapse.domain.repository.GoalRepository
 import top.contins.synapse.domain.repository.ScheduleRepository
 import top.contins.synapse.domain.repository.TaskRepository
 import top.contins.synapse.domain.repository.TokenRepository
+import top.contins.synapse.domain.service.ICalendarService as DomainICalendarService
+import top.contins.synapse.domain.service.SubscriptionSyncService as DomainSubscriptionSyncService
 import top.contins.synapse.network.api.TokenProvider
 import top.contins.synapse.data.storage.TokenManager
 import javax.inject.Singleton
@@ -51,6 +55,18 @@ abstract class RepositoryModule {
     abstract fun bindScheduleRepository(
         scheduleRepositoryImpl: ScheduleRepositoryImpl
     ): ScheduleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindICalendarService(
+        iCalendarService: ICalendarService
+    ): DomainICalendarService
+
+    @Binds
+    @Singleton
+    abstract fun bindSubscriptionSyncService(
+        subscriptionSyncService: SubscriptionSyncService
+    ): DomainSubscriptionSyncService
 
     @Binds
     @Singleton

@@ -400,7 +400,7 @@ fun ChatMessageBubble(message: Message) {
                                 content = message.content,
                                 isUser = isUser,
                                 isStreaming = message.isStreaming
-                            ) 
+                            )
                         }
                     }
                 }

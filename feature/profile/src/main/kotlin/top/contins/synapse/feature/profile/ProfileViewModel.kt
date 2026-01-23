@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import top.contins.synapse.domain.model.auth.AuthResult
 import top.contins.synapse.domain.model.auth.User
@@ -151,6 +152,27 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * 导出全部日程
+     */
+    fun exportAllSchedules() {
+        viewModelScope.launch {
+            try {
+                val schedules = getSchedulesUseCase().first()
+                if (schedules.isEmpty()) {
+                    _scheduleAction.value = ScheduleManagementAction.ExportError("暂无可导出的日程")
+                    return@launch
+                }
+                val icsContent = exportScheduleUseCase(schedules.map { it.id })
+                _scheduleAction.value = ScheduleManagementAction.ExportSuccess(icsContent)
+            } catch (e: Exception) {
+                _scheduleAction.value = ScheduleManagementAction.ExportError(
+                    e.message ?: "导出失败"
+                )
+            }
+        }
+    }
     
     /**
      * 创建新订阅
@@ -163,12 +185,14 @@ class ProfileViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                createSubscriptionUseCase(
+                val subscriptionId = createSubscriptionUseCase(
                     name = name,
                     url = url,
                     color = color,
                     syncInterval = syncInterval
                 )
+                // 创建后立即同步一次，确保日程可见
+                syncSubscription(subscriptionId, name)
             } catch (e: Exception) {
                 _scheduleAction.value = ScheduleManagementAction.ImportError(
                     e.message ?: "创建订阅失败"

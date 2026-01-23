@@ -1,5 +1,6 @@
 package top.contins.synapse.domain.usecase.subscription
 
+import top.contins.synapse.domain.repository.CalendarRepository
 import top.contins.synapse.domain.repository.ScheduleRepository
 import top.contins.synapse.domain.repository.SubscriptionRepository
 import javax.inject.Inject
@@ -9,7 +10,8 @@ import javax.inject.Inject
  */
 class DeleteSubscriptionUseCase @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
-    private val scheduleRepository: ScheduleRepository
+    private val scheduleRepository: ScheduleRepository,
+    private val calendarRepository: CalendarRepository
 ) {
     /**
      * 删除订阅及其所有日程
@@ -19,6 +21,9 @@ class DeleteSubscriptionUseCase @Inject constructor(
         // 先删除此订阅的所有日程
         scheduleRepository.deleteSchedulesByCalendarId(subscriptionId)
         
+        // 删除对应日历
+        calendarRepository.deleteCalendarById(subscriptionId)
+
         // 然后删除订阅本身
         subscriptionRepository.deleteSubscriptionById(subscriptionId)
     }

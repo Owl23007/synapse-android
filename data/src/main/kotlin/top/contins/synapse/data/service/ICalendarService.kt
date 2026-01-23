@@ -8,6 +8,7 @@ import biweekly.property.*
 import top.contins.synapse.domain.model.schedule.Schedule
 import top.contins.synapse.domain.model.schedule.ScheduleType
 import top.contins.synapse.domain.model.schedule.RepeatRule
+import top.contins.synapse.domain.service.ICalendarService as DomainICalendarService
 import java.util.*
 import javax.inject.Inject
 
@@ -15,7 +16,7 @@ import javax.inject.Inject
  * Schedule 与 iCalendar 格式互转服务
  * 使用 biweekly 库处理 iCalendar（RFC 5545）的解析和生成
  */
-class ICalendarService @Inject constructor() {
+class ICalendarService @Inject constructor() : DomainICalendarService {
     
     companion object {
         private const val TAG = "ICalendarService"
@@ -28,7 +29,7 @@ class ICalendarService @Inject constructor() {
      * @return iCalendar 格式字符串（RFC 5545）
      * @throws IllegalArgumentException 如果日程列表为空
      */
-    fun exportToICalendar(schedules: List<Schedule>): String {
+    override fun exportToICalendar(schedules: List<Schedule>): String {
         require(schedules.isNotEmpty()) { "日程列表不能为空" }
         
         val calendar = ICalendar()
@@ -56,10 +57,10 @@ class ICalendarService @Inject constructor() {
      * @return 解析后的日程列表
      * @throws IllegalArgumentException 如果内容为空或 calendarId 无效
      */
-    fun importFromICalendar(
+    override fun importFromICalendar(
         icsContent: String,
         defaultCalendarId: String,
-        subscriptionId: String? = null
+        subscriptionId: String?
     ): List<Schedule> {
         require(icsContent.isNotBlank()) { "iCalendar 内容不能为空" }
         require(defaultCalendarId.isNotBlank()) { "日历 ID 不能为空" }
