@@ -516,26 +516,6 @@ data class ProfileMenuItem(
  */
 fun getSettingsMenuItems() = listOf(
     ProfileMenuItem(
-        title = "通知设置",
-        subtitle = "管理推送和提醒",
-        icon = Icons.Default.Notifications
-    ),
-    ProfileMenuItem(
-        title = "数据备份",
-        subtitle = "云端同步和备份",
-        icon = Icons.Default.CloudSync
-    ),
-    ProfileMenuItem(
-        title = "帮助中心",
-        subtitle = "使用指南和常见问题",
-        icon = Icons.Default.Help
-    ),
-    ProfileMenuItem(
-        title = "关于我们",
-        subtitle = "版本信息和团队介绍",
-        icon = Icons.Default.Info
-    ),
-    ProfileMenuItem(
         title = "退出登录",
         subtitle = "退出当前账号",
         icon = Icons.Default.ExitToApp,
@@ -700,6 +680,16 @@ fun SubscriptionManagementDialog(
 ) {
     var subscriptionName by remember { mutableStateOf("") }
     var subscriptionUrl by remember { mutableStateOf("") }
+    val presets = remember {
+        listOf(
+            "中国日历-完整版" to "https://yangh9.github.io/ChinaCalendar/calendar.ics",
+            "中国日历-法定节假日" to "https://yangh9.github.io/ChinaCalendar/cal_holiday.ics",
+            "中国日历-节日纪念日" to "https://yangh9.github.io/ChinaCalendar/cal_festival.ics",
+            "中国日历-二十四节气" to "https://yangh9.github.io/ChinaCalendar/cal_solarTerm.ics",
+            "中国日历-农历" to "https://yangh9.github.io/ChinaCalendar/cal_lunar.ics",
+            "中国日历-天干地支" to "https://yangh9.github.io/ChinaCalendar/cal_trunkBranch.ics"
+        )
+    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -720,6 +710,22 @@ fun SubscriptionManagementDialog(
                     placeholder = { Text("https://example.com/calendar.ics") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("预设订阅", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    presets.forEach { (name, url) ->
+                        OutlinedButton(
+                            onClick = {
+                                subscriptionName = name
+                                subscriptionUrl = url
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(name, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
