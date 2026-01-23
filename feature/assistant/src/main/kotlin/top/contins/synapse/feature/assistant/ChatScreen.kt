@@ -1,6 +1,7 @@
 package top.contins.synapse.feature.assistant
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -138,7 +139,7 @@ fun ChatScreen(
         }
     ) {
         Scaffold(
-            contentWindowInsets = WindowInsets.statusBars, 
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             topBar = {
                 TopAppBar(
                     title = { 
@@ -148,6 +149,7 @@ fun ChatScreen(
                             fontWeight = FontWeight.SemiBold
                         ) 
                     },
+                    windowInsets = WindowInsets(0, 0, 0, 0),
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -166,50 +168,69 @@ fun ChatScreen(
                 )
             },
             bottomBar = {
-                 // Input Area (Surface adds elevation/background)
-                Surface(
-                    tonalElevation = 2.dp,
-                    color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth().imePadding()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
                 ) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     Row(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .navigationBarsPadding(),
-                        verticalAlignment = Alignment.Bottom
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedTextField(
-                            value = inputText,
-                            onValueChange = viewModel::updateInputText,
-                            placeholder = { Text("今天过的怎么样~") },
+                        val inputShape = RoundedCornerShape(16.dp)
+                        Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(max = 150.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                            ),
-                            enabled = !isLoading
-                        )
+                                .heightIn(min = 44.dp, max = 140.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = inputShape
+                                )
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            BasicTextField(
+                                value = inputText,
+                                onValueChange = viewModel::updateInputText,
+                                enabled = !isLoading,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                decorationBox = { innerTextField ->
+                                    if (inputText.isEmpty()) {
+                                        Text(
+                                            text = "今天过的怎么样~",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        }
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
-                        FloatingActionButton(
+                        IconButton(
                             onClick = viewModel::sendMessage,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
-                            modifier = Modifier.align(Alignment.CenterVertically) 
+                            enabled = !isLoading,
+                            modifier = Modifier.size(44.dp)
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Send",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
@@ -295,27 +316,32 @@ fun ChatMessageBubble(message: Message) {
             Spacer(modifier = Modifier.width(8.dp))
         }
 
-        Column(
-            modifier = Modifier.weight(1f, fill = false),
-            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+        BoxWithConstraints(
+            modifier = Modifier.weight(1f, fill = false)
         ) {
-            Surface(
-                shape = RoundedCornerShape(
-                    topStart = 20.dp,
-                    topEnd = 20.dp,
-                    bottomStart = if (isUser) 20.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 20.dp
-                ),
-                color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.widthIn(max = 340.dp) 
+            val bubbleMaxWidth = maxWidth * 0.78f
+
+            Column(
+                horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
             ) {
-                SelectionContainer {
-                    Box(modifier = Modifier.padding(12.dp)) {
-                        MarkdownMessageItem(
-                            content = message.content,
-                            isUser = isUser,
-                            isStreaming = message.isStreaming
-                        )
+                Surface(
+                    shape = RoundedCornerShape(
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
+                        bottomStart = if (isUser) 20.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 20.dp
+                    ),
+                    color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.widthIn(max = bubbleMaxWidth)
+                ) {
+                    SelectionContainer {
+                        Box(modifier = Modifier.padding(12.dp)) {
+                            MarkdownMessageItem(
+                                content = message.content,
+                                isUser = isUser,
+                                isStreaming = message.isStreaming
+                            )
+                        }
                     }
                 }
             }
