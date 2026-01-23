@@ -1,6 +1,7 @@
 package top.contins.synapse.data.service
 
 import biweekly.Biweekly
+import biweekly.ICalVersion
 import biweekly.ICalendar
 import biweekly.component.VEvent
 import biweekly.property.*
@@ -32,7 +33,7 @@ class ICalendarService @Inject constructor() {
         
         val calendar = ICalendar()
         calendar.productId = ProductId("-//Synapse Android//Schedule Manager//EN")
-        calendar.version = Version.v2_0()
+        calendar.version = ICalVersion.V2_0
         
         schedules.forEach { schedule ->
             try {
@@ -142,15 +143,15 @@ class ICalendarService @Inject constructor() {
         val startTime = event.dateStart?.value?.time ?: System.currentTimeMillis()
         val endTime = event.dateEnd?.value?.time ?: (startTime + ONE_HOUR_MS)
         
-        // 使用 biweekly 的 hasTime() 方法正确检测全天事件
+        // 通过 VALUE=DATE 判断全天事件（避免依赖 Value 枚举）
         val isAllDay = event.dateStart?.let {
-            it.hasTime() == false
+            it.parameters.getValue()?.toString()?.equals("DATE", ignoreCase = true) == true
         } ?: false
         
         val location = event.location?.value
         
         // 尝试从事件中获取时区信息，否则使用系统默认时区
-        val timezoneId = event.dateStart?.parameters?.timezoneId?.value 
+        val timezoneId = event.dateStart?.parameters?.getTimezoneId()
             ?: TimeZone.getDefault().id
         
         val now = System.currentTimeMillis()

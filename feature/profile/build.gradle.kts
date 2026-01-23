@@ -47,6 +47,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     
     implementation(libs.coil.compose)
+    implementation(libs.biweekly)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
