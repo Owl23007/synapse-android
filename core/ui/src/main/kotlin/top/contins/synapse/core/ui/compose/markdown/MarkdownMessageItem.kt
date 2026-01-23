@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,7 +23,7 @@ fun MarkdownMessageItem(
     isUser: Boolean,
     isStreaming: Boolean = false
 ) {
-    val textColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = if (isUser) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
     if (isUser) {
         // 用户消息使用普通文本
         Text(

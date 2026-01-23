@@ -3,9 +3,11 @@ package top.contins.synapse.feature.assistant
 import androidx.compose.foundation.background
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -67,26 +69,50 @@ fun ChatScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
             ) {
                 // Header Area
-                Column(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text(
-                        text = "聊天历史",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${conversations.size} 个对话",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SmartToy,
+                                contentDescription = null,
+                                modifier = Modifier.padding(8.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "聊天历史",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${conversations.size} 个对话",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 
                 HorizontalDivider()
@@ -96,43 +122,77 @@ fun ChatScreen(
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     items(conversations) { conversation ->
-                        NavigationDrawerItem(
-                            label = { 
+                        val isSelected = conversation.id == currentConversationId
+                        val itemShape = RoundedCornerShape(16.dp)
+                        Surface(
+                            modifier = Modifier
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .fillMaxWidth()
+                                .clip(itemShape)
+                                .clickable {
+                                    viewModel.loadConversation(conversation)
+                                    scope.launch { drawerState.close() }
+                                },
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            },
+                            tonalElevation = if (isSelected) 2.dp else 0.dp,
+                            shape = itemShape
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surface
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SmartToy,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(6.dp),
+                                        tint = if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            MaterialTheme.colorScheme.primary
+                                        }
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = conversation.title,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                    modifier = Modifier.weight(1f)
                                 )
-                            },
-                            selected = conversation.id == currentConversationId,
-                            onClick = {
-                                viewModel.loadConversation(conversation)
-                                scope.launch { drawerState.close() }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.SmartToy,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            badge = {
                                 IconButton(
-                                    onClick = { 
-                                        viewModel.deleteConversation(conversation.id)
-                                    }
+                                    onClick = { viewModel.deleteConversation(conversation.id) },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "Delete",
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.outline
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                            }
+                        }
                     }
                 }
             }
@@ -180,7 +240,7 @@ fun ChatScreen(
                             .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val inputShape = RoundedCornerShape(16.dp)
+                        val inputShape = RoundedCornerShape(24.dp)
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -340,17 +400,11 @@ fun ChatMessageBubble(message: Message) {
                                 content = message.content,
                                 isUser = isUser,
                                 isStreaming = message.isStreaming
-                            )
+                            ) 
                         }
                     }
                 }
             }
-            // Optional: Timestamp
-            // Text(
-            //     text = "10:00 AM",
-            //     style = MaterialTheme.typography.labelSmall,
-            //     modifier = Modifier.padding(top = 4.dp)
-            // )
         }
         
         if (isUser) {
