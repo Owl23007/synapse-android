@@ -38,6 +38,8 @@ dependencies {
     implementation(libs.bundles.room)
     implementation(libs.security.crypto)
     implementation(libs.converter.gson)
+    implementation(libs.biweekly)
+    implementation(libs.okhttp)
     ksp(libs.hilt.compiler)
     ksp(libs.room.compiler)
 }
